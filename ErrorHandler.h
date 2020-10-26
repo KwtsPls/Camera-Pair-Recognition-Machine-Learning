@@ -1,0 +1,8 @@
+//
+// Created by Heyo on 26/10/2020.
+//
+
+#ifndef PROJECT_ERRORHANDLER_H
+#define PROJECT_ERRORHANDLER_H
+
+#endif //PROJECT_ERRORHANDLER_H
