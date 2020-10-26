@@ -1,8 +1,17 @@
-//
-// Created by Heyo on 26/10/2020.
-//
-
 #ifndef PROJECT_ERRORHANDLER_H
 #define PROJECT_ERRORHANDLER_H
+
+extern int errorCode;
+
+//Error codes
+typedef enum
+{
+    DIR_UNABLE_TO_OPEN=0,
+    DATA_X_NOT_FOUND=1,
+
+}ERROR_CODES;
+
+//Function to print current error
+void print_error();
 
 #endif //PROJECT_ERRORHANDLER_H
