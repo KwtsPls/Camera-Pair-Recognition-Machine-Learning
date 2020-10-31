@@ -99,6 +99,7 @@ int Initialize_dataset_X(char *name){
     struct dirent *subdptr=NULL;
 
     char *web_name=NULL;
+    char *file_name=NULL;
     char *spec_id=NULL;
     //token for strtok function
     char *token=NULL;
@@ -125,6 +126,12 @@ int Initialize_dataset_X(char *name){
             while ((subdptr = readdir(subdir)) != NULL) {
                 if(strcmp(subdptr->d_name, ".") && strcmp(subdptr->d_name, "..")) {
 
+                    //Get the full path to the json file
+                    file_name = malloc(strlen(web_name)+strlen(subdptr->d_name)+2);
+                    strcpy(file_name,web_name);
+                    strcat(file_name,"/");
+                    strcat(file_name,subdptr->d_name);
+
                     //Get the number from the json files
                     token = strtok(subdptr->d_name, ".");
                     spec_id = malloc(strlen(dptr->d_name) + strlen(token) + 3);
@@ -134,9 +141,15 @@ int Initialize_dataset_X(char *name){
                     strcat(spec_id,"//");
                     strcat(spec_id,token);
 
+                    //Read specs from json file
+                    scan_json_file(file_name);
 
-                    printf("%s\n", spec_id);
+                    //DO NOT KEEP
+                    //DO NOT KEEP
+                    //ONLY FOR TEST DO NOT KEEP
+
                     free(spec_id);
+                    free(file_name);
                 }
             }
 
@@ -147,4 +160,106 @@ int Initialize_dataset_X(char *name){
 
     closedir(dir);
     return 1;
+}
+
+
+//Function to read data from json files
+void scan_json_file(char *name){
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fp = fopen(name, "r");
+
+    if (fp == NULL){
+        errorCode=JSON_FILE_UNABLE_TO_OPEN;
+        print_error();
+    }
+
+    //String for strtok
+    char *token=NULL;
+    char *key=NULL;
+    char *value=NULL;
+
+    //Read the specs from the json file
+    while ((read = getline(&line, &len, fp)) != -1) {
+        //Remove the change line character
+        token = strtok(line, "\n");
+
+        //Break the string into two parts. The key and the value
+        //Left of the : character is the key and right of it the value
+        if(strcmp(token,"{")!=0 && strcmp(token,"}")!=0) {
+            key = strtok(token,":");
+            value = strtok(NULL,"");
+
+            //Start parsing the key
+            key = strtok(key,"\"");
+            key = strtok(NULL,"\"");
+
+            //Start parsing the value
+            //If the value part is not an array simply remove the needless characters
+            if(strcmp(value," [")!=0) {
+                value = strtok(value, "\"");
+                value = strtok(NULL, "");
+                //Remove the two last characters from the string
+                if(value[strlen(value) - 1]==',')
+                    value[strlen(value) - 2] = 0;
+                else
+                    value[strlen(value) - 1] = 0;
+
+                char **array_value=NULL;
+                array_value = malloc(sizeof(char*));
+                array_value[0] = malloc(strlen(value) + 1);
+                strcpy(array_value[0], value);
+
+            }
+            //The value is an array iterate to get every element of the current array
+            else{
+                char * array_line = NULL;
+                size_t len = 0;
+                ssize_t read;
+                char *value=NULL;
+                int values_num=0;
+
+                //Initialize array of strings
+                char **array_value=NULL;
+                array_value = malloc(sizeof(char*));
+
+                while ((read = getline(&array_line, &len, fp)) != -1) {
+                    //Remove the change line character
+                    token = strtok(array_line, "\n");
+
+                    //end of array reached stop the iteration
+                    if(strcmp(token,"    ],")==0 || strcmp(token,"    ]")==0 )
+                        break;
+
+                    //increase the number of items
+
+                    token = strtok(token,"\"");
+                    value = strtok(NULL,"");
+                    //Remove the two last characters from the string
+                    if(value[strlen(value) - 1]==',')
+                        value[strlen(value) - 2] = 0;
+                    else
+                        value[strlen(value) - 1] = 0;
+
+                    //Reallocate space in array for new string
+                    if(values_num!=0) {
+                        array_value = realloc(array_value,sizeof(char*)*(values_num+1));
+                    }
+                    //Store the new string in the array
+                    array_value[values_num] = malloc(strlen(value) + 1);
+                    strcpy(array_value[values_num], value);
+                    values_num++;
+                }
+            }
+        }
+    }
+
+    fclose(fp);
+    if (line)
+        free(line);
+
+    return;
 }

@@ -8,6 +8,7 @@ typedef enum
 {
     DIR_UNABLE_TO_OPEN=0,
     DATA_X_NOT_FOUND=1,
+    JSON_FILE_UNABLE_TO_OPEN=2,
 
 }ERROR_CODES;
 

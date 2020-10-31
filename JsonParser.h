@@ -9,4 +9,7 @@ char *get_datasetX_name();
 //Function to initialize the data structures with dataset X
 int Initialize_dataset_X(char *);
 
+//Function to read data from json files
+void scan_json_file(char *);
+
 #endif //PROJECT_JSONPARSER_H
