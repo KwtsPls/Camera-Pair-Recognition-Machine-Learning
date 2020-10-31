@@ -1,4 +1,10 @@
-//
-// Created by Heyo on 31/10/2020.
-//
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "Dictionary.h"
 
+//Function to initialize a dictionary
+Dictionary initDictionary(){
+    Dictionary *dict = malloc(sizeof(Dictionary));
+    return dict;
+}
