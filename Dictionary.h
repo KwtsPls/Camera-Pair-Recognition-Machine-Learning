@@ -16,4 +16,7 @@ typedef struct dict_node{
 //Function to initialize a dictionary
 Dictionary initDictionary();
 
+//Function for inserting in dictionary
+Dictionary *insertDictionary(Dictionary *dic, char *key, char **val, int num_val);
+
 #endif //PROJECT_DICTIONARY_H
