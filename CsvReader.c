@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "csvReader.h"
+#include "CsvReader.h"
 #include <string.h>
 
 
