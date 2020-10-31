@@ -29,13 +29,12 @@ Dictionary *insertDictionary(Dictionary *dic, char *key, char **val, int num_val
 void printDictionary(Dictionary *dic)
 {
     Dictionary_node *tmp;
-    printf("Kati den doulevei?\n");
     tmp = dic->list;
-    while(tmp!=NULL)
-    {
-        printf("KEY:%s\n", tmp->key);
-        for(int i=0;i<tmp->values_num;i++)
-            printf("Value %d: %s\n",i,tmp->value[i]);
+    while (tmp != NULL) {
+        printf("%s: ", tmp->key);
+        for (int i = 0; i < tmp->values_num; i++)
+            printf("%s,\n", tmp->value[i]);
+        printf("\n\n");
         tmp = tmp->next;
     }
     

@@ -10,6 +10,6 @@ char *get_datasetX_name();
 int Initialize_dataset_X(char *);
 
 //Function to read data from json files
-void scan_json_file(char *);
+void parse_json_file(char *,char *);
 
 #endif //PROJECT_JSONPARSER_H

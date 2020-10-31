@@ -2,6 +2,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include "Dictionary.h"
 #include "JsonParser.h"
 #include "ErrorHandler.h"
 
@@ -142,11 +143,7 @@ int Initialize_dataset_X(char *name){
                     strcat(spec_id,token);
 
                     //Read specs from json file
-                    scan_json_file(file_name);
-
-                    //DO NOT KEEP
-                    //DO NOT KEEP
-                    //ONLY FOR TEST DO NOT KEEP
+                    parse_json_file(file_name,spec_id);
 
                     free(spec_id);
                     free(file_name);
@@ -164,11 +161,14 @@ int Initialize_dataset_X(char *name){
 
 
 //Function to read data from json files
-void scan_json_file(char *name){
+void parse_json_file(char *name,char* spec_id){
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
+
+    //Create a new dictionary for the current file
+    Dictionary *dict = initDictionary(spec_id);
 
     fp = fopen(name, "r");
 
@@ -212,6 +212,11 @@ void scan_json_file(char *name){
                 array_value = malloc(sizeof(char*));
                 array_value[0] = malloc(strlen(value) + 1);
                 strcpy(array_value[0], value);
+                if(key==NULL) {
+                    dict = insertDictionary(dict,"Non-defined",array_value,1);
+                }
+                else
+                    dict = insertDictionary(dict,key,array_value,1);
 
             }
             //The value is an array iterate to get every element of the current array
@@ -253,6 +258,14 @@ void scan_json_file(char *name){
                     strcpy(array_value[values_num], value);
                     values_num++;
                 }
+                if(key==NULL) {
+                    dict = insertDictionary(dict,"Non-defined",array_value,values_num);
+                }
+                else
+                    dict = insertDictionary(dict,key,array_value,values_num);
+
+                if (array_line)
+                    free(array_line);
             }
         }
     }
@@ -260,6 +273,9 @@ void scan_json_file(char *name){
     fclose(fp);
     if (line)
         free(line);
+
+    //printDictionary(dict);
+    deleteDictionary(&dict);
 
     return;
 }
