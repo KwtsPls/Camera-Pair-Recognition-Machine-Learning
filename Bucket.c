@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Bucket.h"
-
+#include "Dictionary.h"
 
 //Creates a Bucket List
-Bucket *Bucket_Create(char *spec_id, int BucketSize)
+Bucket *Bucket_Create(Dictionary *spec_id, int BucketSize)
 {
     Bucket *buck;
     //Allocate memory for the new Bucket
@@ -14,7 +14,7 @@ Bucket *Bucket_Create(char *spec_id, int BucketSize)
     //Number of Spec IDs already stored
     buck->cnt = 1;
     //Create an array for storing pointers to strings
-    buck->spec_ids = malloc(sizeof(char*) * buck->numofSpecs);
+    buck->spec_ids = malloc(sizeof(Dictionary*) * buck->numofSpecs);
     //NULL every pointer of array to char*
     for(int i=0; i<buck->numofSpecs; i++)
         buck->spec_ids[i] = NULL;
@@ -30,12 +30,12 @@ Bucket *Bucket_Create(char *spec_id, int BucketSize)
 }
 
 //Insertion of a new Spec in the list
-Bucket *Bucket_Insert(Bucket* buck, char *spec_id)
+Bucket *Bucket_Insert(Bucket* buck, Dictionary *spec_id)
 {
     if(buck->cnt==buck->numofSpecs) //There is no space in the BucketNode
     {
         //Create a newBucket to store the spec_id
-        Bucket *newBuck = Bucket_Create(spec_id, buck->numofSpecs * (sizeof(char*)));
+        Bucket *newBuck = Bucket_Create(spec_id, buck->numofSpecs * (sizeof(Dictionary*)));
         //Insert the new Bucket Node at the beggining of the List
         newBuck->next = buck;
         newBuck->tail = buck->tail;
@@ -83,7 +83,7 @@ Bucket *Bucket_Merge(Bucket *b, Bucket *a)
                 //Then take one spec_id from bucket a
                 a->cnt--;
                 
-                char *temp = a->spec_ids[a->cnt];
+                Dictionary *temp = a->spec_ids[a->cnt];
                 a->spec_ids[a->cnt]=NULL;
                 
                 //And keep it on bucket b
@@ -127,8 +127,10 @@ void Bucket_Delete(Bucket **DestroyIt)
     {
         Bucket *temp = next;
         next = next->next;
-        for(int i=0;i<temp->cnt;i++)
-            temp->spec_ids[i]=NULL;
+        for(int i=0;i<temp->cnt;i++) {
+            deleteDictionary(&temp->spec_ids[i]);
+            temp->spec_ids[i] = NULL;
+        }
 
         free(temp->spec_ids); 
 
@@ -150,7 +152,7 @@ void Bucket_Print(Bucket *buck)
     {
         printf("Bucket #%d\n",numBuck);
         for(int i=0;i<tmp->cnt;i++)
-            printf("%s\n",tmp->spec_ids[i]);
+            printDictionary(tmp->spec_ids[i]);
         numBuck++;
         tmp = tmp->next;
     }

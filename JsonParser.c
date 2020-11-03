@@ -5,6 +5,7 @@
 #include "Dictionary.h"
 #include "JsonParser.h"
 #include "ErrorHandler.h"
+#include "Bucket.h"
 
 int errorCode;
 
@@ -122,6 +123,7 @@ int Initialize_dataset_X(char *name){
             strcat(web_name, dptr->d_name);
 
             subdir = opendir(web_name);
+            printf("%s\n",web_name);
 
             //Begin iterating through the files
             while ((subdptr = readdir(subdir)) != NULL) {
@@ -274,8 +276,13 @@ void parse_json_file(char *name,char* spec_id){
     if (line)
         free(line);
 
+    //Test insert into the bucket
+    Bucket *buck = Bucket_Create(dict,128);
+    //Bucket_Print(buck);
+
     //printDictionary(dict);
-    deleteDictionary(&dict);
+    //deleteDictionary(&dict);
+    Bucket_Delete(&buck);
 
     return;
 }
