@@ -6,6 +6,7 @@
 #include "JsonParser.h"
 #include "ErrorHandler.h"
 #include "Bucket.h"
+#include "HashTable.h"
 
 int errorCode;
 
@@ -93,7 +94,7 @@ char *get_datasetX_name(){
 }
 
 //Function to initialize the data structures with dataset X
-int Initialize_dataset_X(char *name){
+int Initialize_dataset_X(char *name,HashTable *ht){
 
     DIR *dir;
     struct dirent *dptr = NULL;
@@ -145,7 +146,7 @@ int Initialize_dataset_X(char *name){
                     strcat(spec_id,token);
 
                     //Read specs from json file
-                    parse_json_file(file_name,spec_id);
+                    parse_json_file(file_name,spec_id,ht);
 
                     free(spec_id);
                     free(file_name);
@@ -163,7 +164,7 @@ int Initialize_dataset_X(char *name){
 
 
 //Function to read data from json files
-void parse_json_file(char *name,char* spec_id){
+void parse_json_file(char *name,char* spec_id,HashTable *ht){
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
@@ -260,8 +261,10 @@ void parse_json_file(char *name,char* spec_id){
                     strcpy(array_value[values_num], value);
                     values_num++;
                 }
+
                 if(key==NULL) {
                     dict = insertDictionary(dict,"Non-defined",array_value,values_num);
+                    
                 }
                 else
                     dict = insertDictionary(dict,key,array_value,values_num);
@@ -272,17 +275,19 @@ void parse_json_file(char *name,char* spec_id){
         }
     }
 
+    ht = insertHashTable(ht,dict);  
+
     fclose(fp);
     if (line)
         free(line);
 
     //Test insert into the bucket
-    Bucket *buck = Bucket_Create(dict,128);
+    //Bucket *buck = Bucket_Create(dict,128);
     //Bucket_Print(buck);
 
     //printDictionary(dict);
     //deleteDictionary(&dict);
-    Bucket_Delete(&buck);
+    //Bucket_Delete(&buck);
 
     return;
 }

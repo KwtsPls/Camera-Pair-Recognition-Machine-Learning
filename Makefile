@@ -1,5 +1,5 @@
-main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o
-	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o -o main
+main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o 
+	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o  -o main
 
 main.o : main.c JsonParser.h ErrorHandler.h
 	gcc -g3 -c main.c
@@ -18,6 +18,9 @@ Bucket.o : Bucket.c Bucket.h Dictionary.h
 
 CsvReader.o : CsvReader.c CsvReader.h
 	gcc -g3 -c CsvReader.c
+
+HashTable.o : HashTable.c HashTable.h
+	gcc -g3 -c HashTable.c
 
 clean:
 	rm main main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o
