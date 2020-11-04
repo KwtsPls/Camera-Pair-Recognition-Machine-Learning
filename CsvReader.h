@@ -4,6 +4,6 @@
 #include <stdlib.h>
 
 //Parser for finding pairs of spec_ids in the csv file
-int csParser(char *filename);
+HashTable *csvParser(char *filename, HashTable **ht);
 
 #endif

@@ -53,6 +53,9 @@ keyBucketEntry *createEntry(Dictionary *dict)
     //Save the name of the current spec id
     entry->key = strdup(dict->dict_name); 
 
+    //Save the number of entries inside the outer_entry
+    entry->num_entries = 1;
+
     //Create Bucket for the entry set
     entry->set = Bucket_Create(dict,BUCKET_SIZE);
 
@@ -153,6 +156,27 @@ HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
     return ht_reshaped;
 }
 
+
+//Function to find a key bucket entry with the given spec_id
+keyBucketEntry *findKeyBucketEntry(HashTable *ht,char * spec_id){
+    int h = hashCode(spec_id,ht->buckets_num);
+
+    //If current bucket is empty return NULL -> entry does not exist
+    if(ht->table[h]==NULL)
+        return NULL;
+
+    //Iterate through the key bucket to find the spec id
+    for(int i=0;i<ht->table[h]->num_entries;i++){
+
+            if(ht->table[h]->array[i]!=NULL){
+                if(strcmp(ht->table[h]->array[i]->key,spec_id)==0)
+                    return ht->table[h]->array[i];
+            }
+    }
+
+    return NULL;
+}
+
 //Fucntion to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode){
     HashTable *temp;
@@ -196,4 +220,37 @@ void printHashTable(HashTable *ht){
         if(ht->table[i]!=NULL)
             printf("\nNUMBER OF ENTRIES IN BUCKET %d ---> %d\n",i,ht->table[i]->num_entries);
     }
+}
+
+HashTable *mergeHashTable(HashTable **ht, char *left_sp, char *right_sp){
+   //Hash the left and right spec ids
+   keyBucketEntry *left_Entry, *right_Entry;
+   left_Entry = findKeyBucketEntry(*ht,left_sp);
+   right_Entry = findKeyBucketEntry(*ht,right_sp);
+   
+   if(left_Entry->num_entries>=right_Entry->num_entries){
+        Bucket *prev_set = right_Entry->set;
+        while(prev_set!=NULL){
+            int cnt = prev_set->cnt;
+            Dictionary **spec_ids_ar = prev_set->spec_ids;
+            for(int i=0;i<cnt;i++){
+                char *dict_name = spec_ids_ar[i]->dict_name;
+                int h = hashCode(dict_name,(*ht)->buckets_num);
+                //Iterate through the key bucket to find the spec id
+                for(int j=0;j<(*ht)->table[h]->num_entries;j++){
+                    if((*ht)->table[h]->array[j]!=NULL){
+                        if(strcmp((*ht)->table[h]->array[j]->key,dict_name)==0)
+                            (*ht)->table[h]->array[j]->set = left_Entry->set;
+                        }
+                    }
+            }
+        }
+        
+        left_Entry->set = Bucket_Merge(left_Entry->set,right_Entry->set);
+        
+        
+        return *ht;
+    }
+    else
+        return mergeHashTable(ht,right_sp,left_sp);
 }

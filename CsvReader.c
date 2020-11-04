@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "CsvReader.h"
 #include <string.h>
+#include "HashTable.h"
+#include "CsvReader.h"
 
 
 //Parser for finding pairs of spec_ids in the csv file
-int csParser(char *filename)
+HashTable *csvParser(char *filename,HashTable **ht)
 {
     FILE *fp;
     char *line = NULL;
     size_t len = 0;
-    ssize_t read;
+    size_t read;
 
     //Open file
     fp = fopen(filename,"r");
@@ -42,8 +43,10 @@ int csParser(char *filename)
         //Label to integer
         int label = atoi(lbl_str);
         if(label == 1) //They re the same 
+        {
             printf("Left_Sp: %s, Right_Sp: %s\n",left_sp,right_sp);
-        
+            ht = mergeHashTable(ht, left_sp,right_sp)
+        }
         i++;    //New line Read
     }
     //Free space and close file
@@ -51,6 +54,6 @@ int csParser(char *filename)
     fclose(fp);
 
     //Return num of files read
-    return i;
+    return ht;
 
 }

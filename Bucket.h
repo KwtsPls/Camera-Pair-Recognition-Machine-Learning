@@ -10,9 +10,9 @@
 
 typedef struct Bucket
 {
-    int cnt;                //Counter for already spec_ids.
-    int numofSpecs;         //Number of nodes that can store one list Node
-    Dictionary **spec_ids;        //Pointer's to nodes of Specs
+    int cnt;                //Counter for entries in bucket.
+    int numofSpecs;         //Max number of entries in the bucket
+    Dictionary **spec_ids;  //Pointer's to nodes of Specs
     struct Bucket *tail;    //Pointer to the last Node
     struct Bucket *next;    //Next Bucket Node
 }Bucket;

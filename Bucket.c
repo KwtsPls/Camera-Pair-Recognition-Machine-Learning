@@ -63,6 +63,7 @@ Bucket *Bucket_Merge(Bucket *b, Bucket *a)
         head->tail->next = b;
         //Last node of head is b's Last node
         head->tail = b->tail;
+        return head;
     }
     else{
         if(a->cnt == a->numofSpecs) //This means bucket a is full
