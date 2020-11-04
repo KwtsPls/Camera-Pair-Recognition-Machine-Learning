@@ -47,13 +47,13 @@ keyBucket *insertBucketEntry(keyBucket *kb,Dictionary *spec_id);
 Dictionary *getTopKeyBucketEntry(keyBucket *kb, int pos);
 
 //Function to double the size of the current hash table;
-HashTable *reshapeHashTable(HashTable *ht,Dictionary *spec_id);
+HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id);
 
 //Function to initialize a hash table
 HashTable *initHashTable(int buckets_num);
 
 //Function to add an entry to this hash table
-HashTable *insertHashTable(HashTable *,Dictionary *spec_id);
+HashTable *insertHashTable(HashTable **,Dictionary *spec_id);
 
 //Fucntion to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode);

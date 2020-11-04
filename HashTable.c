@@ -99,26 +99,26 @@ keyBucket *insertBucketEntry(keyBucket *kb,Dictionary *spec_id){
 }
 
 //Function to add an entry to this hash table
-HashTable *insertHashTable(HashTable *ht,Dictionary *spec_id){
+HashTable *insertHashTable(HashTable **ht,Dictionary *spec_id){
 
     //hash the name of the spec_id
-    int h = hashCode(spec_id->dict_name,ht->buckets_num);
+    int h = hashCode(spec_id->dict_name,(*ht)->buckets_num);
 
     //Check if the bucket is empty
-    if(ht->table[h]==NULL)
-        ht->table[h] = initKeyBucket(spec_id);
+    if((*ht)->table[h]==NULL)
+        (*ht)->table[h] = initKeyBucket(spec_id);
     //If bucket is not empty check if there is enough space for a new entry
     //If there is insert it into the bucket
-    else if(keyBucketAvailable(ht->table[h])==KEY_BUCKET_AVAILABLE){
-        ht->table[h] = insertBucketEntry(ht->table[h],spec_id);
+    else if(keyBucketAvailable((*ht)->table[h])==KEY_BUCKET_AVAILABLE){
+        (*ht)->table[h] = insertBucketEntry((*ht)->table[h],spec_id);
     }
     //A bucket is full - hash table must be reshaped
     else{
-        //Reshape the hash table
-        ht = reshapeHashTable(ht,spec_id);
+        HashTable *ht_rehashed = reshapeHashTable(ht,spec_id);
+        return ht_rehashed;
     }
 
-    return ht;
+    return *ht;
 }
 
 //Function to get the first spec id of a given key bucket
@@ -127,25 +127,28 @@ Dictionary *getTopKeyBucketEntry(keyBucket *kb, int pos){
 }
 
 //Function to double the size of the current hash table;
-HashTable *reshapeHashTable(HashTable *ht,Dictionary *spec_id){
+HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
 
     //Create a new hash table with double the size of the current one
-    HashTable *ht_reshaped = initHashTable(ht->buckets_num*2);
+    HashTable *ht_reshaped = initHashTable((*ht)->buckets_num*2);
 
     //Rehash the values of the old hash table into the new one
-    for(int i=0;i<ht->buckets_num;i++){
+    for(int i=0;i<(*ht)->buckets_num;i++){
 
         //Iterate through the key bucket
-        for(int j=0;j<ht->table[i]->num_entries;j++){
-            Dictionary *dict = getTopKeyBucketEntry(ht->table[i],j);
-            ht_reshaped = insertHashTable(ht_reshaped,dict);
+        if((*ht)->table[i]!=NULL){
+            for(int j=0;j<(*ht)->table[i]->num_entries;j++){
+                Dictionary *dict = getTopKeyBucketEntry((*ht)->table[i],j);
+                ht_reshaped = insertHashTable(&ht_reshaped,dict);
+            }
         }
-        
     }
-    //Insert the entry that created the conflict
-    ht_reshaped = insertHashTable(ht_reshaped,spec_id);
 
-    deleteHashTable(&ht,BUCKET_REHASH_MODE);
+    //Insert the entry that created the conflict
+    ht_reshaped = insertHashTable(&ht_reshaped,spec_id);
+
+    deleteHashTable(ht,BUCKET_REHASH_MODE);
+    ht=NULL;
 
     return ht_reshaped;
 }
@@ -154,8 +157,10 @@ HashTable *reshapeHashTable(HashTable *ht,Dictionary *spec_id){
 void deleteHashTable(HashTable **destroyed,int mode){
     HashTable *temp;
     temp = *destroyed;
-    for(int i=0;i<temp->buckets_num;i++)
-        deleteKeyBucket(&(temp->table[i]),mode);
+    for(int i=0;i<temp->buckets_num;i++){
+        if(temp->table[i]!=NULL)
+            deleteKeyBucket(&(temp->table[i]),mode);
+    }
     free(temp->table);
     free(*destroyed);
     *destroyed = temp = NULL;   
@@ -165,8 +170,10 @@ void deleteHashTable(HashTable **destroyed,int mode){
 void deleteKeyBucket(keyBucket **destroyed,int mode){
     keyBucket *temp;
     temp = *destroyed;
-    for(int i=0;i<temp->num_entries;i++)
-        deleteOuterEntry(&(temp->array[i]),mode);
+    for(int i=0;i<temp->num_entries;i++){
+        if(temp->array[i]!=NULL)
+            deleteOuterEntry(&(temp->array[i]),mode);
+    }
     free(temp->array);
     free(*destroyed);
     *destroyed = temp = NULL;
@@ -184,7 +191,9 @@ void deleteOuterEntry(keyBucketEntry **destroyed,int mode){
 
 //Function to print hash table
 void printHashTable(HashTable *ht){
-    for(int i=0;i<ht->buckets_num;i++)
-        for(int j=0;j<ht->table[i]->num_entries;j++)
-            Bucket_Print(ht->table[i]->array[j]->set);
+    printf("CURRENT HASH TABLE NUM OF BUCKETS : %d\n\n",ht->buckets_num);
+    for(int i=0;i<ht->buckets_num;i++){
+        if(ht->table[i]!=NULL)
+            printf("\nNUMBER OF ENTRIES IN BUCKET %d ---> %d\n",i,ht->table[i]->num_entries);
+    }
 }

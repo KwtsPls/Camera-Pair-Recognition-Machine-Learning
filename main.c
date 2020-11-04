@@ -16,7 +16,7 @@ int main(){
         return 1;
     }
     HashTable *ht = initHashTable(2);
-    int check = Initialize_dataset_X(X_name,ht);
+    int check = Initialize_dataset_X(X_name,&ht);
 
     //printHashTable(ht);
     deleteHashTable(&ht,BUCKET_DELETE_MODE);

@@ -94,7 +94,7 @@ char *get_datasetX_name(){
 }
 
 //Function to initialize the data structures with dataset X
-int Initialize_dataset_X(char *name,HashTable *ht){
+int Initialize_dataset_X(char *name,HashTable **ht){
 
     DIR *dir;
     struct dirent *dptr = NULL;
@@ -164,7 +164,7 @@ int Initialize_dataset_X(char *name,HashTable *ht){
 
 
 //Function to read data from json files
-void parse_json_file(char *name,char* spec_id,HashTable *ht){
+void parse_json_file(char *name,char* spec_id,HashTable **ht){
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
@@ -275,7 +275,7 @@ void parse_json_file(char *name,char* spec_id,HashTable *ht){
         }
     }
 
-    ht = insertHashTable(ht,dict);  
+    *ht = insertHashTable(ht,dict);  
 
     fclose(fp);
     if (line)
