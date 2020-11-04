@@ -95,7 +95,7 @@ Bucket *Bucket_Merge(Bucket *b, Bucket *a)
                 Bucket *temp = a;
                 a = a->next;
                 temp->next = NULL; 
-                Bucket_Delete(&temp);
+                Bucket_Delete(&temp,BUCKET_REHASH_MODE);
                 //Store the head of b
                 Bucket *head = b;
                 //Last node of b is pointing to the head of a
@@ -118,9 +118,14 @@ Bucket *Bucket_Merge(Bucket *b, Bucket *a)
     }
 }
 
+//Function to get the first entry of the bucket
+//Used for rehasing
+Dictionary *Bucket_Get_FirstEntry(Bucket *b){
+    return b->spec_ids[0];
+}
 
 //Deletion of The Bucket (Apetaksamin)
-void Bucket_Delete(Bucket **DestroyIt)
+void Bucket_Delete(Bucket **DestroyIt,int mode)
 {
     Bucket *next = *DestroyIt;
     while(next!=NULL)
@@ -128,7 +133,8 @@ void Bucket_Delete(Bucket **DestroyIt)
         Bucket *temp = next;
         next = next->next;
         for(int i=0;i<temp->cnt;i++) {
-            deleteDictionary(&temp->spec_ids[i]);
+            if(mode==BUCKET_DELETE_MODE)
+                deleteDictionary(&temp->spec_ids[i]);
             temp->spec_ids[i] = NULL;
         }
 

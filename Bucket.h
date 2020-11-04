@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include "Dictionary.h"
 
+#define BUCKET_REHASH_MODE 1
+#define BUCKET_DELETE_MODE 2
+
 typedef struct Bucket
 {
     int cnt;                //Counter for already spec_ids.
@@ -26,8 +29,11 @@ Bucket *Bucket_Insert(Bucket *buck, Dictionary *spec_id);
 Bucket *Bucket_Merge(Bucket *a, Bucket *b);
 
 //Deletion of The Bucket (Apetaksamin)
-void Bucket_Delete(Bucket **DestroyIt);
+void Bucket_Delete(Bucket **DestroyIt,int mode);
 
+//Function to get the first entry of the bucket
+//Used for rehasing
+Dictionary *Bucket_Get_FirstEntry(Bucket *b);
 
 void Bucket_Print(Bucket *buck);
 

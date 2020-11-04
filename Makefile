@@ -1,5 +1,5 @@
-main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o 
-	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o  -o main
+main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o
+	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o CsvReader.o -o main
 
 main.o : main.c JsonParser.h ErrorHandler.h
 	gcc -g3 -c main.c

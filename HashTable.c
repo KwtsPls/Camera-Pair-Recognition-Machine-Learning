@@ -4,7 +4,7 @@
 #include "HashTable.h"
 
 //Hash function for this hash table -> I used DJB2
-unsigned long h2(char *str,int buckets)
+unsigned long hashCode(char *str,int buckets)
 {
     unsigned long hash = 5381;
     int c;
@@ -15,8 +15,52 @@ unsigned long h2(char *str,int buckets)
     return hash % buckets;
 }
 
+
+//Function to create a keyBucket
+keyBucket *initKeyBucket(Dictionary *spec_id){
+
+    //Allocate memory for the new bucket
+    keyBucket *kb = malloc(sizeof(keyBucket));
+
+    //Size is defined as a consant
+    kb->bucket_size = BUCKET_SIZE/4;
+
+    //New bucket is created with one entry
+    kb->num_entries=1;
+
+    //Max number of entries inside bucket
+    kb->max_entries= BUCKET_SIZE/(4*sizeof(Dictionary*));
+
+    //Allocate memory for the contents of the bucket
+    kb->array = malloc(sizeof(keyBucketEntry*)*kb->max_entries);
+
+    //Initialize each array position as NULL
+    for(int i=0;i<kb->max_entries;i++)
+        kb->array[i]=NULL;
+    
+    //Insert the first entry of the array
+    kb->array[0]= createEntry(spec_id);
+
+    return kb;
+}
+
+//Function to create a new key bucket entry
+keyBucketEntry *createEntry(Dictionary *dict)
+{
+    //Allocate memory for the new entry
+    keyBucketEntry *entry = malloc(sizeof(keyBucketEntry));
+    
+    //Save the name of the current spec id
+    entry->key = strdup(dict->dict_name); 
+
+    //Create Bucket for the entry set
+    entry->set = Bucket_Create(dict,BUCKET_SIZE);
+
+    return entry;
+}
+
 //Function to initialize a hash table
-HashTable *initHashTable(int bucket_size,int buckets_num){
+HashTable *initHashTable(int buckets_num){
 
     //Allocate space for the hash table
     HashTable *ht = malloc(sizeof(HashTable));
@@ -24,92 +68,123 @@ HashTable *initHashTable(int bucket_size,int buckets_num){
     //Hash table is initialized empty
     ht->buckets_num=buckets_num;
 
-    //The default size of each bucket
-    ht->bucket_size=bucket_size;
-
     //Allocate space for the array of buckets
-    ht->table = malloc(sizeof(Bucket*)*buckets_num);
+    ht->table = malloc(sizeof(keyBucket*)*buckets_num);
 
     //Initialize every bucket as NULL
     for(int i=0;i<buckets_num;i++)
         ht->table[i] = NULL;
 
-    
     return ht;
 }
 
+//Check if a key bucket has space for one more entry
+int keyBucketAvailable(keyBucket *kb){
+    if((kb->num_entries+1)>kb->max_entries)
+        return KEY_BUCKET_FULL;
+    else
+        return KEY_BUCKET_AVAILABLE;
+}
+
+//Insert a new entry into the key bucket -> only used if bucket has remaining space
+keyBucket *insertBucketEntry(keyBucket *kb,Dictionary *spec_id){
+
+    //Create a data bucket for the new spec id
+    kb->array[kb->num_entries] = createEntry(spec_id);
+
+    //Increase the entries counter
+    kb->num_entries++;
+
+    return kb;
+}
 
 //Function to add an entry to this hash table
 HashTable *insertHashTable(HashTable *ht,Dictionary *spec_id){
 
-    //Hash the name of the incoming dictionary
-    int h = h2(spec_id->dict_name,ht->buckets_num);
+    //hash the name of the spec_id
+    int h = hashCode(spec_id->dict_name,ht->buckets_num);
 
-    printf("%s\n",spec_id->dict_name);
-    //Check if the hashed values belongs to a bucket that is not empty
-    //If the bucket is empty create a new bucket
-    if(ht->table[h]==NULL){
-        ht->table[h] = Bucket_Create(spec_id,ht->bucket_size);
-        return ht; 
+    //Check if the bucket is empty
+    if(ht->table[h]==NULL)
+        ht->table[h] = initKeyBucket(spec_id);
+    //If bucket is not empty check if there is enough space for a new entry
+    //If there is insert it into the bucket
+    else if(keyBucketAvailable(ht->table[h])==KEY_BUCKET_AVAILABLE){
+        ht->table[h] = insertBucketEntry(ht->table[h],spec_id);
     }
-    //If there is a collision the hash table must be rebuild
+    //A bucket is full - hash table must be reshaped
     else{
-        
-        //Create a new hash table with double the size of the old one
-        HashTable *new_ht = initHashTable(ht->bucket_size,ht->buckets_num*2);
-        h = h2(spec_id->dict_name,new_ht->buckets_num);
-        new_ht->table[h] = Bucket_Create(spec_id,new_ht->bucket_size);
-        
-        //rehash every value into the new hash table
-        for(int i=0;i<ht->buckets_num;i++){
-            if(ht->table[i]!=NULL){
-                h = h2(ht->table[i]->spec_ids[0]->dict_name,new_ht->buckets_num);
-
-                if(new_ht->table[h]==NULL)
-                    new_ht->table[h] = ht->table[i];
-                else{
-                    printf("%s\n",ht->table[i]->spec_ids[0]->dict_name);
-                    printf("WRONG COLLISION WITH NEW BUCKETS %d OLD BUCKET %d\n",new_ht->buckets_num,ht->buckets_num);
-                }
-                    
-            }
-        }
-
-        killOldHashTable(&ht);
-        //Return new hash table
-        return new_ht;
+        //Reshape the hash table
+        ht = reshapeHashTable(ht,spec_id);
     }
+
+    return ht;
 }
 
-//Function to destroy hash table that is no longer in use
-void killOldHashTable(HashTable **destroyed){
-    //Temporary pointer to the hash table to destroy
-    HashTable *hash = *destroyed;
-    //Delete the buckets    
-    free(hash->table);
-    //Delete the pointers
-    free(*destroyed);
-    hash = *destroyed = NULL; 
+//Function to get the first spec id of a given key bucket
+Dictionary *getTopKeyBucketEntry(keyBucket *kb, int pos){
+    return Bucket_Get_FirstEntry(kb->array[pos]->set);
 }
 
-void deleteHashTable(HashTable **destroyed)
-{
-    //Temporary pointer to the hash table to destroy
-    HashTable *hash = *destroyed;
-    
-    //Delete each bucket seperately
-    for(int i=0;i<hash->buckets_num;i++)    
-        Bucket_Delete(&(hash->table[i]));
+//Function to double the size of the current hash table;
+HashTable *reshapeHashTable(HashTable *ht,Dictionary *spec_id){
 
-    //Delete the buckets    
-    free(hash->table);
-    //Delete the pointers
+    //Create a new hash table with double the size of the current one
+    HashTable *ht_reshaped = initHashTable(ht->buckets_num*2);
+
+    //Rehash the values of the old hash table into the new one
+    for(int i=0;i<ht->buckets_num;i++){
+
+        //Iterate through the key bucket
+        for(int j=0;j<ht->table[i]->num_entries;j++){
+            Dictionary *dict = getTopKeyBucketEntry(ht->table[i],j);
+            ht_reshaped = insertHashTable(ht_reshaped,dict);
+        }
+        
+    }
+    //Insert the entry that created the conflict
+    ht_reshaped = insertHashTable(ht_reshaped,spec_id);
+
+    deleteHashTable(&ht,BUCKET_REHASH_MODE);
+
+    return ht_reshaped;
+}
+
+//Fucntion to delete the Hash Table
+void deleteHashTable(HashTable **destroyed,int mode){
+    HashTable *temp;
+    temp = *destroyed;
+    for(int i=0;i<temp->buckets_num;i++)
+        deleteKeyBucket(&(temp->table[i]),mode);
+    free(temp->table);
     free(*destroyed);
-    hash = *destroyed = NULL;
+    *destroyed = temp = NULL;   
+}
+
+//Function to deleteKeyBucket
+void deleteKeyBucket(keyBucket **destroyed,int mode){
+    keyBucket *temp;
+    temp = *destroyed;
+    for(int i=0;i<temp->num_entries;i++)
+        deleteOuterEntry(&(temp->array[i]),mode);
+    free(temp->array);
+    free(*destroyed);
+    *destroyed = temp = NULL;
+}
+
+//Function to deleteOuterEntry
+void deleteOuterEntry(keyBucketEntry **destroyed,int mode){
+    keyBucketEntry *temp;
+    temp = *destroyed;
+    free(temp->key);
+    Bucket_Delete(&temp->set,mode);
+    free(*destroyed);
+    *destroyed = temp = NULL;
 }
 
 //Function to print hash table
 void printHashTable(HashTable *ht){
     for(int i=0;i<ht->buckets_num;i++)
-        Bucket_Print(ht->table[i]);
+        for(int j=0;j<ht->table[i]->num_entries;j++)
+            Bucket_Print(ht->table[i]->array[j]->set);
 }
