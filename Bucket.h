@@ -7,6 +7,10 @@
 
 #define BUCKET_REHASH_MODE 1
 #define BUCKET_DELETE_MODE 2
+#define BUCKET_FIRST_FULL 3
+#define BUCKET_FIRST_AVAILABLE 4
+#define LIST_EMPTY 5
+#define LIST_NOT_EMPTY 6
 
 typedef struct Bucket
 {
@@ -38,29 +42,31 @@ Bucket *Bucket_Merge(Bucket *a, Bucket *b);
 //Deletion of The Bucket (Apetaksamin)
 void Bucket_Delete(Bucket **DestroyIt,int mode);
 
-//Function to get the first entry of the bucket
-//Used for rehasing
-// Dictionary *Bucket_Get_FirstEntry(BucketList *b);
-
+//Function to print bucket
 void Bucket_Print(Bucket *buck);
-
 
 //Creates a Bucket List
 BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize);
 
-
 //Insertion of a new Spec in the list
 BucketList *BucketList_Insert(BucketList *buck, Dictionary *spec_id);
 
+//Function to return wether the first bucket of the bucket is full or not
+int BucketList_Bucket_Full(BucketList *bl);
 
-//Function to get the first entry of the bucket
-//Used for rehasing
+//Function to check if list is empty
+int BucketList_Empty(BucketList *b);
+
+//Function to get the first entry of the bucket used for rehasing
 Dictionary *Bucket_Get_FirstEntry(BucketList *b);
 
+//Function to delete list of buckets
 void BucketList_Delete(BucketList **b, int mode);
 
+//Function to print list of buckets
 void BucketList_Print(BucketList *b);
 
+BucketList *BucketList_Merge(BucketList **Max_list, BucketList **min_list);
 
 // BucketList *BucketList_Merge(BucketList *a, BucketList *b);
 
