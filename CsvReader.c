@@ -20,7 +20,7 @@ HashTable *csvParser(char *filename,HashTable **ht)
     {
         //PRINT Error
         printf("ERROR: CSV file was not found or could not be opened\n");
-        return -1;
+        return NULL;
     }
 
     int i=0;    //Number Of Lines Counter
@@ -45,7 +45,7 @@ HashTable *csvParser(char *filename,HashTable **ht)
         if(label == 1) //They re the same 
         {
             printf("Left_Sp: %s, Right_Sp: %s\n",left_sp,right_sp);
-            ht = mergeHashTable(ht, left_sp,right_sp)
+            //ht = mergeHashTable(ht, left_sp,right_sp)
         }
         i++;    //New line Read
     }
@@ -54,6 +54,5 @@ HashTable *csvParser(char *filename,HashTable **ht)
     fclose(fp);
 
     //Return num of files read
-    return ht;
-
+    return *ht;
 }

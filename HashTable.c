@@ -223,34 +223,4 @@ void printHashTable(HashTable *ht){
 }
 
 HashTable *mergeHashTable(HashTable **ht, char *left_sp, char *right_sp){
-   //Hash the left and right spec ids
-   keyBucketEntry *left_Entry, *right_Entry;
-   left_Entry = findKeyBucketEntry(*ht,left_sp);
-   right_Entry = findKeyBucketEntry(*ht,right_sp);
-   
-   if(left_Entry->num_entries>=right_Entry->num_entries){
-        Bucket *prev_set = right_Entry->set;
-        while(prev_set!=NULL){
-            int cnt = prev_set->cnt;
-            Dictionary **spec_ids_ar = prev_set->spec_ids;
-            for(int i=0;i<cnt;i++){
-                char *dict_name = spec_ids_ar[i]->dict_name;
-                int h = hashCode(dict_name,(*ht)->buckets_num);
-                //Iterate through the key bucket to find the spec id
-                for(int j=0;j<(*ht)->table[h]->num_entries;j++){
-                    if((*ht)->table[h]->array[j]!=NULL){
-                        if(strcmp((*ht)->table[h]->array[j]->key,dict_name)==0)
-                            (*ht)->table[h]->array[j]->set = left_Entry->set;
-                        }
-                    }
-            }
-        }
-        
-        left_Entry->set = Bucket_Merge(left_Entry->set,right_Entry->set);
-        
-        
-        return *ht;
-    }
-    else
-        return mergeHashTable(ht,right_sp,left_sp);
 }
