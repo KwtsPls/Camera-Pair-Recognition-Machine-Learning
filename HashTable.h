@@ -12,7 +12,7 @@
 typedef struct outer_entry{
     char *key;
     int num_entries;
-    Bucket *set;
+    BucketList *set;
 } keyBucketEntry;
 
 //Struct for the buckets containing the spec_ids
@@ -59,7 +59,7 @@ HashTable *insertHashTable(HashTable **ht,Dictionary *spec_id);
 //Function to find a key bucket entry with the given spec_id
 keyBucketEntry *findKeyBucketEntry(HashTable *ht,char * spec_id);
 
-//Fucntion to delete the Hash Table
+//Function to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode);
 
 //Function to deleteKeyBucket

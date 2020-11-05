@@ -22,7 +22,7 @@ keyBucket *initKeyBucket(Dictionary *spec_id){
     //Allocate memory for the new bucket
     keyBucket *kb = malloc(sizeof(keyBucket));
 
-    //Size is defined as a consant
+    //Size is defined as a constant
     kb->bucket_size = BUCKET_SIZE/4;
 
     //New bucket is created with one entry
@@ -57,7 +57,7 @@ keyBucketEntry *createEntry(Dictionary *dict)
     entry->num_entries = 1;
 
     //Create Bucket for the entry set
-    entry->set = Bucket_Create(dict,BUCKET_SIZE);
+    entry->set = BucketList_Create(dict,BUCKET_SIZE);
 
     return entry;
 }
@@ -177,7 +177,7 @@ keyBucketEntry *findKeyBucketEntry(HashTable *ht,char * spec_id){
     return NULL;
 }
 
-//Fucntion to delete the Hash Table
+//Function to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode){
     HashTable *temp;
     temp = *destroyed;
@@ -208,7 +208,7 @@ void deleteOuterEntry(keyBucketEntry **destroyed,int mode){
     keyBucketEntry *temp;
     temp = *destroyed;
     free(temp->key);
-    Bucket_Delete(&temp->set,mode);
+    BucketList_Delete(&temp->set,mode);
     free(*destroyed);
     *destroyed = temp = NULL;
 }
