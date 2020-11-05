@@ -13,16 +13,23 @@ typedef struct Bucket
     int cnt;                //Counter for entries in bucket.
     int numofSpecs;         //Max number of entries in the bucket
     Dictionary **spec_ids;  //Pointer's to nodes of Specs
-    struct Bucket *tail;    //Pointer to the last Node
     struct Bucket *next;    //Next Bucket Node
 }Bucket;
 
 
+typedef struct BucketList
+{
+    struct Bucket *head;
+    struct Bucket *tail;
 
-//Creates a Bucket List
+}BucketList;
+
+
+
+//Creates a Bucket Node
 Bucket *Bucket_Create(Dictionary *spec_id, int BucketSize);
 
-//Insertion of a new Spec in the list
+//Insertion of a new Spec in the node
 Bucket *Bucket_Insert(Bucket *buck, Dictionary *spec_id);
 
 //Merging Buckets
@@ -33,10 +40,29 @@ void Bucket_Delete(Bucket **DestroyIt,int mode);
 
 //Function to get the first entry of the bucket
 //Used for rehasing
-Dictionary *Bucket_Get_FirstEntry(Bucket *b);
+// Dictionary *Bucket_Get_FirstEntry(BucketList *b);
 
 void Bucket_Print(Bucket *buck);
 
+
+//Creates a Bucket List
+BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize);
+
+
+//Insertion of a new Spec in the list
+BucketList *BucketList_Insert(BucketList *buck, Dictionary *spec_id);
+
+
+//Function to get the first entry of the bucket
+//Used for rehasing
+Dictionary *Bucket_Get_FirstEntry(BucketList *b);
+
+void BucketList_Delete(BucketList **b, int mode);
+
+void BucketList_Print(BucketList *b);
+
+
+// BucketList *BucketList_Merge(BucketList *a, BucketList *b);
 
 //Write to file the sets inside the bucket
 // void Bucket_Write(Bucket *buck, FILE *fd);

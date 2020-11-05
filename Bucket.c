@@ -24,10 +24,22 @@ Bucket *Bucket_Create(Dictionary *spec_id, int BucketSize)
     buck->next = NULL;
 
     //Last pointer to this Node
-    buck->tail = buck;
+    // buck->tail = buck;
 
     return buck;
 }
+
+//Creates a Bucket List
+BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize)
+{
+    //Allocate space for the list
+    BucketList *lista = malloc(sizeof(BucketList));
+    //Head and tail pointers of the list point to the New Bucket Node
+    lista->head = lista->tail = Bucket_Create(spec_id,BucketSize);
+    //Return the new BucketList
+    return lista;
+}
+
 
 //Insertion of a new Spec in the list
 Bucket *Bucket_Insert(Bucket* buck, Dictionary *spec_id)
@@ -38,7 +50,7 @@ Bucket *Bucket_Insert(Bucket* buck, Dictionary *spec_id)
         Bucket *newBuck = Bucket_Create(spec_id, buck->numofSpecs * (sizeof(Dictionary*)));
         //Insert the new Bucket Node at the beggining of the List
         newBuck->next = buck;
-        newBuck->tail = buck->tail;
+        // newBuck->tail = buck->tail;
         
         return newBuck;
     }
@@ -52,77 +64,91 @@ Bucket *Bucket_Insert(Bucket* buck, Dictionary *spec_id)
     }
 }
 
-//Merging Buckets
-Bucket *Bucket_Merge(Bucket *b, Bucket *a)
-{
-    if(b->cnt == b->numofSpecs) //Bucket b is full
-    {
-        //Store the head of a
-        Bucket *head = a;
-        //Last node of a is pointing to the head of b
-        head->tail->next = b;
-        //Last node of head is b's Last node
-        head->tail = b->tail;
-        return head;
-    }
-    else{
-        if(a->cnt == a->numofSpecs) //This means bucket a is full
-        {
-            //Store the head of b
-            Bucket *head = b;
-            //Last node of b is pointing to the head of a
-            head->tail->next = a;
-            //Last node of head is a's Last node
-            head->tail = a->tail;
-            return head;
-        }
-        else
-        {
-            //While a is not empty and b is not Full
-            while(b->cnt!=b->numofSpecs && a->cnt!=0)
-            {
-                //Then take one spec_id from bucket a
-                a->cnt--;
-                
-                Dictionary *temp = a->spec_ids[a->cnt];
-                a->spec_ids[a->cnt]=NULL;
-                
-                //And keep it on bucket b
-                b->spec_ids[b->cnt]=temp;
-                b->cnt++;
-            }
-            if(a->cnt == 0) //So there is an empty bucket, need to delete it
-            {
-                Bucket *temp = a;
-                a = a->next;
-                temp->next = NULL; 
-                Bucket_Delete(&temp,BUCKET_REHASH_MODE);
-                //Store the head of b
-                Bucket *head = b;
-                //Last node of b is pointing to the head of a
-                head->tail->next = a;
-                //Last node of head is a's Last node
-                head->tail = a->tail;
-                return head;
-            }
 
-            //So b is full and a is not empty so...
-            //Store the head of a
-            Bucket *head = a;
-            //Last node of a is pointing to the head of b
-            head->tail->next = b;
-            //Last node of head is b's Last node
-            head->tail = b->tail;
-            return head;
-        }
-        
-    }
+
+//Insertion of a new Spec in the list
+BucketList *BucketList_Insert(BucketList *buck, Dictionary *spec_id)
+{
+    //Insert something and make the pointer returned the head pointer
+    //Every new insertion is stored in the head of the list
+    buck->head = Bucket_Insert(buck->head,spec_id);
+    return buck;
 }
+
+
+
+// //Merging Buckets
+// Bucket *Bucket_Merge(Bucket *b, Bucket *a)
+// {
+//     Bucket *temp;
+//     if(b->cnt == b->numofSpecs) //Bucket b is full
+//     {
+//         //Store the head of a
+//         Bucket *head = a;
+//         //Last node of a is pointing to the head of b
+//         head->tail->next = b;
+//         //Last node of head is b's Last node
+//         head->tail = b->tail;
+//         return head;
+//     }
+//     else{
+//         if(a->cnt == a->numofSpecs) //This means bucket a is full
+//         {
+//             //Store the head of b
+//             Bucket *head = b;
+//             //Last node of b is pointing to the head of a
+//             head->tail->next = a;
+//             //Last node of head is a's Last node
+//             head->tail = a->tail;
+//             return head;
+//         }
+//         else
+//         {
+//             //While a is not empty and b is not Full
+//             while(b->cnt!=b->numofSpecs && a->cnt!=0)
+//             {
+//                 //Then take one spec_id from bucket a
+//                 a->cnt--;
+                
+//                 Dictionary *temp = a->spec_ids[a->cnt];
+//                 a->spec_ids[a->cnt]=NULL;
+                
+//                 //And keep it on bucket b
+//                 b->spec_ids[b->cnt]=temp;
+//                 b->cnt++;
+//             }
+//             if(a->cnt == 0) //So there is an empty bucket, need to delete it
+//             {
+//                 Bucket *temp = a;
+//                 a = a->next;
+//                 temp->next = NULL; 
+//                 Bucket_Delete(&temp,BUCKET_REHASH_MODE);
+//                 //Store the head of b
+//                 Bucket *head = b;
+//                 //Last node of b is pointing to the head of a
+//                 head->tail->next = a;
+//                 //Last node of head is a's Last node
+//                 head->tail = a->tail;
+//                 return head;
+//             }
+
+//             //So b is full and a is not empty so...
+//             //Store the head of a
+//             Bucket *head = a;
+//             //Last node of a is pointing to the head of b
+//             head->tail->next = b;
+//             //Last node of head is b's Last node
+//             head->tail = b->tail;
+//             return head;
+//         }
+        
+//     }
+// }
 
 //Function to get the first entry of the bucket
 //Used for rehasing
-Dictionary *Bucket_Get_FirstEntry(Bucket *b){
-    return b->spec_ids[0];
+Dictionary *Bucket_Get_FirstEntry(BucketList *b){
+    return b->head->spec_ids[0];
 }
 
 //Deletion of The Bucket (Apetaksamin)
@@ -142,7 +168,7 @@ void Bucket_Delete(Bucket **DestroyIt,int mode)
         free(temp->spec_ids); 
 
         temp->next = NULL;
-        temp->tail = NULL;
+        // temp->tail = NULL;
         temp->spec_ids = NULL;
         free(temp);
         temp = NULL;
@@ -164,6 +190,25 @@ void Bucket_Print(Bucket *buck)
         tmp = tmp->next;
     }
 }
+
+
+void BucketList_Delete(BucketList **b,int mode)
+{
+    
+    Bucket_Delete(&((*b)->head),mode);
+    (*b)->tail = NULL;
+    free(*b);
+    b = NULL;
+}
+
+
+//Prints Bucket List
+void BucketList_Print(BucketList *b)
+{
+    Bucket_Print(b->head);
+}
+
+
 
 //Write to file the sets inside the bucket
 //void Bucket_Write(Bucket *buck, FILE *fd);
