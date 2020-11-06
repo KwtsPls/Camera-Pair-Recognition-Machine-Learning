@@ -44,8 +44,8 @@ HashTable *csvParser(char *filename,HashTable **ht)
         int label = atoi(lbl_str);
         if(label == 1) //They re the same 
         {
-            printf("Left_Sp: %s, Right_Sp: %s\n",left_sp,right_sp);
-            ht = createCliqueHashTable(ht, left_sp,right_sp);
+            //printf("\nleft spec: %s , right spec: %s \n",left_sp,right_sp);
+            *ht = createCliqueHashTable(ht, left_sp,right_sp);
         }
         i++;    //New line Read
     }

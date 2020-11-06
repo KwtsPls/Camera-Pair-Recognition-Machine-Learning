@@ -67,7 +67,8 @@ void BucketList_Delete(BucketList **b, int mode);
 //Function to print list of buckets
 void BucketList_Print(BucketList *b);
 
-BucketList *BucketList_Merge(BucketList **Max_list, BucketList **min_list);
+//Function to delete the first bucket in the list
+BucketList *BucketList_Delete_First(BucketList **b,int mode);
 
 // BucketList *BucketList_Merge(BucketList *a, BucketList *b);
 

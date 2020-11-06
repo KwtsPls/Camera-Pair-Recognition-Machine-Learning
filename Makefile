@@ -23,4 +23,4 @@ HashTable.o : HashTable.c HashTable.h
 	gcc -g3 -c HashTable.c
 
 clean:
-	rm main main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o
+	rm main main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o

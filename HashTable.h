@@ -61,11 +61,14 @@ int findKeyBucketEntry(HashTable *ht,char * spec_id);
 //Function to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode);
 
+//Function to delete the Hash Table after the cliques are formed
+void cliqueDeleteHashTable(HashTable **ht,int mode);
+
+//Function to set all pointers pointing to a certain clique as NULL
+HashTable *erasePointerHashTable(HashTable **ht,keyBucketEntry *clique_bucket);
+
 //Function to deleteKeyBucket
 void deleteKeyBucket(keyBucket **destroyed,int mode);
-
-//Function to deleteOuterEntry
-void deleteOuterEntry(keyBucketEntry **destroyed,int mode);
 
 //Function to destroy hash table that is no longer in use
 void killOldHashTable(HashTable **destroyed);
@@ -76,6 +79,8 @@ void printHashTable(HashTable *ht);
 //Function for merging same specs
 HashTable *createCliqueHashTable(HashTable **ht, char *left_sp,char *right_sp);
 
-
+//Function to perform set union between two sets
+//Max_List : Number of entries in this bucket is greater than those in min_List
+BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTable **ht,int h,int index);
 
 #endif //PROJECT_HASHTABLE_H 

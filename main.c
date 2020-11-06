@@ -17,10 +17,20 @@ int main(){
         return 1;
     }
     HashTable *ht = initHashTable(2);
+
+    printf("Loading data...\n\n");
+
     int check = Initialize_dataset_X(X_name,&ht);
+
+    printf("\nData loading was successful!\n\n");
+
     ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht);
-    printHashTable(ht);
-    deleteHashTable(&ht,BUCKET_DELETE_MODE);
+
+    printf("\nFinished creating cliques\n\n");
+
+    //printHashTable(ht);
+
+    cliqueDeleteHashTable(&ht,BUCKET_DELETE_MODE);
     free(X_name);
     return 0;
 }

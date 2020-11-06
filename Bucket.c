@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "Bucket.h"
 #include "Dictionary.h"
+#include "HashTable.h"
 
 //Creates a Bucket List
 Bucket *Bucket_Create(Dictionary *spec_id, int BucketSize)
@@ -150,7 +151,7 @@ BucketList *BucketList_Insert(BucketList *buck, Dictionary *spec_id)
 // }
 
 //Function to get the first entry of the bucket
-//Used for rehasing
+//Used for rehashing
 Dictionary *Bucket_Get_FirstEntry(BucketList *b){
     return b->head->spec_ids[0];
 }
@@ -159,7 +160,7 @@ Dictionary *Bucket_Get_FirstEntry(BucketList *b){
 void Bucket_Delete(Bucket **DestroyIt,int mode)
 {
     int cnt = (*DestroyIt)->cnt;
-    if(mode==BUCKET_REHASH_MODE){
+    if(mode==BUCKET_DELETE_MODE){
         for(int i=0; i<cnt;i++){
             deleteDictionary(&(*DestroyIt)->spec_ids[i]);
         }
@@ -188,17 +189,23 @@ void Bucket_Print(Bucket *buck)
 //Function to delete a BucketList
 void BucketList_Delete(BucketList **b,int mode)
 {
+    if(*b==NULL)
+        return;
+
     while ((*b)->head!=NULL)
     {
         Bucket *temp;
         temp = (*b)->head;
         (*b)->head = (*b)->head->next;
         Bucket_Delete(&temp,mode);
+        temp=NULL;
     }
     (*b)->tail = NULL;
     (*b)->head = NULL;
-    free(*b);
-    b = NULL;
+    if(*b!=NULL) {
+        free(*b);
+        *b = NULL;
+    }
 }
 
 //Function to delete the first bucket in the list
@@ -222,12 +229,11 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode){
 }
 
 //Prints Bucket List
-void BucketList_Print(BucketList *b)
-{
+void BucketList_Print(BucketList *b){
     Bucket_Print(b->head);
 }
 
-//Function to return wether the first bucket of the bucket is full or not
+//Function to return whether the first bucket of the bucket is full or not
 int BucketList_Bucket_Full(BucketList *bl){
     if(bl->head->numofSpecs == bl->head->cnt)
         return BUCKET_FIRST_FULL;
@@ -243,69 +249,5 @@ int BucketList_Empty(BucketList *b){
         return LIST_NOT_EMPTY;
 }
 
-//Function to perform set union betwen two sets
-//Max_List : Number of entries in this bucket is greater than those in min_List
-BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List)
-{
-    //The first bucket of the bucket chain with the fewer elements is full
-    //So it is pushed at the end of Max_List
-    if(BucketList_Bucket_Full(*min_List)==BUCKET_FIRST_FULL)
-    {
-        //Increase the counter of entries in Max_List
-        (*Max_List)->num_entries +=  (*min_List)->num_entries;
-
-        //Add the minimum entries List in the end of our Main List(has greater entries)
-        (*Max_List)->tail->next = (*min_List)->head;
-        //Update the tail of our Main List
-        (*Max_List)->tail = (*min_List)->tail;
-
-        //Delete the pointer to the list
-        free(*min_List);
-        *min_List=NULL;
-
-        //Return the updated list
-        return (*Max_List);
-    }
-    //The first bucket of the bucket chain with the fewer elements is not full
-    //the first block's entries will be inserted into Max_List and the rest of the blocks will
-    //be pushed at the end of Max_List
-    else
-    {
-        //Iterate through the first bucket of min_list and insert all of its entries into Max_List
-        Bucket *temp;
-        temp = (*min_List)->head;
-        int cnt = temp->cnt;
-        for(int i=0;i<cnt;i++)
-            (*Max_List) = BucketList_Insert((*Max_List),temp->spec_ids[i]);
-
-        //Delete first block of min_list
-        *min_List = BucketList_Delete_First(min_List,BUCKET_REHASH_MODE);
-
-        //If min_list only contained one block it is no longer of use so it is deleted
-        if(BucketList_Empty(*min_List)==LIST_EMPTY){
-            BucketList_Delete(min_List,BUCKET_REHASH_MODE);
-        }
-        else{
-
-            //Increase the counter of entris in Max_List
-            (*Max_List)->num_entries += (*min_List)->num_entries;
-            
-            //Add the next minimum entries List in the end of our Main List(has greater entries)
-            (*Max_List)->tail->next = (*min_List)->head;
-
-            //Update the tail of our Main List
-            (*Max_List)->tail = (*min_List)->tail;
-
-            //Delete the pointer to the list
-            free(*min_List);
-            *min_List=NULL;
-
-        }
-        return *Max_List;
-
-    }
-
-
-}
 //Write to file the sets inside the bucket
 //void Bucket_Write(Bucket *buck, FILE *fd);

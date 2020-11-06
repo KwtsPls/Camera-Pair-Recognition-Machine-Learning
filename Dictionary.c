@@ -70,10 +70,14 @@ void deleteDictionary(Dictionary **dic)
         next = next->next;
         tmp -> next = NULL;
         free(tmp->key);
-        for(int i=0;i<tmp->values_num;i++)
-            free(tmp->value[i]);
-        free(tmp->value);
-        free(tmp);
+        for(int i=0;i<tmp->values_num;i++) {
+            if(tmp->value!=NULL)
+                free(tmp->value[i]);
+        }
+        if(tmp->value!=NULL)
+            free(tmp->value);
+        if(tmp!=NULL)
+            free(tmp);
         tmp = NULL;
     }
     (*dic)->list = NULL;

@@ -157,6 +157,9 @@ HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
 
 //Function to find a key bucket entry with the given spec_id
 int findKeyBucketEntry(HashTable *ht,char * spec_id){
+    if(spec_id==NULL)
+        return -1;
+
     int h = hashCode(spec_id,ht->buckets_num);
 
     //If current bucket is empty return NULL -> entry does not exist
@@ -166,7 +169,7 @@ int findKeyBucketEntry(HashTable *ht,char * spec_id){
     //Iterate through the key bucket to find the spec id
     for(int i=0;i<ht->table[h]->num_entries;i++){
 
-            if(ht->table[h]->array[i]!=NULL){
+            if(ht->table[h]->array[i]!=NULL && ht->table[h]->array[i]->key!=NULL){
                 if(strcmp(ht->table[h]->array[i]->key,spec_id)==0)
                     return i;
             }
@@ -176,16 +179,56 @@ int findKeyBucketEntry(HashTable *ht,char * spec_id){
 }
 
 //Function to delete the Hash Table
-void deleteHashTable(HashTable **destroyed,int mode){
-    HashTable *temp;
-    temp = *destroyed;
-    for(int i=0;i<temp->buckets_num;i++){
-        if(temp->table[i]!=NULL)
-            deleteKeyBucket(&(temp->table[i]),mode);
+void deleteHashTable(HashTable **ht,int mode){
+
+    for(int i=0;i<(*ht)->buckets_num;i++){
+        if((*ht)->table[i]!=NULL) {
+            deleteKeyBucket(&(*ht)->table[i],mode);
+        }
     }
-    free(temp->table);
-    free(*destroyed);
-    *destroyed = temp = NULL;   
+    free((*ht)->table);
+    (*ht)->table=NULL;
+    free(*ht);
+    *ht=NULL;
+}
+
+//Function to delete the Hash Table
+void cliqueDeleteHashTable(HashTable **ht,int mode){
+
+    for(int i=0;i<(*ht)->buckets_num;i++){
+        if((*ht)->table[i]!=NULL) {
+            for(int j=0;j<(*ht)->table[i]->num_entries;j++){
+                if((*ht)->table[i]->array[j]!=NULL) {
+
+                    if((*ht)->table[i]->array[j]->set!=NULL) {
+                        //If the number of elements in the buckets is less than or 1 just delete it normally
+                        if ((*ht)->table[i]->array[j]->set->num_entries <= 1) {
+                            BucketList_Delete(&(*ht)->table[i]->array[j]->set, mode);
+                        }
+                        //Delete the bucket and set all pointers that form the clique as NULL
+                        else {
+                            //Set all pointers showing the clique as NULL
+                            (*ht) = erasePointerHashTable(ht, (*ht)->table[i]->array[j]);
+                            BucketList_Delete(&(*ht)->table[i]->array[j]->set, mode);
+                        }
+                    }
+                    (*ht)->table[i]->array[j]->set = NULL;
+                    free((*ht)->table[i]->array[j]->key);
+                    (*ht)->table[i]->array[j]->key=NULL;
+                    free((*ht)->table[i]->array[j]);
+                    (*ht)->table[i]->array[j] = NULL;
+                }
+            }
+            free((*ht)->table[i]->array);
+            (*ht)->table[i]->array=NULL;
+            free((*ht)->table[i]);
+            (*ht)->table[i]=NULL;
+        }
+    }
+    free((*ht)->table);
+    (*ht)->table=NULL;
+    free(*ht);
+    *ht=NULL;
 }
 
 //Function to deleteKeyBucket
@@ -193,20 +236,17 @@ void deleteKeyBucket(keyBucket **destroyed,int mode){
     keyBucket *temp;
     temp = *destroyed;
     for(int i=0;i<temp->num_entries;i++){
-        if(temp->array[i]!=NULL)
-            deleteOuterEntry(&(temp->array[i]),mode);
+        if(temp->array[i]!=NULL) {
+            free(temp->array[i]->key);
+            temp->array[i]->key=NULL;
+            BucketList_Delete(&temp->array[i]->set, mode);
+            temp->array[i]->set=NULL;
+            free(temp->array[i]);
+            temp->array[i]=NULL;
+        }
     }
     free(temp->array);
-    free(*destroyed);
-    *destroyed = temp = NULL;
-}
-
-//Function to deleteOuterEntry
-void deleteOuterEntry(keyBucketEntry **destroyed,int mode){
-    keyBucketEntry *temp;
-    temp = *destroyed;
-    free(temp->key);
-    BucketList_Delete(&temp->set,mode);
+    temp->array=NULL;
     free(*destroyed);
     *destroyed = temp = NULL;
 }
@@ -233,8 +273,33 @@ HashTable *changePointerHashTable(HashTable **ht,keyBucketEntry *old_bucket,keyB
         for(int i=0;i<current->cnt;i++){
             int hash_v = hashCode(current->spec_ids[i]->dict_name,(*ht)->buckets_num);
             int index = findKeyBucketEntry((*ht),current->spec_ids[i]->dict_name);
+
             //Change the pointer of the found spec id
-            (*ht)->table[hash_v]->array[index]->set = new_bucket->set;
+            if((*ht)->table[hash_v]->array[index]!=old_bucket)
+                (*ht)->table[hash_v]->array[index]->set = new_bucket->set;
+        }
+
+        current = current->next;
+    }
+
+    return *ht;
+}
+
+//Function to set all pointers pointing to a certain clique as NULL
+HashTable *erasePointerHashTable(HashTable **ht,keyBucketEntry *clique_bucket){
+
+    Bucket *current = clique_bucket->set->head;
+    //Iterate through the list of buckets and hash every entry
+    //The pointers of old_bucket must now point to new_bucket
+    while(current!=NULL){
+        int num_entries = current->cnt;
+        for(int i=0;i<current->cnt;i++){
+            int hash_v = hashCode(current->spec_ids[i]->dict_name,(*ht)->buckets_num);
+            int index = findKeyBucketEntry((*ht),current->spec_ids[i]->dict_name);
+            //Change the pointer of the found spec id
+            if(index!=-1 && (*ht)->table[hash_v]->array[index]!=clique_bucket) {
+                (*ht)->table[hash_v]->array[index]->set = NULL;
+            }
         }
 
         current = current->next;
@@ -253,21 +318,99 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
     int left_index = findKeyBucketEntry(*ht,left_sp);
     int right_index = findKeyBucketEntry(*ht,right_sp);
 
-    //Get the number of elemnts in each bucket list
+    //Get the number of elements in each bucket list
     int left_cnt = (*ht)->table[left_h]->array[left_index]->set->num_entries;
     int right_cnt = (*ht)->table[right_h]->array[right_index]->set->num_entries;
 
     //The merge is performed accordingly to the number of elements
-    if(left_cnt<right_cnt){
-        keyBucketEntry *old_bucket = (*ht)->table[left_h]->array[left_index];
-        (*ht) = changePointerHashTable(ht,old_bucket,(*ht)->table[right_h]->array[right_index]);
-        (*ht)->table[right_h]->array[right_index]->set = BucketList_Merge(&(*ht)->table[right_h]->array[right_index]->set,&(old_bucket->set));
-        return *ht;
+    //printf("Left number :%d , Right number %d\n\n",left_cnt,right_cnt);
+
+    //If the entries are not already on the same set unify them
+    if((*ht)->table[right_h]->array[right_index]->set!=(*ht)->table[left_h]->array[left_index]->set) {
+
+        if (left_cnt < right_cnt) {
+            //keyBucketEntry *old_bucket = (*ht)->table[left_h]->array[left_index];
+            (*ht) = changePointerHashTable(ht, (*ht)->table[left_h]->array[left_index],
+                                           (*ht)->table[right_h]->array[right_index]);
+            (*ht)->table[right_h]->array[right_index]->set = BucketList_Merge(
+                    &(*ht)->table[right_h]->array[right_index]->set, &(*ht)->table[left_h]->array[left_index]->set, ht,
+                    left_h, left_index);
+        }
+        else {
+            //keyBucketEntry *old_bucket = (*ht)->table[right_h]->array[right_index];
+            (*ht) = changePointerHashTable(ht, (*ht)->table[right_h]->array[right_index],
+                                           (*ht)->table[left_h]->array[left_index]);
+            (*ht)->table[left_h]->array[left_index]->set = BucketList_Merge(
+                    &(*ht)->table[left_h]->array[left_index]->set, &(*ht)->table[right_h]->array[right_index]->set, ht,
+                    right_h, right_index);
+        }
     }
-    else{
-        keyBucketEntry *old_bucket = (*ht)->table[right_h]->array[right_index];
-        (*ht) = changePointerHashTable(ht,old_bucket,(*ht)->table[left_h]->array[left_index]);
-        (*ht)->table[left_h]->array[left_index]->set = BucketList_Merge(&(*ht)->table[left_h]->array[left_index]->set,&(old_bucket->set));
-        return *ht;  
+    return *ht;
+}
+
+//Function to perform set union between two sets
+//Max_List : Number of entries in this bucket is greater than those in min_List
+BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTable **ht,int h,int index)
+{
+    //The first bucket of the bucket chain with the fewer elements is full
+    //So it is pushed at the end of Max_List
+    if(BucketList_Bucket_Full(*min_List)==BUCKET_FIRST_FULL)
+    {
+
+        //Increase the counter of entries in Max_List
+        (*Max_List)->num_entries +=  (*min_List)->num_entries;
+
+        //Add the minimum entries List in the end of our Main List(has greater entries)
+        (*Max_List)->tail->next = (*min_List)->head;
+        //Update the tail of our Main List
+        (*Max_List)->tail = (*min_List)->tail;
+
+        //Delete the pointer to the list
+        free(*min_List);
+        *min_List=NULL;
+
+        //Return the updated list
+        return (*Max_List);
     }
+    //The first bucket of the bucket chain with the fewer elements is not full
+    //the first block's entries will be inserted into Max_List and the rest of the blocks will
+    //be pushed at the end of Max_List
+    else
+    {
+        //Iterate through the first bucket of min_list and insert all of its entries into Max_List
+        Bucket *temp;
+        temp = (*min_List)->head;
+        int cnt = temp->cnt;
+        for(int i=0;i<cnt;i++)
+            *Max_List = BucketList_Insert((*Max_List),temp->spec_ids[i]);
+
+        //Delete first block of min_list
+        *min_List = BucketList_Delete_First(min_List,BUCKET_REHASH_MODE);
+
+        //If min_list only contained one block it is no longer of use so it is deleted
+        if(BucketList_Empty(*min_List)==LIST_EMPTY){
+            BucketList_Delete(min_List,BUCKET_REHASH_MODE);
+            (*ht)->table[h]->array[index]->set = *Max_List;
+        }
+        else{
+
+            //Increase the counter of entries in Max_List
+            (*Max_List)->num_entries += (*min_List)->num_entries;
+
+            //Add the next minimum entries List in the end of our Main List(has greater entries)
+            (*Max_List)->tail->next = (*min_List)->head;
+
+            //Update the tail of our Main List
+            (*Max_List)->tail = (*min_List)->tail;
+
+            //Delete the pointer to the list
+            free(*min_List);
+            *min_List=NULL;
+
+        }
+        return *Max_List;
+
+    }
+
+
 }
