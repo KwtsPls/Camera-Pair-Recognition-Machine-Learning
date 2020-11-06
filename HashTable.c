@@ -53,9 +53,7 @@ keyBucketEntry *createEntry(Dictionary *dict)
     //Save the name of the current spec id
     entry->key = strdup(dict->dict_name); 
 
-    //Save the number of entries inside the outer_entry
-    entry->num_entries = 1;
-
+    
     //Create Bucket for the entry set
     entry->set = BucketList_Create(dict,BUCKET_SIZE);
 
@@ -158,23 +156,23 @@ HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
 
 
 //Function to find a key bucket entry with the given spec_id
-keyBucketEntry *findKeyBucketEntry(HashTable *ht,char * spec_id){
+int findKeyBucketEntry(HashTable *ht,char * spec_id){
     int h = hashCode(spec_id,ht->buckets_num);
 
     //If current bucket is empty return NULL -> entry does not exist
     if(ht->table[h]==NULL)
-        return NULL;
+        return -1;
 
     //Iterate through the key bucket to find the spec id
     for(int i=0;i<ht->table[h]->num_entries;i++){
 
             if(ht->table[h]->array[i]!=NULL){
                 if(strcmp(ht->table[h]->array[i]->key,spec_id)==0)
-                    return ht->table[h]->array[i];
+                    return i;
             }
     }
 
-    return NULL;
+    return -1;
 }
 
 //Function to delete the Hash Table
@@ -217,11 +215,59 @@ void deleteOuterEntry(keyBucketEntry **destroyed,int mode){
 void printHashTable(HashTable *ht){
     printf("CURRENT HASH TABLE NUM OF BUCKETS : %d\n\n",ht->buckets_num);
     for(int i=0;i<ht->buckets_num;i++){
-        if(ht->table[i]!=NULL)
-            printf("\nNUMBER OF ENTRIES IN BUCKET %d ---> %d\n",i,ht->table[i]->num_entries);
+        if(ht->table[i]!=NULL){
+            for(int j=0;j<ht->table[i]->num_entries;j++)
+                BucketList_Print(ht->table[i]->array[j]->set);
+        }
     }
 }
 
+//Function to change the pointers of the list with less elements
+//to the list with the most elements so the union can be performed correctly
+HashTable *changePointerHashTable(HashTable **ht,keyBucketEntry *old_bucket,keyBucketEntry *new_bucket){
+    Bucket *current = old_bucket->set->head;
+    //Iterate through the list of buckets and hash every entry
+    //The pointers of old_bucket must now point to new_bucket
+    while(current!=NULL){
+        int num_entries = current->cnt;
+        for(int i=0;i<current->cnt;i++){
+            int hash_v = hashCode(current->spec_ids[i]->dict_name,(*ht)->buckets_num);
+            int index = findKeyBucketEntry((*ht),current->spec_ids[i]->dict_name);
+            //Change the pointer of the found spec id
+            (*ht)->table[hash_v]->array[index]->set = new_bucket->set;
+        }
 
-HashTable *mergeHashTable(HashTable **ht, char *left_sp, char *right_sp){
+        current = current->next;
+    }
+
+    return *ht;
+}
+
+//Function to perform union of the two spec ids
+HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
+    //Hash the values for the two spec_ids;
+    int left_h = hashCode(left_sp,(*ht)->buckets_num);
+    int right_h = hashCode(right_sp,(*ht)->buckets_num);
+
+    //Get the indexes of the hashed entries
+    int left_index = findKeyBucketEntry(*ht,left_sp);
+    int right_index = findKeyBucketEntry(*ht,right_sp);
+
+    //Get the number of elemnts in each bucket list
+    int left_cnt = (*ht)->table[left_h]->array[left_index]->set->num_entries;
+    int right_cnt = (*ht)->table[right_h]->array[right_index]->set->num_entries;
+
+    //The merge is performed accordingly to the number of elements
+    if(left_cnt<right_cnt){
+        keyBucketEntry *old_bucket = (*ht)->table[left_h]->array[left_index];
+        (*ht) = changePointerHashTable(ht,old_bucket,(*ht)->table[right_h]->array[right_index]);
+        (*ht)->table[right_h]->array[right_index]->set = BucketList_Merge(&(*ht)->table[right_h]->array[right_index]->set,&(old_bucket->set));
+        return *ht;
+    }
+    else{
+        keyBucketEntry *old_bucket = (*ht)->table[right_h]->array[right_index];
+        (*ht) = changePointerHashTable(ht,old_bucket,(*ht)->table[left_h]->array[left_index]);
+        (*ht)->table[left_h]->array[left_index]->set = BucketList_Merge(&(*ht)->table[left_h]->array[left_index]->set,&(old_bucket->set));
+        return *ht;  
+    }
 }

@@ -11,7 +11,6 @@
 //Struct for the entries of the bucket array
 typedef struct outer_entry{
     char *key;
-    int num_entries;
     BucketList *set;
 } keyBucketEntry;
 
@@ -56,8 +55,8 @@ HashTable *initHashTable(int buckets_num);
 //Function to add an entry to this hash table
 HashTable *insertHashTable(HashTable **ht,Dictionary *spec_id);
 
-//Function to find a key bucket entry with the given spec_id
-keyBucketEntry *findKeyBucketEntry(HashTable *ht,char * spec_id);
+//Function to find a key bucket entry with the given spec_id and return its index
+int findKeyBucketEntry(HashTable *ht,char * spec_id);
 
 //Function to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode);
@@ -75,7 +74,7 @@ void killOldHashTable(HashTable **destroyed);
 void printHashTable(HashTable *ht);
 
 //Function for merging same specs
-HashTable *mergeHashTable(HashTable **ht, char *left_sp,char *right_sp);
+HashTable *createCliqueHashTable(HashTable **ht, char *left_sp,char *right_sp);
 
 
 

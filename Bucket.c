@@ -36,6 +36,10 @@ BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize)
     BucketList *lista = malloc(sizeof(BucketList));
     //Head and tail pointers of the list point to the New Bucket Node
     lista->head = lista->tail = Bucket_Create(spec_id,BucketSize);
+
+    //Save the number of entries inside the List
+    lista->num_entries = 1;
+
     //Return the new BucketList
     return lista;
 }
@@ -72,6 +76,7 @@ BucketList *BucketList_Insert(BucketList *buck, Dictionary *spec_id)
     //Insert something and make the pointer returned the head pointer
     //Every new insertion is stored in the head of the list
     buck->head = Bucket_Insert(buck->head,spec_id);
+    buck->num_entries++;
     return buck;
 }
 
@@ -172,9 +177,9 @@ void Bucket_Print(Bucket *buck)
     int numBuck = 1;
     while(tmp!=NULL)
     {
-        printf("Bucket #%d\n",numBuck);
+        printf("\n\nBUCKET %d:\n",numBuck);
         for(int i=0;i<tmp->cnt;i++)
-            printDictionary(tmp->spec_ids[i]);
+            printf("%s\n",buck->spec_ids[i]->dict_name);
         numBuck++;
         tmp = tmp->next;
     }
@@ -203,11 +208,13 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode){
         Bucket_Delete(&((*b)->head),mode);
         (*b)->head=NULL;
         (*b)->tail=NULL;
+        (*b)->num_entries=0;
     }
     //If the list contains multiple buckets
     else{
         Bucket *to_be_deleted=(*b)->head;
         (*b)->head = (*b)->head->next;
+        (*b)->num_entries = (*b)->num_entries - to_be_deleted->cnt;
         Bucket_Delete(&to_be_deleted,mode);
     }
 
@@ -244,10 +251,18 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List)
     //So it is pushed at the end of Max_List
     if(BucketList_Bucket_Full(*min_List)==BUCKET_FIRST_FULL)
     {
+        //Increase the counter of entries in Max_List
+        (*Max_List)->num_entries +=  (*min_List)->num_entries;
+
         //Add the minimum entries List in the end of our Main List(has greater entries)
         (*Max_List)->tail->next = (*min_List)->head;
         //Update the tail of our Main List
         (*Max_List)->tail = (*min_List)->tail;
+
+        //Delete the pointer to the list
+        free(*min_List);
+        *min_List=NULL;
+
         //Return the updated list
         return (*Max_List);
     }
@@ -271,11 +286,20 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List)
             BucketList_Delete(min_List,BUCKET_REHASH_MODE);
         }
         else{
+
+            //Increase the counter of entris in Max_List
+            (*Max_List)->num_entries += (*min_List)->num_entries;
+            
             //Add the next minimum entries List in the end of our Main List(has greater entries)
             (*Max_List)->tail->next = (*min_List)->head;
 
             //Update the tail of our Main List
             (*Max_List)->tail = (*min_List)->tail;
+
+            //Delete the pointer to the list
+            free(*min_List);
+            *min_List=NULL;
+
         }
         return *Max_List;
 

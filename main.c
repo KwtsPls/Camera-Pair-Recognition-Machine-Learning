@@ -3,6 +3,7 @@
 #include "JsonParser.h"
 #include "ErrorHandler.h"
 #include "HashTable.h"
+#include "CsvReader.h"
 
 int errorCode;
 
@@ -17,7 +18,7 @@ int main(){
     }
     HashTable *ht = initHashTable(2);
     int check = Initialize_dataset_X(X_name,&ht);
-
+    ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht);
     printHashTable(ht);
     deleteHashTable(&ht,BUCKET_DELETE_MODE);
     free(X_name);

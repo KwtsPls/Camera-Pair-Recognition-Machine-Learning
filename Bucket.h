@@ -23,6 +23,7 @@ typedef struct Bucket
 
 typedef struct BucketList
 {
+    int num_entries;
     struct Bucket *head;
     struct Bucket *tail;
 
