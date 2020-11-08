@@ -53,10 +53,9 @@ Bucket *Bucket_Insert(Bucket* buck, Dictionary *spec_id)
     {
         //Create a newBucket to store the spec_id
         Bucket *newBuck = Bucket_Create(spec_id, buck->numofSpecs * (sizeof(Dictionary*)));
-        //Insert the new Bucket Node at the beggining of the List
+        //Insert the new Bucket Node at the beginning of the List
         newBuck->next = buck;
         // newBuck->tail = buck->tail;
-
         return newBuck;
     }
     else    //There is space in the Bucket Node

@@ -24,7 +24,7 @@ int main(){
 
     printf("\nData loading was successful!\n\n");
 
-    ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht);
+    ht = csvParser("sigmod_large_labelled_dataset.csv",&ht);
 
     printf("\nFinished creating cliques\n\n");
 

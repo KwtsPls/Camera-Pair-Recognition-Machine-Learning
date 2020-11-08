@@ -23,13 +23,13 @@ keyBucket *initKeyBucket(Dictionary *spec_id){
     keyBucket *kb = malloc(sizeof(keyBucket));
 
     //Size is defined as a constant
-    kb->bucket_size = BUCKET_SIZE/4;
+    kb->bucket_size = KEY_BUCKET_SIZE;
 
     //New bucket is created with one entry
     kb->num_entries=1;
 
     //Max number of entries inside bucket
-    kb->max_entries= BUCKET_SIZE/(4*sizeof(Dictionary*));
+    kb->max_entries= KEY_BUCKET_SIZE/(sizeof(Dictionary*));
 
     //Allocate memory for the contents of the bucket
     kb->array = malloc(sizeof(keyBucketEntry*)*kb->max_entries);
@@ -367,7 +367,7 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
 
         //Delete the pointer to the list
         free(*min_List);
-        *min_List=NULL;
+        (*ht)->table[h]->array[index]->set = *Max_List;
 
         //Return the updated list
         return (*Max_List);
@@ -405,7 +405,7 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
 
             //Delete the pointer to the list
             free(*min_List);
-            *min_List=NULL;
+            (*ht)->table[h]->array[index]->set = *Max_List;
 
         }
         return *Max_List;
