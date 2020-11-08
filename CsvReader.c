@@ -64,7 +64,7 @@ void csvWriteCliques(HashTable **ht){
     fp = fopen("cliques.csv","w+");
 
     //Write first line into file of the line
-    int err = fprintf(fp,"left_spec_id, right_spec_id\n");
+    int err = fprintf(fp,"left_spec_id,right_spec_id\n");
     //Something went wrong while writing to the file....
     if(err == EOF)
         exit(10);

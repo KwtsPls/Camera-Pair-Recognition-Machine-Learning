@@ -265,9 +265,9 @@ void bucketListWriteCliques(BucketList *lista, FILE *fp){
             strcpy(left_spec,bucket->spec_ids[i]->dict_name);
             //Write the items of the current bucket in the chain
             for(int j=i+1;j<bucket->cnt;j++){
-                line = malloc(strlen(bucket->spec_ids[j]->dict_name)+strlen(left_spec)+3);
+                line = malloc(strlen(bucket->spec_ids[j]->dict_name)+strlen(left_spec)+2);
                 strcpy(line,left_spec);
-                strcat(line,", ");
+                strcat(line,",");
                 strcat(line,bucket->spec_ids[j]->dict_name);
                 fprintf(fp,"%s\n",line);
                 free(line);
@@ -277,7 +277,7 @@ void bucketListWriteCliques(BucketList *lista, FILE *fp){
                 for(int j=0;j<cur->cnt;j++){
                     line = malloc(strlen(cur->spec_ids[j]->dict_name)+strlen(left_spec)+3);
                     strcpy(line,left_spec);
-                    strcat(line,", ");
+                    strcat(line,",");
                     strcat(line,cur->spec_ids[j]->dict_name);
                     fprintf(fp,"%s\n",line);
                     free(line);
