@@ -24,6 +24,7 @@ typedef struct Bucket
 typedef struct BucketList
 {
     int num_entries;
+    char dirty_bit;
     struct Bucket *head;
     struct Bucket *tail;
 
@@ -74,6 +75,9 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode);
 
 //Write to file the sets inside the bucket
 // void Bucket_Write(Bucket *buck, FILE *fd);
+
+//Function that writes Cliques to file
+void bucketListWriteCliques(BucketList *lista, FILE *fp);
 
 
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Bucket.h"
 #include "Dictionary.h"
 #include "HashTable.h"
@@ -40,6 +41,9 @@ BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize)
 
     //Save the number of entries inside the List
     lista->num_entries = 1;
+
+    //Initialize the dirty bit as zero - clique is not created
+    lista->dirty_bit = 0;
 
     //Return the new BucketList
     return lista;
@@ -250,3 +254,38 @@ int BucketList_Empty(BucketList *b){
 
 //Write to file the sets inside the bucket
 //void Bucket_Write(Bucket *buck, FILE *fd);
+
+
+void bucketListWriteCliques(BucketList *lista, FILE *fp){
+    Bucket *bucket = lista->head;
+    while(bucket!=NULL){
+        for(int i=0;i<bucket->cnt;i++){
+            char *line;
+            char *left_spec = malloc(strlen(bucket->spec_ids[i]->dict_name)+1);
+            strcpy(left_spec,bucket->spec_ids[i]->dict_name);
+            //Write the items of the current bucket in the chain
+            for(int j=i+1;j<bucket->cnt;j++){
+                line = malloc(strlen(bucket->spec_ids[j]->dict_name)+strlen(left_spec)+3);
+                strcpy(line,left_spec);
+                strcat(line,", ");
+                strcat(line,bucket->spec_ids[j]->dict_name);
+                fprintf(fp,"%s\n",line);
+                free(line);
+            }
+            Bucket *cur = bucket->next;
+            while(cur!=NULL){
+                for(int j=0;j<cur->cnt;j++){
+                    line = malloc(strlen(cur->spec_ids[j]->dict_name)+strlen(left_spec)+3);
+                    strcpy(line,left_spec);
+                    strcat(line,", ");
+                    strcat(line,cur->spec_ids[j]->dict_name);
+                    fprintf(fp,"%s\n",line);
+                    free(line);
+                }
+                cur = cur->next;
+            }
+            free(left_spec);
+        }
+        bucket = bucket->next;
+    }
+}

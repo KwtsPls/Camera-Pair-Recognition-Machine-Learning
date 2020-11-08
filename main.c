@@ -24,11 +24,18 @@ int main(){
 
     printf("\nData loading was successful!\n\n");
 
+    printf("\nCreating cliques...\n\n");
+
     ht = csvParser("sigmod_large_labelled_dataset.csv",&ht);
 
-    printf("\nFinished creating cliques\n\n");
+    printf("\nFinished creating cliques!\n\n");
 
-    //printHashTable(ht);
+    printf("\nCreating file cliques.csv...\n");
+
+    //Creating File to write to
+    csvWriteCliques(&ht);
+
+    printf("\nFile created successfuly!\n\n");
 
     cliqueDeleteHashTable(&ht,BUCKET_DELETE_MODE);
     free(X_name);

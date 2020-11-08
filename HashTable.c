@@ -369,6 +369,8 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
         free(*min_List);
         (*ht)->table[h]->array[index]->set = *Max_List;
 
+        //Change the bucket as dirty so it can be stored in the disk
+        (*Max_List)->dirty_bit=1;
         //Return the updated list
         return (*Max_List);
     }
@@ -408,8 +410,12 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
             (*ht)->table[h]->array[index]->set = *Max_List;
 
         }
-        return *Max_List;
 
+        
+        //Change the bucket as dirty so it can be stored in the disk
+        (*Max_List)->dirty_bit=1;
+        //Return the updated list
+        return *Max_List;
     }
 
 

@@ -6,4 +6,7 @@
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename, HashTable **ht);
 
+//Function to create a new csv to write the cliques into
+void csvWriteCliques(HashTable **ht);
+
 #endif

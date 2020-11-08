@@ -56,3 +56,39 @@ HashTable *csvParser(char *filename,HashTable **ht)
     //Return num of files read
     return *ht;
 }
+
+
+//Function to create a new csv to write the cliques into
+void csvWriteCliques(HashTable **ht){
+    FILE *fp;
+    fp = fopen("cliques.csv","w+");
+
+    //Write first line into file of the line
+    int err = fprintf(fp,"left_spec_id, right_spec_id\n");
+    //Something went wrong while writing to the file....
+    if(err == EOF)
+        exit(10);
+
+    //Iterate through the Hash Table
+    for(int i=0;i<(*ht)->buckets_num;i++)
+    {
+        //If the table is not Null iterate through it
+        if((*ht)->table[i]!=NULL)
+        {
+            for(int j=0;j<(*ht)->table[i]->num_entries;j++)
+            {
+                //So dirty bit is 1 we have to write it in the file as a clique
+                if((*ht)->table[i]->array[j]->set->dirty_bit==1)
+                {
+                    //Make the bit of the list to 0 so we dont write it again in the file
+                    (*ht)->table[i]->array[j]->set->dirty_bit=0;
+
+                    bucketListWriteCliques((*ht)->table[i]->array[j]->set,fp);
+
+                }
+            }
+        }
+    }
+
+    fclose(fp);
+}   
