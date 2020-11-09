@@ -42,11 +42,8 @@ HashTable *csvParser(char *filename,HashTable **ht)
         lbl_str = strtok(NULL,",");
         //Label to integer
         int label = atoi(lbl_str);
-        if(label == 1) //They re the same 
-        {
-            //printf("\nleft spec: %s , right spec: %s \n",left_sp,right_sp);
+        if(label == 1) //They're the same
             *ht = createCliqueHashTable(ht, left_sp,right_sp);
-        }
         i++;    //New line Read
     }
     //Free space and close file

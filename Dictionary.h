@@ -27,12 +27,13 @@ Dictionary *insertDictionary(Dictionary *dic, char *key, char **val, int num_val
 //Function for printing dictionary
 void printDictionary(Dictionary *dic);
 
-
 //Give Key in the Dictionary to get the values
 char **lookUpDictionary(Dictionary *dic, char *key, int *num_val);
 
-
 //Function for Deleting Dictionaries
 void deleteDictionary(Dictionary **dic);
+
+//Function to return the number of key/value pairs in a dictionary
+int sizeDictionary(Dictionary *dict);
 
 #endif //PROJECT_DICTIONARY_H

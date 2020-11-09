@@ -1,5 +1,13 @@
+#Make part for the main function of the program
 main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o
 	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o CsvReader.o -o main
+
+#Make part for the test part of the program using acutest library
+test: test_check.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o
+	gcc -g3 test_check.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o -o test
+
+test_check.o: test_check.c HashTable.h ErrorHandler.h acutest-master/include/acutest.h
+	gcc -g3 -Iacutest-master/include/ -c -Wall test_check.c
 
 main.o : main.c JsonParser.h ErrorHandler.h
 	gcc -g3 -c main.c
@@ -23,4 +31,4 @@ HashTable.o : HashTable.c HashTable.h
 	gcc -g3 -c HashTable.c
 
 clean:
-	rm main main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o
+	rm main test main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o

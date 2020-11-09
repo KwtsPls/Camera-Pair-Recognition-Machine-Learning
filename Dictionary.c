@@ -50,7 +50,6 @@ char **lookUpDictionary(Dictionary *dic, char *key, int *num_val)
     {
         if(strcmp(tmp->key,key)==0)
         {
-            printf("TOVRIKA\n");
             (*num_val) = tmp->values_num;
             return tmp->value;
         }
@@ -84,4 +83,19 @@ void deleteDictionary(Dictionary **dic)
     free((*dic)->dict_name);
     free(*dic);
     dic = NULL;
+}
+
+//Function to return the number of key/value pairs in a dictionary
+int sizeDictionary(Dictionary *dict){
+    if(dict->list!=NULL){
+        Dictionary_node *cur = dict->list;
+        int count=0;
+        while(cur!=NULL){
+            count++;
+            cur=cur->next;
+        }
+        return count;
+    }
+    else
+        return 0;
 }

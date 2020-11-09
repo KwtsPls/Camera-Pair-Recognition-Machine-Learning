@@ -280,14 +280,5 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
     fclose(fp);
     if (line)
         free(line);
-
-    //Test insert into the bucket
-    //Bucket *buck = Bucket_Create(dict,128);
-    //Bucket_Print(buck);
-
-    //printDictionary(dict);
-    //deleteDictionary(&dict);
-    //Bucket_Delete(&buck);
-
     return;
 }

@@ -4,8 +4,9 @@
 #include "Dictionary.h"
 #include "Bucket.h"
 
-#define BUCKET_SIZE 32
+#define BUCKET_SIZE 64
 #define KEY_BUCKET_SIZE 128
+#define TABLE_INIT_SIZE 2
 #define KEY_BUCKET_AVAILABLE 1
 #define KEY_BUCKET_FULL 2
 

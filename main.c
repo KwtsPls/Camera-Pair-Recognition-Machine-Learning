@@ -16,7 +16,7 @@ int main(){
         print_error();
         return 1;
     }
-    HashTable *ht = initHashTable(2);
+    HashTable *ht = initHashTable(TABLE_INIT_SIZE);
 
     printf("Loading data...\n\n");
 
@@ -37,7 +37,7 @@ int main(){
 
     printf("\nFile created successfuly!\n\n");
 
-    cliqueDeleteHashTable(&ht,BUCKET_DELETE_MODE);
+    cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     free(X_name);
     return 0;
 }

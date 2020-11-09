@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include "Dictionary.h"
 
-#define BUCKET_REHASH_MODE 1
-#define BUCKET_DELETE_MODE 2
+#define BUCKET_SOFT_DELETE_MODE 1
+#define BUCKET_HARD_DELETE_MODE 2
 #define BUCKET_FIRST_FULL 3
 #define BUCKET_FIRST_AVAILABLE 4
 #define LIST_EMPTY 5

@@ -148,7 +148,7 @@ HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
     //Insert the entry that created the conflict
     ht_reshaped = insertHashTable(&ht_reshaped,spec_id);
 
-    deleteHashTable(ht,BUCKET_REHASH_MODE);
+    deleteHashTable(ht,BUCKET_SOFT_DELETE_MODE);
     ht=NULL;
 
     return ht_reshaped;
@@ -323,8 +323,6 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
     int right_cnt = (*ht)->table[right_h]->array[right_index]->set->num_entries;
 
     //The merge is performed accordingly to the number of elements
-    //printf("Left number :%d , Right number %d\n\n",left_cnt,right_cnt);
-
     //If the entries are not already on the same set unify them
     if((*ht)->table[right_h]->array[right_index]->set!=(*ht)->table[left_h]->array[left_index]->set) {
 
@@ -387,11 +385,11 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
             *Max_List = BucketList_Insert((*Max_List),temp->spec_ids[i]);
 
         //Delete first block of min_list
-        *min_List = BucketList_Delete_First(min_List,BUCKET_REHASH_MODE);
+        *min_List = BucketList_Delete_First(min_List,BUCKET_SOFT_DELETE_MODE);
 
         //If min_list only contained one block it is no longer of use so it is deleted
         if(BucketList_Empty(*min_List)==LIST_EMPTY){
-            BucketList_Delete(min_List,BUCKET_REHASH_MODE);
+            BucketList_Delete(min_List,BUCKET_SOFT_DELETE_MODE);
             (*ht)->table[h]->array[index]->set = *Max_List;
         }
         else{
