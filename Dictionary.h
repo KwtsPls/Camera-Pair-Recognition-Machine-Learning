@@ -24,6 +24,9 @@ Dictionary *initDictionary(char *dict_name);
 //Function for inserting in dictionary
 Dictionary *insertDictionary(Dictionary *dic, char *key, char **val, int num_val);
 
+//function to update the value of a certain key inside the dictionary
+int updateDictionary(Dictionary **dict,char *key, char **val, int num_val);
+
 //Function for printing dictionary
 void printDictionary(Dictionary *dic);
 

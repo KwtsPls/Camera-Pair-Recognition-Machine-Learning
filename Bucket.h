@@ -41,7 +41,7 @@ Bucket *Bucket_Insert(Bucket *buck, Dictionary *spec_id);
 //Merging Buckets
 Bucket *Bucket_Merge(Bucket *a, Bucket *b);
 
-//Deletion of The Bucket (Apetaksamin)
+//Deletion of The Bucket
 void Bucket_Delete(Bucket **DestroyIt,int mode);
 
 //Function to print bucket

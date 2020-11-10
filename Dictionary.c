@@ -15,6 +15,15 @@ Dictionary *initDictionary(char *dict_name){
 //Function for inserting in dictionary
 Dictionary *insertDictionary(Dictionary *dic, char *key, char **val, int num_val)
 {
+    //Check if the key is already in the dictionary
+    //and if it exists return the dictionary as is
+    int index;
+    if(lookUpDictionary(dic,key,&index)!=NULL) {
+        for(int i=0;i<num_val;i++) free(val[i]);
+        free(val);
+        return dic;
+    }
+
     Dictionary_node *node = malloc(sizeof(Dictionary_node));
     node->key = strdup(key);
     node->value = val;
@@ -24,6 +33,27 @@ Dictionary *insertDictionary(Dictionary *dic, char *key, char **val, int num_val
     return dic;
 }
 
+
+//function to update the value of a certain key inside the dictionary
+int updateDictionary(Dictionary **dict,char *key, char **val, int num_val){
+
+    Dictionary_node *tmp;
+    tmp = (*dict)->list;
+    while(tmp!=NULL)
+    {
+        if(strcmp(tmp->key,key)==0)
+        {
+            for(int i=0;i<tmp->values_num;i++) free(tmp->value[i]);
+            free(tmp->value);
+            tmp->value=val;
+            tmp->values_num=num_val;
+            return 1;
+        }
+        tmp = tmp->next;
+    }
+
+    return -1;
+}
 
 //Function for printing dictionary
 void printDictionary(Dictionary *dic)
@@ -55,6 +85,8 @@ char **lookUpDictionary(Dictionary *dic, char *key, int *num_val)
         }
         tmp = tmp->next;
     }
+
+    *num_val=-1;
     return NULL;
 }
 

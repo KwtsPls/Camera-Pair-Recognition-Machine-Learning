@@ -57,6 +57,9 @@ HashTable *initHashTable(int buckets_num);
 //Function to add an entry to this hash table
 HashTable *insertHashTable(HashTable **ht,Dictionary *spec_id);
 
+//Function to return the number of entries inside the hashtable
+int sizeHashTable(HashTable *ht);
+
 //Function to find a key bucket entry with the given spec_id and return its index
 int findKeyBucketEntry(HashTable *ht,char * spec_id);
 

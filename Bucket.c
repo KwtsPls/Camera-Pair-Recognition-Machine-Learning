@@ -109,13 +109,12 @@ void Bucket_Delete(Bucket **DestroyIt,int mode)
 void Bucket_Print(Bucket *buck)
 {
     Bucket *tmp = buck;
-    int numBuck = 1;
     while(tmp!=NULL)
     {
-        printf("\n\nBUCKET %d:\n",numBuck);
-        for(int i=0;i<tmp->cnt;i++)
-            printf("%s\n",buck->spec_ids[i]->dict_name);
-        numBuck++;
+        for(int i=0;i<tmp->cnt;i++) {
+            if(buck->spec_ids[i]!=NULL)
+                printf("%s\n", buck->spec_ids[i]->dict_name);
+        }
         tmp = tmp->next;
     }
 }

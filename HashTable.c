@@ -178,6 +178,18 @@ int findKeyBucketEntry(HashTable *ht,char * spec_id){
     return -1;
 }
 
+//Function to return the number of entries inside the hashtable
+int sizeHashTable(HashTable *ht){
+
+    int sum=0;
+    for(int i=0;i<ht->buckets_num;i++){
+        if(ht->table[i]!=NULL)
+            sum += ht->table[i]->num_entries;
+    }
+
+    return sum;
+}
+
 //Function to delete the Hash Table
 void deleteHashTable(HashTable **ht,int mode){
 
@@ -253,11 +265,20 @@ void deleteKeyBucket(keyBucket **destroyed,int mode){
 
 //Function to print hash table
 void printHashTable(HashTable *ht){
-    printf("CURRENT HASH TABLE NUM OF BUCKETS : %d\n\n",ht->buckets_num);
+
     for(int i=0;i<ht->buckets_num;i++){
         if(ht->table[i]!=NULL){
-            for(int j=0;j<ht->table[i]->num_entries;j++)
-                BucketList_Print(ht->table[i]->array[j]->set);
+            for(int j=0;j<ht->table[i]->num_entries;j++) {
+                printf("\nBUCKET %d %d:\n",i,j);
+                if (ht->table[i]->array[j] != NULL && ht->table[i]->array[j]->set != NULL) {
+                    Bucket *cur = ht->table[i]->array[j]->set->head;
+                    while(cur!=NULL){
+                        for(int l=0;l<cur->cnt;l++)
+                            printf("%s\n",cur->spec_ids[l]->dict_name);
+                        cur = cur->next;
+                    }
+                }
+            }
         }
     }
 }

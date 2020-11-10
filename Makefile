@@ -6,8 +6,8 @@ main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvRe
 test: test_check.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o
 	gcc -g3 test_check.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o -o test
 
-test_check.o: test_check.c HashTable.h ErrorHandler.h acutest-master/include/acutest.h
-	gcc -g3 -Iacutest-master/include/ -c -Wall test_check.c
+test_check.o: test_check.c HashTable.h ErrorHandler.h Test_Units/acutest-master/include/acutest.h Test_Units/Helper_Files/test_names.h
+	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_check.c
 
 main.o : main.c JsonParser.h ErrorHandler.h
 	gcc -g3 -c main.c
