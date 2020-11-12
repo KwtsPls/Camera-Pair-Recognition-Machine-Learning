@@ -1,6 +1,6 @@
 #ifndef PROJECT_DICTIONARY_H
 #define PROJECT_DICTIONARY_H
-
+#include "ErrorHandler.h"
 
 
 typedef struct dict_node{

@@ -2,6 +2,8 @@
 #define CSVREADER_H
 #include <stdio.h>
 #include <stdlib.h>
+#include "ErrorHandler.h"
+#include <errno.h>
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename, HashTable **ht);

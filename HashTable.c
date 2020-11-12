@@ -21,6 +21,13 @@ keyBucket *initKeyBucket(Dictionary *spec_id){
 
     //Allocate memory for the new bucket
     keyBucket *kb = malloc(sizeof(keyBucket));
+    if(kb == NULL)
+    {
+        //Malloc failed
+        errorCode = MALLOC_FAILURE;
+        print_error();
+        return NULL;
+    }
 
     //Size is defined as a constant
     kb->bucket_size = KEY_BUCKET_SIZE;
@@ -33,6 +40,15 @@ keyBucket *initKeyBucket(Dictionary *spec_id){
 
     //Allocate memory for the contents of the bucket
     kb->array = malloc(sizeof(keyBucketEntry*)*kb->max_entries);
+    if(kb->array == NULL)
+    {
+        //Malloc failed
+        errorCode = MALLOC_FAILURE;
+        print_error();
+        free(kb);
+        return NULL;
+    }
+
 
     //Initialize each array position as NULL
     for(int i=0;i<kb->max_entries;i++)
@@ -49,13 +65,36 @@ keyBucketEntry *createEntry(Dictionary *dict)
 {
     //Allocate memory for the new entry
     keyBucketEntry *entry = malloc(sizeof(keyBucketEntry));
-    
+    if(entry == NULL)
+    {
+        //Malloc failed
+        errorCode = MALLOC_FAILURE;
+        print_error();
+        return NULL;
+    }
+
+
     //Save the name of the current spec id
     entry->key = strdup(dict->dict_name); 
-
+    if(entry->key == NULL)
+    {
+        //Malloc failed
+        errorCode = MALLOC_FAILURE;
+        free(entry);
+        print_error();
+        return NULL;
+    }
     
     //Create Bucket for the entry set
     entry->set = BucketList_Create(dict,BUCKET_SIZE);
+    if(entry->set == NULL)
+    {
+        //Something went wrong while initialising BucketList
+        //It was printed in BucketList_Create
+        free(entry->key);
+        free(entry);
+        return NULL;
+    }
 
     return entry;
 }
@@ -65,12 +104,28 @@ HashTable *initHashTable(int buckets_num){
 
     //Allocate space for the hash table
     HashTable *ht = malloc(sizeof(HashTable));
+    if(ht == NULL)
+    {
+        //Malloc failed
+        errorCode = MALLOC_FAILURE;
+        print_error();
+        return NULL;
+    }
 
     //Hash table is initialized empty
     ht->buckets_num=buckets_num;
 
     //Allocate space for the array of buckets
     ht->table = malloc(sizeof(keyBucket*)*buckets_num);
+    if(ht->table == NULL)
+    {
+        //Malloc failed
+        errorCode = MALLOC_FAILURE;
+        print_error();
+        free(ht);
+        return NULL;
+    }
+
 
     //Initialize every bucket as NULL
     for(int i=0;i<buckets_num;i++)
@@ -148,6 +203,7 @@ HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
     //Insert the entry that created the conflict
     ht_reshaped = insertHashTable(&ht_reshaped,spec_id);
 
+    //Delete old hash table but do not delete the dictionaries
     deleteHashTable(ht,BUCKET_SOFT_DELETE_MODE);
     ht=NULL;
 
@@ -182,8 +238,10 @@ int findKeyBucketEntry(HashTable *ht,char * spec_id){
 int sizeHashTable(HashTable *ht){
 
     int sum=0;
+    //Iterate through the buckets of HashTable
     for(int i=0;i<ht->buckets_num;i++){
-        if(ht->table[i]!=NULL)
+        if(ht->table[i]!=NULL) //If its not NULL
+            //Add to sum the num of entries
             sum += ht->table[i]->num_entries;
     }
 
@@ -192,26 +250,29 @@ int sizeHashTable(HashTable *ht){
 
 //Function to delete the Hash Table
 void deleteHashTable(HashTable **ht,int mode){
-
+    //Iterate through its bucket of Hash Table
     for(int i=0;i<(*ht)->buckets_num;i++){
+        //If its not NULL delete it
         if((*ht)->table[i]!=NULL) {
             deleteKeyBucket(&(*ht)->table[i],mode);
         }
     }
+    //Free the space of the HashTables Cells
     free((*ht)->table);
     (*ht)->table=NULL;
+    //Free hash table space
     free(*ht);
     *ht=NULL;
 }
 
 //Function to delete the Hash Table
 void cliqueDeleteHashTable(HashTable **ht,int mode){
-
+    //Iterate through its bucket of the Hash Table
     for(int i=0;i<(*ht)->buckets_num;i++){
         if((*ht)->table[i]!=NULL) {
+            //Iterate through the bucket array inside the HashTable
             for(int j=0;j<(*ht)->table[i]->num_entries;j++){
                 if((*ht)->table[i]->array[j]!=NULL) {
-
                     if((*ht)->table[i]->array[j]->set!=NULL) {
                         //If the number of elements in the buckets is less than or 1 just delete it normally
                         if ((*ht)->table[i]->array[j]->set->num_entries <= 1) {
@@ -224,6 +285,7 @@ void cliqueDeleteHashTable(HashTable **ht,int mode){
                             BucketList_Delete(&(*ht)->table[i]->array[j]->set, mode);
                         }
                     }
+                    //Freee the space of the key Bucket Entry
                     (*ht)->table[i]->array[j]->set = NULL;
                     free((*ht)->table[i]->array[j]->key);
                     (*ht)->table[i]->array[j]->key=NULL;
@@ -231,12 +293,14 @@ void cliqueDeleteHashTable(HashTable **ht,int mode){
                     (*ht)->table[i]->array[j] = NULL;
                 }
             }
+            //Free the space of the keyBucket
             free((*ht)->table[i]->array);
             (*ht)->table[i]->array=NULL;
             free((*ht)->table[i]);
             (*ht)->table[i]=NULL;
         }
     }
+    //Free the space of the Hash Table
     free((*ht)->table);
     (*ht)->table=NULL;
     free(*ht);
@@ -247,8 +311,10 @@ void cliqueDeleteHashTable(HashTable **ht,int mode){
 void deleteKeyBucket(keyBucket **destroyed,int mode){
     keyBucket *temp;
     temp = *destroyed;
+    //Iterate through the KeyBucket
     for(int i=0;i<temp->num_entries;i++){
         if(temp->array[i]!=NULL) {
+            //Free the space of the KeyBUcketEntry
             free(temp->array[i]->key);
             temp->array[i]->key=NULL;
             BucketList_Delete(&temp->array[i]->set, mode);
@@ -257,8 +323,10 @@ void deleteKeyBucket(keyBucket **destroyed,int mode){
             temp->array[i]=NULL;
         }
     }
+    //Free the array of the KeyBucketEntry
     free(temp->array);
     temp->array=NULL;
+    //Free the space of the KeyBucket
     free(*destroyed);
     *destroyed = temp = NULL;
 }
@@ -266,14 +334,18 @@ void deleteKeyBucket(keyBucket **destroyed,int mode){
 //Function to print hash table
 void printHashTable(HashTable *ht){
 
+    //Iterate through the hashTable
     for(int i=0;i<ht->buckets_num;i++){
         if(ht->table[i]!=NULL){
+            //Iterate through the KeyBucketEntries
             for(int j=0;j<ht->table[i]->num_entries;j++) {
                 printf("\nBUCKET %d %d:\n",i,j);
                 if (ht->table[i]->array[j] != NULL && ht->table[i]->array[j]->set != NULL) {
+                    //Iterate through the bucket list
                     Bucket *cur = ht->table[i]->array[j]->set->head;
                     while(cur!=NULL){
                         for(int l=0;l<cur->cnt;l++)
+                            //Print every spec_id
                             printf("%s\n",cur->spec_ids[l]->dict_name);
                         cur = cur->next;
                     }

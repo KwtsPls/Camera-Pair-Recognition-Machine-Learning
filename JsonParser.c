@@ -45,10 +45,27 @@ char *get_datasetX_name(){
                     if(strcmp(sftr->d_name, ".") && strcmp(sftr->d_name, "..")){
                         //Get the name of the current directory
                         current = malloc(strlen(ftr->d_name)+1);
+                        if(current == NULL)
+                        {   
+                            //Something went wrong with Malloc
+                            errorCode = MALLOC_FAILURE;
+                            print_error();
+                            closedir(subfolder);
+                            return NULL;
+                        }
                         strcpy(current,ftr->d_name);
 
                         //Create the path name
                         cur_path = malloc(strlen(sftr->d_name) + strlen(ftr->d_name)+2);
+                        if(cur_path == NULL)
+                        {
+                            //Something went wrong with Malloc
+                            errorCode = MALLOC_FAILURE;
+                            print_error();
+                            closedir(subfolder);
+                            free(current);
+                            return NULL;
+                        }
                         strcpy(cur_path,ftr->d_name);
                         strcat(cur_path,"/");
                         strcat(cur_path,sftr->d_name);
@@ -76,15 +93,34 @@ char *get_datasetX_name(){
                                         return current;
                                     }
                                 }
-                            }
+                            }  
+                            free(current);
+                            free(cur_path);
+                            closedir(target);
                         }
-                        free(current);
-                        free(cur_path);
-                        closedir(target);
+                        //Number 20 is the number if the file is not a directory
+                        else if(errno != 20 && target == NULL)
+                        {
+                            //Could not open target file
+                            free(current);
+                            free(cur_path);
+                            closedir(subfolder);
+                            errorCode = DIR_UNABLE_TO_OPEN;
+                            print_error();
+                            return NULL;
+                        }                                                  
                     }
                 }
+                closedir(subfolder);
             }
-            closedir(subfolder);
+            //Number 20 is the number if the file is not a directory
+            //There is no error here cause in the subfolder it can be junk files
+            //That are not subfolders....
+            else if(errno != 20 && subfolder == NULL)
+            {
+                errorCode=DIR_UNABLE_TO_OPEN;
+                print_error();
+            }
         }
     }
 
@@ -119,11 +155,30 @@ int Initialize_dataset_X(char *name,HashTable **ht){
         if(strcmp(dptr->d_name, ".") && strcmp(dptr->d_name, "..")) {
             //Save the name of the current sub directory
             web_name = malloc(strlen(name)+strlen(dptr->d_name) + 2);
+            if(web_name == NULL)
+            {
+                //Malloc Failed
+                closedir(dir);
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                return -1;
+
+            }
             strcpy(web_name, name);
             strcat(web_name, "/");
             strcat(web_name, dptr->d_name);
 
             subdir = opendir(web_name);
+            if(subdir == NULL)
+            {
+                //Something went wrong while opening the subdirectory
+                errorCode = DIR_UNABLE_TO_OPEN;
+                print_error();
+                closedir(dir);
+                free(web_name);
+                return -1;
+            }
+
             printf("%s\n",web_name);
 
             //Begin iterating through the files
@@ -132,6 +187,16 @@ int Initialize_dataset_X(char *name,HashTable **ht){
 
                     //Get the full path to the json file
                     file_name = malloc(strlen(web_name)+strlen(subdptr->d_name)+2);
+                    if(file_name == NULL)
+                    {
+                        //MALLOC FAILED
+                        free(web_name);
+                        closedir(dir);
+                        closedir(subdir);
+                        errorCode = MALLOC_FAILURE;
+                        print_error();
+                        return -1;
+                    }
                     strcpy(file_name,web_name);
                     strcat(file_name,"/");
                     strcat(file_name,subdptr->d_name);
@@ -139,6 +204,17 @@ int Initialize_dataset_X(char *name,HashTable **ht){
                     //Get the number from the json files
                     token = strtok(subdptr->d_name, ".");
                     spec_id = malloc(strlen(dptr->d_name) + strlen(token) + 3);
+                    if(spec_id == NULL)
+                    {
+                        //MALLOC FAILED
+                        free(web_name);
+                        free(file_name);
+                        closedir(dir);
+                        closedir(subdir);
+                        errorCode = MALLOC_FAILURE;
+                        print_error();
+                        return -1;
+                    }
 
                     //Create the spec_id
                     strcpy(spec_id, dptr->d_name);
@@ -178,6 +254,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
     if (fp == NULL){
         errorCode=JSON_FILE_UNABLE_TO_OPEN;
         print_error();
+        return;
     }
 
     //String for strtok
@@ -213,8 +290,26 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
 
                 char **array_value=NULL;
                 array_value = malloc(sizeof(char*));
+                if(array_value == NULL)
+                {
+                    //MALLOC FAILED
+                    errorCode = MALLOC_FAILURE;
+                    print_error();
+                    fclose(fp);
+                    return;
+                }
                 array_value[0] = malloc(strlen(value) + 1);
+                if(array_value[0] == NULL)
+                {
+                    //MALLOC FAILED
+                    errorCode = MALLOC_FAILURE;
+                    print_error();
+                    fclose(fp);
+                    free(array_value);
+                    return;
+                }
                 strcpy(array_value[0], value);
+                //Check the value of key, that was parsed
                 if(key==NULL) {
                     dict = insertDictionary(dict,"Non-defined",array_value,1);
                 }
@@ -233,6 +328,14 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                 //Initialize array of strings
                 char **array_value=NULL;
                 array_value = malloc(sizeof(char*));
+                if(array_value == NULL)
+                {
+                    //MallocFailure
+                    errorCode = MALLOC_FAILURE;
+                    print_error();
+                    fclose(fp);
+                    return;
+                }
 
                 while ((read = getline(&array_line, &len, fp)) != -1) {
                     //Remove the change line character
@@ -255,9 +358,28 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                     //Reallocate space in array for new string
                     if(values_num!=0) {
                         array_value = realloc(array_value,sizeof(char*)*(values_num+1));
+                        if(array_value == NULL)
+                        {
+                            //MallocFailure
+                            errorCode = MALLOC_FAILURE;
+                            print_error();
+                            fclose(fp);
+                            return;
+                        }
                     }
                     //Store the new string in the array
                     array_value[values_num] = malloc(strlen(value) + 1);
+                    if(array_value[values_num] == NULL)
+                    {
+                        //MALLOC FAILURE
+                        for(int i=0;i<values_num;i++)
+                            free(array_value[i]);
+                        free(array_value);
+                        fclose(fp);
+                        errorCode = MALLOC_FAILURE;
+                        print_error();
+                        return;
+                    }
                     strcpy(array_value[values_num], value);
                     values_num++;
                 }

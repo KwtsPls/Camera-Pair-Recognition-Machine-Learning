@@ -71,10 +71,6 @@ void BucketList_Print(BucketList *b);
 //Function to delete the first bucket in the list
 BucketList *BucketList_Delete_First(BucketList **b,int mode);
 
-// BucketList *BucketList_Merge(BucketList *a, BucketList *b);
-
-//Write to file the sets inside the bucket
-// void Bucket_Write(Bucket *buck, FILE *fd);
 
 //Function that writes Cliques to file
 void bucketListWriteCliques(BucketList *lista, FILE *fp);

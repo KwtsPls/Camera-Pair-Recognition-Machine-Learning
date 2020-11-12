@@ -18,8 +18,9 @@ HashTable *csvParser(char *filename,HashTable **ht)
     //Check if file Opened
     if(fp==NULL)
     {
-        //PRINT Error
-        printf("ERROR: CSV file was not found or could not be opened\n");
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
         return NULL;
     }
 
@@ -46,8 +47,10 @@ HashTable *csvParser(char *filename,HashTable **ht)
             *ht = createCliqueHashTable(ht, left_sp,right_sp);
         i++;    //New line Read
     }
+
     //Free space and close file
     free(line);
+    //Close the file
     fclose(fp);
 
     //Return num of files read
@@ -58,13 +61,25 @@ HashTable *csvParser(char *filename,HashTable **ht)
 //Function to create a new csv to write the cliques into
 void csvWriteCliques(HashTable **ht){
     FILE *fp;
+    //Open file to write to...
     fp = fopen("cliques.csv","w+");
+    //Check if file Opened
+    if(fp==NULL)
+    {
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return;
+    }
 
     //Write first line into file of the line
     int err = fprintf(fp,"left_spec_id,right_spec_id\n");
     //Something went wrong while writing to the file....
-    if(err == EOF)
-        exit(10);
+    if(err<0)
+    {
+        errorCode = WRITING_TO_FILE;
+        print_error();
+    }
 
     //Iterate through the Hash Table
     for(int i=0;i<(*ht)->buckets_num;i++)
@@ -72,6 +87,7 @@ void csvWriteCliques(HashTable **ht){
         //If the table is not Null iterate through it
         if((*ht)->table[i]!=NULL)
         {
+            //Iterate through the array of table...
             for(int j=0;j<(*ht)->table[i]->num_entries;j++)
             {
                 //So dirty bit is 1 we have to write it in the file as a clique
@@ -79,7 +95,7 @@ void csvWriteCliques(HashTable **ht){
                 {
                     //Make the bit of the list to 0 so we dont write it again in the file
                     (*ht)->table[i]->array[j]->set->dirty_bit=0;
-
+                    //Write the bucketList to the file
                     bucketListWriteCliques((*ht)->table[i]->array[j]->set,fp);
 
                 }
@@ -87,5 +103,6 @@ void csvWriteCliques(HashTable **ht){
         }
     }
 
+    //Close the file
     fclose(fp);
 }   
