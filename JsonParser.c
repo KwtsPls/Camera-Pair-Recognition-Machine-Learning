@@ -93,9 +93,7 @@ char *get_datasetX_name(){
                                         return current;
                                     }
                                 }
-                            }  
-                            free(current);
-                            free(cur_path);
+                            }
                             closedir(target);
                         }
                         //Number 20 is the number if the file is not a directory
@@ -108,7 +106,9 @@ char *get_datasetX_name(){
                             errorCode = DIR_UNABLE_TO_OPEN;
                             print_error();
                             return NULL;
-                        }                                                  
+                        }
+                        free(current);
+                        free(cur_path);
                     }
                 }
                 closedir(subfolder);
