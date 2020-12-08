@@ -3,6 +3,7 @@
 
 #include "Dictionary.h"
 #include "Bucket.h"
+#include "SecTable.h"
 
 #define BUCKET_SIZE 64
 #define KEY_BUCKET_SIZE 128

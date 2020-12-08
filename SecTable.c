@@ -7,7 +7,7 @@
 // Used Thomas Wang's function for hashing pointers
 unsigned int HashPointer(void* Ptr,int buckets)
 {
-    unsigned int Value = (unsigned int)Ptr;
+    long Value = (long)Ptr;
     Value = ~Value + (Value << 15);
     Value = Value ^ (Value >> 12);
     Value = Value + (Value << 2);
@@ -44,7 +44,7 @@ int CompareString(void * a, void *b)
 }
 
 //Function to create a new secondary hash table
-secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cmpFuncion){
+secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cmpFuncion,Data type){
 
     secTable *st = malloc(sizeof(secTable));
     st->loadFactor = 0;
@@ -53,6 +53,7 @@ secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cm
     st->numOfBuckets = size;
     st->hashFunction = hashFunction;
     st->cmpFunction = cmpFuncion;
+    st->type = type;
     st->table = malloc(sizeof(secondaryNode*) * st->numOfBuckets);
 
     // Initialize every bucket of the table as NULL
@@ -85,13 +86,10 @@ secTable *insert_secTable(secTable *st, void *value){
                 st->table[h]->num_elements++;
             }
             else{
-                //Na grapseis sxolia
-                //Ta sxolia den exoun kapoion na katigorisoun
-                //KWSTA
-                //Onomata den leme oikogeneies den thigoume
-                secondaryNode *new_node = create_secondaryNode(value,st->bucketSize);
-                new_node = st->table[h]->next;
-                new_node->next=NULL;
+                //The first block is the one containing free space in every bucket
+                //If the first block is full add a new one at the start of the bucket chain
+                secondaryNode *new_node = create_secondaryNode(value,(st->bucketSize/sizeof(value)));
+                new_node->next = st->table[h];
                 st->table[h] = new_node;
             }
             st->num_elements++;
@@ -101,9 +99,9 @@ secTable *insert_secTable(secTable *st, void *value){
     }
     // Reshape the hash table with doubled size
     else{
-        secTable *newst = reshape_secTable(&st);
-        newst = insert_secTable(newst, value);
-        return newst;
+        secTable *new_st = reshape_secTable(&st);
+        new_st = insert_secTable(new_st, value);
+        return new_st;
     }
     
 }
@@ -115,31 +113,69 @@ secTable *replace_secTable(secTable *st, void *old_value, void *new_value){
     return insert_secTable(st, new_value);
 }
 
-//Function to destroy a hash table
-void destroy_secTable(secTable **st){
-    for(int i=0;i<(*st)->numOfBuckets;i++){
-        if((*st)->table[i]!=NULL)
-            destroy_secondaryNode(&((*st)->table[i]));
+//Function to get the next prime number
+int findNextPrime(int N){
+    for(int i=N;i<MAX_PRIME;i++){
+        int flag=0;
+        for (int j = 2; j <= i / 2; ++j) {
+            // condition for non-prime
+            if (i % j == 0) {
+                flag=1;
+                break;
+            }
+        }
+        if(flag==0)
+            return i;
     }
-    free((*st)->table);
-    free(*st);
-    *st = NULL;
 }
 
 //Function for reshaping the hash table
 secTable *reshape_secTable(secTable **st){
-    secTable *newst = create_secTable((*st)->numOfBuckets*2,(*st)->bucketSize,(*st)->hashFunction,(*st)->cmpFunction);
+    //Find the closest prime number of the current table size*2
+    int new_size = findNextPrime((*st)->numOfBuckets*2);
+    //Create a new hash table with doubled the size of the previous one
+    secTable *new_st = create_secTable(new_size,(*st)->bucketSize,(*st)->hashFunction,(*st)->cmpFunction,(*st)->type);
+    //Iterate through the old hashtable and get every value
+    //and insert it into the new hashtable
     for(int i=0;i<(*st)->numOfBuckets;i++){
         while((*st)->table[i]!=NULL){
             void *nvalue;
             (*st)->table[i] = getFirstVal((*st)->table[i],&nvalue);
             if(nvalue!=NULL)
-                newst = insert_secTable(newst,nvalue);
+                new_st = insert_secTable(new_st,nvalue);
         }
     }
     free((*st)->table);
     free(*st);
-    return newst;
+    return new_st;
+}
+
+//Function to print a hash table
+void print_secTable(secTable *st){
+    for(int i=0;i<st->numOfBuckets;i++){
+        if(st->table[i]!=NULL) {
+            printf("BUCKET %d:\n",i);
+            print_secondaryNode(st->table[i],st->type);
+        }
+    }
+}
+
+//Function to print the values of a secondary block
+void print_secondaryNode(secondaryNode *node,Data type){
+    secondaryNode *cur = node;
+    while(cur!=NULL){
+        for(int i=0;i<cur->num_elements;i++){
+            if(type==String) {
+                if(node->values[i]!=NULL)
+                    printf("%s\n", (char *) node->values[i]);
+            }
+            else if (type==Pointer) {
+                if(node->values[i]!=NULL)
+                    printf("%p\n", node->values[i]);
+            }
+        }
+        cur = cur->next;
+    }
 }
 
 //Function to get the number of items in the first block of a chain
@@ -149,35 +185,51 @@ int getNumElements_secondaryNode(secondaryNode *node){
 
 //Function to create a new secondary node
 secondaryNode *create_secondaryNode(void *value,int size){
-    secondaryNode *sn = malloc(sizeof(sizeof(secondaryNode)));
+    secondaryNode *sn = malloc(sizeof(secondaryNode));
     sn->num_elements = 1;
-    //Nomizw alla den eimai kai sigours
-    sn->values = malloc(sizeof(value) * size);
+    sn->values = malloc(sizeof(void*) * size);
+    for(int i=0;i<size;i++)
+        sn->values[i]=NULL;
     sn->values[0] = value;
-
     sn->next = NULL;
     return sn;
 }
 
 
-//Function to destroy a secondary node
-void destroy_secondaryNode(secondaryNode **node){
-    secondaryNode *next = *node;
-    while (next!=NULL){
-        secondaryNode *tmp = next;
-        next = next->next;
-        for(int i=0;i<tmp->num_elements;i++)
-            tmp->values[i] = NULL;
-        free(tmp->values);
-        free(tmp);
+//Function to delete a hash table
+void destroy_secTable(secTable **st,int mode){
+    for(int i=0;i<(*st)->numOfBuckets;i++){
+        destroy_secondaryNode(&((*st)->table[i]),mode);
     }
-
-    *node = NULL;    
+    free((*st)->table);
+    free(*st);
+    *st=NULL;
 }
 
+//Function to destroy a secondary node
+void destroy_secondaryNode(secondaryNode **node,int mode){
+
+    secondaryNode *cur = *node;
+    while(cur!=NULL){
+        for(int i=0;i<cur->num_elements;i++){
+            if(mode==ST_SOFT_DELETE_MODE)
+                cur->values[i]=NULL;
+            else
+                free(cur->values[i]);
+        }
+        free(cur->values);
+        secondaryNode *temp = cur;
+        cur = cur->next;
+        free(temp);
+    }
+
+    *node = NULL;
+}
 
 //Returns the first Value of the list
 secondaryNode *getFirstVal(secondaryNode *node, void **value){
+
+    //If the first block is empty delete it
     if(node->num_elements == 0){
         secondaryNode *tmp = node;
         node = node->next;
@@ -188,7 +240,8 @@ secondaryNode *getFirstVal(secondaryNode *node, void **value){
 
         return node;
     }
-    
+
+    //Get the last element from the current block and return it
     node->num_elements--;
     *value =  node->values[node->num_elements];
     node->values[node->num_elements] = NULL;
@@ -204,6 +257,7 @@ secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
     if(fun(value,tmp_value) == 1){
         return node;
     }
+
     secondaryNode *ptr = node;
     while (ptr!=NULL){
         for(int i=0;i<ptr->num_elements;i++){

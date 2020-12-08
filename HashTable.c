@@ -186,7 +186,8 @@ Dictionary *getTopKeyBucketEntry(keyBucket *kb, int pos){
 HashTable *reshapeHashTable(HashTable **ht,Dictionary *spec_id){
 
     //Create a new hash table with double the size of the current one
-    HashTable *ht_reshaped = initHashTable((*ht)->buckets_num*2);
+    int new_size = findNextPrime((*ht)->buckets_num*2);
+    HashTable *ht_reshaped = initHashTable(new_size);
 
     //Rehash the values of the old hash table into the new one
     for(int i=0;i<(*ht)->buckets_num;i++){

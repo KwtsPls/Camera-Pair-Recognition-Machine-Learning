@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "JsonParser.h"
 #include "ErrorHandler.h"
 #include "HashTable.h"
@@ -35,7 +36,7 @@ int main(){
     //Creating File to write to
     csvWriteCliques(&ht);
 
-    printf("\nFile created successfuly!\n\n");
+    printf("\nFile created successfully!\n\n");
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     free(X_name);
