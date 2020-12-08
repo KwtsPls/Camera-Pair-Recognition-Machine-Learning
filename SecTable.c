@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "SecTable.h"
 
 
@@ -30,9 +31,20 @@ unsigned int HashString(void* Ptr,int buckets)
     return hash%buckets;
 }
 
+//Returns 1 if pointers are the same
+int ComparePointer(void *a, void *b)
+{
+    return a==b;
+}
+
+//Returns 1 if strings are the same
+int CompareString(void * a, void *b)
+{
+    return strcmp((char *)a, (char *)b) == 0;
+}
 
 //Function to create a new secondary hash table
-secTable *create_secTable(int size, int bucketSize,Hash hashFunction){
+secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cmpFuncion){
 
     secTable *st = malloc(sizeof(secTable));
     st->loadFactor = 0;
@@ -40,6 +52,7 @@ secTable *create_secTable(int size, int bucketSize,Hash hashFunction){
     st->bucketSize=bucketSize;
     st->numOfBuckets = size;
     st->hashFunction = hashFunction;
+    st->cmpFunction = cmpFuncion;
     st->table = malloc(sizeof(secondaryNode*) * st->numOfBuckets);
 
     // Initialize every bucket of the table as NULL
@@ -58,7 +71,7 @@ secTable *insert_secTable(secTable *st, void *value){
     if(st->loadFactor<0.85){
         
         if(st->table[h]==NULL){
-            st->table[h] = create_secondaryNode(value,(st->bucketSize/sizeof(value));
+            st->table[h] = create_secondaryNode(value,(st->bucketSize/sizeof(value)));
             //Update the number of elements
             st->num_elements++;
             // Update load factor
@@ -69,6 +82,7 @@ secTable *insert_secTable(secTable *st, void *value){
             //There is enough space in the first block of the bucket insert the new entry
             if(current_num < (st->bucketSize/sizeof(value))){
                 st->table[h]->values[current_num] = value;
+                st->table[h]->num_elements++;
             }
             else{
                 //Na grapseis sxolia
@@ -82,25 +96,51 @@ secTable *insert_secTable(secTable *st, void *value){
             }
             st->num_elements++;
             st->loadFactor = st->num_elements/(st->numOfBuckets*(st->bucketSize/sizeof(value)));
-
         }
-        
+        return st;
     }
     // Reshape the hash table with doubled size
     else{
-
+        secTable *newst = reshape_secTable(&st);
+        newst = insert_secTable(newst, value);
+        return newst;
     }
     
 }
 
 //Function to replace a value from the hash table with a given new one
-secTable *replace_secTable(secTable *st, void *old_value, void *new_value);
+secTable *replace_secTable(secTable *st, void *old_value, void *new_value){
+    int h = st->hashFunction(old_value, st->numOfBuckets);
+    st->table[h] = deletevalue(st->table[h],old_value,st->cmpFunction);
+    return insert_secTable(st, new_value);
+}
 
 //Function to destroy a hash table
-void destroy_secTable(secTable **st);
+void destroy_secTable(secTable **st){
+    for(int i=0;i<(*st)->numOfBuckets;i++){
+        if((*st)->table[i]!=NULL)
+            destroy_secondaryNode(&((*st)->table[i]));
+    }
+    free((*st)->table);
+    free(*st);
+    *st = NULL;
+}
 
 //Function for reshaping the hash table
-secTable *reshape_secTable(secTable **st);
+secTable *reshape_secTable(secTable **st){
+    secTable *newst = create_secTable((*st)->numOfBuckets*2,(*st)->bucketSize,(*st)->hashFunction,(*st)->cmpFunction);
+    for(int i=0;i<(*st)->numOfBuckets;i++){
+        while((*st)->table[i]!=NULL){
+            void *nvalue;
+            (*st)->table[i] = getFirstVal((*st)->table[i],&nvalue);
+            if(nvalue!=NULL)
+                newst = insert_secTable(newst,nvalue);
+        }
+    }
+    free((*st)->table);
+    free(*st);
+    return newst;
+}
 
 //Function to get the number of items in the first block of a chain
 int getNumElements_secondaryNode(secondaryNode *node){
@@ -121,12 +161,58 @@ secondaryNode *create_secondaryNode(void *value,int size){
 
 
 //Function to destroy a secondary node
-void destroy_secondaryNode(secondaryNode **node, int mode){
-    secondaryNode *tmp = node;
-    while (tmp!=NULL)
-    {
-        
+void destroy_secondaryNode(secondaryNode **node){
+    secondaryNode *next = *node;
+    while (next!=NULL){
+        secondaryNode *tmp = next;
+        next = next->next;
+        for(int i=0;i<tmp->num_elements;i++)
+            tmp->values[i] = NULL;
+        free(tmp->values);
+        free(tmp);
+    }
+
+    *node = NULL;    
+}
+
+
+//Returns the first Value of the list
+secondaryNode *getFirstVal(secondaryNode *node, void **value){
+    if(node->num_elements == 0){
+        secondaryNode *tmp = node;
+        node = node->next;
+        tmp->next = NULL;
+        *value = NULL;
+        free(tmp->values);
+        free(tmp);
+
+        return node;
     }
     
+    node->num_elements--;
+    *value =  node->values[node->num_elements];
+    node->values[node->num_elements] = NULL;
+    return node;
+
+}
+
+//Function to delete value
+secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
+    node->num_elements--;
+    void *tmp_value = node->values[node->num_elements];
+    node->values[node->num_elements] = NULL;
+    if(fun(value,tmp_value) == 1){
+        return node;
+    }
+    secondaryNode *ptr = node;
+    while (ptr!=NULL){
+        for(int i=0;i<ptr->num_elements;i++){
+            if(fun(value,ptr->values[i]) == 1){
+                ptr->values[i] = tmp_value;
+                return node;
+            }
+        }
+        ptr = ptr->next;
+    }
     
 }

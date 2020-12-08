@@ -9,7 +9,7 @@
 
 
 typedef unsigned int (*Hash)(void *, int size);
-
+typedef int (*Compare)(void *, void *);
 
 typedef struct secondaryNode{
 
@@ -28,8 +28,12 @@ typedef struct SecTable{
     float loadFactor;
     int numOfBuckets;
     int num_elements;
+
     int bucketSize;
     Hash hashFunction;
+    //Pointer to compare Function
+    Compare cmpFunction;
+
     secondaryNode **table;
 
 }secTable;
@@ -41,7 +45,7 @@ unsigned int HashPointer(void* Ptr,int buckets);
 unsigned int HashString(void* Ptr,int buckets);
 
 //Function to create a new secondary hash table
-secTable *create_secTable(int size, int bucketSize, Hash hashFunction);
+secTable *create_secTable(int size, int bucketSize, Hash hashFunction, Compare cmpFunction);
 
 //Function to insert a new entry into the 
 secTable *insert_secTable(secTable *st, void *value);
@@ -61,13 +65,17 @@ int getNumElements_secondaryNode(secondaryNode *node);
 //Function to create a new secondary node
 secondaryNode *create_secondaryNode(void *value,int size);
 
+//Returns the first Value of the list
+secondaryNode *getFirstVal(secondaryNode *node, void **value);
+
 //Function to destroy a secondary node
 void destroy_secondaryNode(secondaryNode **node);
 
+//Function to delete value
+secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun);
+
 //Hash Function
-unsigned int HashPointer(void* Ptr,int buckets)
+unsigned int HashPointer(void* Ptr,int buckets);
 
 
-
-
-#endif 
+#endif //SECTABLE_H 
