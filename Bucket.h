@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Dictionary.h"
+#include "SecTable.h"
 
 #define BUCKET_SOFT_DELETE_MODE 1
 #define BUCKET_HARD_DELETE_MODE 2
@@ -25,6 +26,7 @@ typedef struct BucketList
 {
     int num_entries;
     char dirty_bit;
+    secTable *negatives;
     struct Bucket *head;
     struct Bucket *tail;
 
