@@ -17,13 +17,20 @@ int main(){
         print_error();
         return 1;
     }
+
+    //Hashtable containing the cliques
     HashTable *ht = initHashTable(TABLE_INIT_SIZE);
+
+    //Hashtable for the vocabulary
+    secTable *vocabulary = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,String);
 
     printf("Loading data...\n\n");
 
-    int check = Initialize_dataset_X(X_name,&ht);
+    int check = Initialize_dataset_X(X_name,&ht,&vocabulary);
 
     printf("\nData loading was successful!\n\n");
+
+    printf("\nFound %d unique words...\n\n",vocabulary->num_elements);
 
     printf("\nCreating cliques...\n\n");
 
@@ -39,6 +46,7 @@ int main(){
     printf("\nFile created successfully!\n\n");
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
+    destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
     free(X_name);
     return 0;
 }

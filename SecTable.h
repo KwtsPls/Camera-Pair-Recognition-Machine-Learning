@@ -102,4 +102,10 @@ void print_secTable(secTable *st);
 //Function to print the values of a secondary block
 void print_secondaryNode(secondaryNode *node,Data type);
 
+//Function to find if an item exists in the hash table
+int find_secTable(secTable *st,void *value);
+
+//Function to find if an item exists in a block chain
+int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func);
+
 #endif //SECTABLE_H 

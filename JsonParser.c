@@ -7,6 +7,8 @@
 #include "ErrorHandler.h"
 #include "Bucket.h"
 #include "HashTable.h"
+#include "SecTable.h"
+#include "DataPreprocess.h"
 
 int errorCode;
 
@@ -130,7 +132,7 @@ char *get_datasetX_name(){
 }
 
 //Function to initialize the data structures with dataset X
-int Initialize_dataset_X(char *name,HashTable **ht){
+int Initialize_dataset_X(char *name,HashTable **ht,secTable **vocabulary){
 
     DIR *dir;
     struct dirent *dptr = NULL;
@@ -149,6 +151,9 @@ int Initialize_dataset_X(char *name,HashTable **ht){
         print_error();
         return -1;
     }
+
+    //Initialize stopwords
+    secTable *stopwords = init_stopwords();
 
     //Begin iterating through the subdirectories
     while((dptr = readdir(dir))!=NULL){
@@ -222,7 +227,7 @@ int Initialize_dataset_X(char *name,HashTable **ht){
                     strcat(spec_id,token);
 
                     //Read specs from json file
-                    parse_json_file(file_name,spec_id,ht);
+                    parse_json_file(file_name,spec_id,ht,stopwords,vocabulary);
 
                     free(spec_id);
                     free(file_name);
@@ -234,13 +239,16 @@ int Initialize_dataset_X(char *name,HashTable **ht){
         }
     }
 
+    //delete the table used for the stopwords
+    destroy_secTable(&stopwords,ST_SOFT_DELETE_MODE);
+
     closedir(dir);
     return 1;
 }
 
 
 //Function to read data from json files
-void parse_json_file(char *name,char* spec_id,HashTable **ht){
+void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords,secTable **vocabulary){
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
@@ -290,17 +298,16 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
 
                 char **array_value=NULL;
                 array_value = malloc(sizeof(char*));
-                if(array_value == NULL)
-                {
+                if(array_value == NULL){
                     //MALLOC FAILED
                     errorCode = MALLOC_FAILURE;
                     print_error();
                     fclose(fp);
                     return;
                 }
+                value = preprocess(value,stopwords,vocabulary);
                 array_value[0] = malloc(strlen(value) + 1);
-                if(array_value[0] == NULL)
-                {
+                if(array_value[0] == NULL){
                     //MALLOC FAILED
                     errorCode = MALLOC_FAILURE;
                     print_error();
@@ -309,6 +316,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                     return;
                 }
                 strcpy(array_value[0], value);
+                free(value);
                 //Check the value of key, that was parsed
                 if(key==NULL) {
                     dict = insertDictionary(dict,"Non-defined",array_value,1);
@@ -328,8 +336,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                 //Initialize array of strings
                 char **array_value=NULL;
                 array_value = malloc(sizeof(char*));
-                if(array_value == NULL)
-                {
+                if(array_value == NULL){
                     //MallocFailure
                     errorCode = MALLOC_FAILURE;
                     print_error();
@@ -358,8 +365,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                     //Reallocate space in array for new string
                     if(values_num!=0) {
                         array_value = realloc(array_value,sizeof(char*)*(values_num+1));
-                        if(array_value == NULL)
-                        {
+                        if(array_value == NULL){
                             //MallocFailure
                             errorCode = MALLOC_FAILURE;
                             print_error();
@@ -368,9 +374,9 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                         }
                     }
                     //Store the new string in the array
+                    value = preprocess(value,stopwords,vocabulary);
                     array_value[values_num] = malloc(strlen(value) + 1);
-                    if(array_value[values_num] == NULL)
-                    {
+                    if(array_value[values_num] == NULL){
                         //MALLOC FAILURE
                         for(int i=0;i<values_num;i++)
                             free(array_value[i]);
@@ -381,12 +387,12 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht){
                         return;
                     }
                     strcpy(array_value[values_num], value);
+                    free(value);
                     values_num++;
                 }
 
                 if(key==NULL) {
                     dict = insertDictionary(dict,"Non-defined",array_value,values_num);
-                    
                 }
                 else
                     dict = insertDictionary(dict,key,array_value,values_num);

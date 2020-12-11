@@ -40,7 +40,7 @@ int ComparePointer(void *a, void *b)
 //Returns 1 if strings are the same
 int CompareString(void * a, void *b)
 {
-    return strcmp((char *)a, (char *)b) == 0;
+    return (strcmp((char *)a, (char *)b) == 0);
 }
 
 //Function to create a new secondary hash table
@@ -66,7 +66,7 @@ secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cm
 
 //Function to insert a new entry into the 
 secTable *insert_secTable(secTable *st, void *value){
-    
+
     int h = st->hashFunction(value, st->numOfBuckets);
     // If the load factor of the hash table is too high reshape the hash table
     if(st->loadFactor<0.85){
@@ -269,4 +269,35 @@ secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
         ptr = ptr->next;
     }
     
+}
+
+//Function to find if an item exists in the hash table
+int find_secTable(secTable *st,void *value){
+    int h = st->hashFunction(value,st->numOfBuckets);
+    return find_secondaryNode(st->table[h],value,st->cmpFunction);
+}
+
+//Function to find if an item exists in a block chain
+int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func){
+
+    //Bucket list is empty - the item cannot exist in this list
+    if(node==NULL){
+        return 0;
+    }
+    else{
+        secondaryNode *cur = node;
+
+        //Iterate through the list and check if the value exists in a block
+        while(cur!=NULL){
+            for(int i=0;i<cur->num_elements;i++){
+                if(compare_func(value,cur->values[i])==1)
+                    return 1;
+            }
+
+            cur = cur->next;
+        }
+
+        return 0;
+    }
+
 }
