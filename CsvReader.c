@@ -45,6 +45,9 @@ HashTable *csvParser(char *filename,HashTable **ht)
         int label = atoi(lbl_str);
         if(label == 1) //They're the same
             *ht = createCliqueHashTable(ht, left_sp,right_sp);
+        else if (label == 0) //Negative relation
+            *ht = 
+
         i++;    //New line Read
     }
 

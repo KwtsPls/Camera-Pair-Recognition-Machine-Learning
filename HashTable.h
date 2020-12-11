@@ -89,4 +89,7 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp,char *right_sp);
 //Max_List : Number of entries in this bucket is greater than those in min_List
 BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTable **ht,int h,int index);
 
+//Function to add a negative relation between two ids
+HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp);
+
 #endif //PROJECT_HASHTABLE_H 

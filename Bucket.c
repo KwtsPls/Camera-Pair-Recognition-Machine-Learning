@@ -74,6 +74,9 @@ BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize)
     //Initialize the dirty bit as zero - clique is not created
     lista->dirty_bit = 0;
 
+    //Initialize the table with the negative relations
+    lista->negatives = create_secTable(ST_INIT_SIZE,SB_SIZE,HashPointer,ComparePointer,Pointer);
+
     //Return the new BucketList
     return lista;
 }

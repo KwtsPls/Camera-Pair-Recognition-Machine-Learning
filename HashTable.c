@@ -19,6 +19,7 @@ unsigned long hashCode(char *str,int buckets)
 //Function to create a keyBucket
 keyBucket *initKeyBucket(Dictionary *spec_id){
 
+
     //Allocate memory for the new bucket
     keyBucket *kb = malloc(sizeof(keyBucket));
     if(kb == NULL)
@@ -511,4 +512,30 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
     }
 
 
+}
+
+//Function to add a negative relation between two ids
+HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp){
+    
+    //Hash the left entry
+    int left_h = hashCode(left_sp,ht->buckets_num);
+    //Get the index for the left spec
+    int left_index = findKeyBucketEntry(ht,left_sp);
+
+    //Hash the left entry
+    int right_h = hashCode(right_sp,ht->buckets_num);   
+    //Get the index for the right spec
+    int right_index = findKeyBucketEntry(ht,right_sp);
+
+    //Get the pointer to the left clique    
+    BucketList *left_pt = ht->table[left_h]->array[left_index]->set;
+    //Get the pointer to the right clique 
+    BucketList *right_pt = ht->table[right_h]->array[right_index]->set;
+
+    //Insert the left clique's pointer into the negative set of the right clique
+    ht->table[left_h]->array[left_index]->set->negatives = insert_secTable(ht->table[left_h]->array[left_index]->set->negatives,right_pt);
+    //Similarly for the right clique's pointer  
+    ht->table[right_h]->array[right_index]->set->negatives = insert_secTable(ht->table[right_h]->array[right_index]->set->negatives,right_pt);
+    
+    return ht;
 }
