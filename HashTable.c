@@ -286,7 +286,7 @@ void cliqueDeleteHashTable(HashTable **ht,int mode){
                             BucketList_Delete(&(*ht)->table[i]->array[j]->set, mode);
                         }
                     }
-                    //Freee the space of the key Bucket Entry
+                    //Free the space of the key Bucket Entry
                     (*ht)->table[i]->array[j]->set = NULL;
                     free((*ht)->table[i]->array[j]->key);
                     (*ht)->table[i]->array[j]->key=NULL;
