@@ -9,7 +9,7 @@ unsigned long hashCode(char *str,int buckets)
     unsigned long hash = 5381;
     int c;
 
-    while (c = *str++)
+    while((c = *str++))
         hash = ((hash << 5) + hash) + c;
 
     return hash % buckets;
@@ -364,7 +364,6 @@ HashTable *changePointerHashTable(HashTable **ht,keyBucketEntry *old_bucket,keyB
     //Iterate through the list of buckets and hash every entry
     //The pointers of old_bucket must now point to new_bucket
     while(current!=NULL){
-        int num_entries = current->cnt;
         for(int i=0;i<current->cnt;i++){
             int hash_v = hashCode(current->spec_ids[i]->dict_name,(*ht)->buckets_num);
             int index = findKeyBucketEntry((*ht),current->spec_ids[i]->dict_name);
@@ -387,7 +386,6 @@ HashTable *erasePointerHashTable(HashTable **ht,keyBucketEntry *clique_bucket){
     //Iterate through the list of buckets and hash every entry
     //The pointers of old_bucket must now point to new_bucket
     while(current!=NULL){
-        int num_entries = current->cnt;
         for(int i=0;i<current->cnt;i++){
             int hash_v = hashCode(current->spec_ids[i]->dict_name,(*ht)->buckets_num);
             int index = findKeyBucketEntry((*ht),current->spec_ids[i]->dict_name);
@@ -425,6 +423,18 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
             //keyBucketEntry *old_bucket = (*ht)->table[left_h]->array[left_index];
             (*ht) = changePointerHashTable(ht, (*ht)->table[left_h]->array[left_index],
                                            (*ht)->table[right_h]->array[right_index]);
+
+
+            //Change the negative Relations, from the set of the left buck to point to the right bcuk
+            (*ht)->table[left_h]->array[left_index]->set = updateNegativeRelations(
+                (*ht)->table[left_h]->array[left_index]->set,
+                (*ht)->table[right_h]->array[right_index]->set);
+
+            //Merge the negative values...
+            (*ht)->table[right_h]->array[right_index]->set = mergeNegativeRelations(
+                (*ht)->table[right_h]->array[right_index]->set,
+                &((*ht)->table[left_h]->array[left_index]->set));
+
             (*ht)->table[right_h]->array[right_index]->set = BucketList_Merge(
                     &(*ht)->table[right_h]->array[right_index]->set, &(*ht)->table[left_h]->array[left_index]->set, ht,
                     left_h, left_index);
@@ -433,6 +443,18 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
             //keyBucketEntry *old_bucket = (*ht)->table[right_h]->array[right_index];
             (*ht) = changePointerHashTable(ht, (*ht)->table[right_h]->array[right_index],
                                            (*ht)->table[left_h]->array[left_index]);
+
+            
+            //Change the negative Relations, from the set of the left buck to point to the right bcuk
+            (*ht)->table[right_h]->array[right_index]->set = updateNegativeRelations(
+                (*ht)->table[right_h]->array[right_index]->set,
+                (*ht)->table[left_h]->array[left_index]->set);
+
+            //Merge the negative values...
+            (*ht)->table[left_h]->array[left_index]->set = mergeNegativeRelations(
+                (*ht)->table[left_h]->array[left_index]->set,
+                &((*ht)->table[right_h]->array[right_index]->set));
+
             (*ht)->table[left_h]->array[left_index]->set = BucketList_Merge(
                     &(*ht)->table[left_h]->array[left_index]->set, &(*ht)->table[right_h]->array[right_index]->set, ht,
                     right_h, right_index);
@@ -459,8 +481,12 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
         (*Max_List)->tail = (*min_List)->tail;
 
         //Delete the pointer to the list
+        destroy_secTable(&((*min_List)->negatives),ST_SOFT_DELETE_MODE);
         free(*min_List);
+        
         (*ht)->table[h]->array[index]->set = *Max_List;
+        
+        (*ht)->table[h]->array[index]->set->negatives = (*Max_List)->negatives;
 
         //Change the bucket as dirty so it can be stored in the disk
         (*Max_List)->dirty_bit=1;
@@ -486,6 +512,8 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
         if(BucketList_Empty(*min_List)==LIST_EMPTY){
             BucketList_Delete(min_List,BUCKET_SOFT_DELETE_MODE);
             (*ht)->table[h]->array[index]->set = *Max_List;
+            (*ht)->table[h]->array[index]->set->negatives = (*Max_List)->negatives;
+
         }
         else{
 
@@ -499,8 +527,12 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
             (*Max_List)->tail = (*min_List)->tail;
 
             //Delete the pointer to the list
+            // free((*min_List)->negatives->table);
+            free((*min_List)->negatives);
             free(*min_List);
             (*ht)->table[h]->array[index]->set = *Max_List;
+            (*ht)->table[h]->array[index]->set->negatives = (*Max_List)->negatives;
+
 
         }
 
@@ -535,7 +567,101 @@ HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp
     //Insert the left clique's pointer into the negative set of the right clique
     ht->table[left_h]->array[left_index]->set->negatives = insert_secTable(ht->table[left_h]->array[left_index]->set->negatives,right_pt);
     //Similarly for the right clique's pointer  
-    ht->table[right_h]->array[right_index]->set->negatives = insert_secTable(ht->table[right_h]->array[right_index]->set->negatives,right_pt);
+    ht->table[right_h]->array[right_index]->set->negatives = insert_secTable(ht->table[right_h]->array[right_index]->set->negatives,left_pt);
     
     return ht;
+}
+
+
+
+void testCSVHashTable(char *filename, HashTable *ht){
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+
+    //Open file
+    fp = fopen(filename,"r");
+    //Check if file Opened
+    if(fp==NULL)
+    {
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return;
+    }
+
+    int i=0;    //Number Of Lines Counter
+    //Read each line
+    while((read = getline(&line, &len,fp))!=-1){
+        if(i==0){ //Skip First Line cause its Left_spec, Right_Spec, label
+        
+            i++;
+            continue;
+        }
+        
+        char *left_sp,*right_sp,*lbl_str;
+        //Take left_spec_id
+        left_sp = strtok(line,",");
+        //Take right_spec_id
+        right_sp = strtok(NULL,",");
+        //Take label
+        lbl_str = strtok(NULL,",");
+        //Label to integer
+        int label = atoi(lbl_str);
+        
+        int j = -1;
+        if(label == 1) //They're the same
+            j = checkPositiveAs(ht,left_sp,right_sp);        
+        else if (label == 0) //Negative relation
+            j = checkNegativeAs(ht,left_sp,right_sp);
+        
+        if(j==-1)
+        {
+            printf("ERROR");
+            printf("\n%s\n",line);
+            exit(1);
+        }
+
+        i++;    //New line Read
+    }
+    free(line);
+    fclose(fp);
+    printf("OLA GOOD\n");
+
+}
+
+int checkPositiveAs(HashTable *ht, char *left, char *right){
+    int h = hashCode(left, ht->buckets_num);
+    int l_ind = findKeyBucketEntry(ht,left);
+
+
+    int r_h = hashCode(right, ht->buckets_num);
+    int r_ind = findKeyBucketEntry(ht,right);
+    
+    BucketList *l_s = ht->table[h]->array[l_ind]->set;
+    BucketList *r_s = ht->table[r_h]->array[r_ind]->set;
+
+    if(l_s == r_s)
+        return 1;
+    else return -1;
+}   
+
+
+int checkNegativeAs(HashTable *ht, char *left, char *right){
+    int h = hashCode(left, ht->buckets_num);
+    int l_ind = findKeyBucketEntry(ht,left);
+
+    int r_h = hashCode(right, ht->buckets_num);
+    int r_ind = findKeyBucketEntry(ht,right);
+
+    BucketList *l_s = ht->table[h]->array[l_ind]->set;
+    BucketList *r_s = ht->table[r_h]->array[r_ind]->set;
+
+    int l_found = find_secTable(l_s->negatives,r_s);
+    int r_found = find_secTable(r_s->negatives,l_s);
+
+    if(l_found == 1 && r_found == 1)
+        return 1;    
+    else return -1;
 }

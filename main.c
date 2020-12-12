@@ -27,6 +27,8 @@ int main(){
     printf("Loading data...\n\n");
 
     int check = Initialize_dataset_X(X_name,&ht,&vocabulary);
+    if(check == -1)
+        return 1;
 
     printf("\nData loading was successful!\n\n");
 
@@ -40,10 +42,22 @@ int main(){
 
     printf("\nCreating file cliques.csv...\n");
 
+    // printHashTable(ht);
     //Creating File to write to
     csvWriteCliques(&ht);
 
     printf("\nFile created successfully!\n\n");
+
+    testCSVHashTable("sigmod_large_labelled_dataset.csv", ht);
+
+    int d = checkPositiveAs(ht, "www.pricedekho.com//1096","www.gosale.com//1428");
+    printf("%d\n",d);
+    d = checkNegativeAs(ht, "www.pricedekho.com//1096","www.gosale.com//1428");
+    printf("%d\n",d);
+
+
+
+
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);

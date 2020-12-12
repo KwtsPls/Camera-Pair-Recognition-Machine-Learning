@@ -92,4 +92,11 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
 //Function to add a negative relation between two ids
 HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp);
 
+
+void testCSVHashTable(char *filename, HashTable *ht);
+int checkPositiveAs(HashTable *ht, char *left, char *right);
+int checkNegativeAs(HashTable *ht, char *left, char *right);
+
+
+
 #endif //PROJECT_HASHTABLE_H 

@@ -66,6 +66,9 @@ secTable *replace_secTable(secTable *st, void *old_value, void *new_value);
 //Function for reshaping the hash table
 secTable *reshape_secTable(secTable **st);
 
+//Function to delete value
+secTable *deletevalue_secTable(secTable *st, void *value);
+
 //Function to get the next prime number
 int findNextPrime(int N);
 
@@ -83,6 +86,8 @@ void destroy_secondaryNode(secondaryNode **node,int mode);
 
 //Function to delete value
 secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun);
+
+
 
 //Hash Function
 unsigned int HashPointer(void* Ptr,int buckets);
@@ -107,5 +112,8 @@ int find_secTable(secTable *st,void *value);
 
 //Function to find if an item exists in a block chain
 int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func);
+
+
+
 
 #endif //SECTABLE_H 

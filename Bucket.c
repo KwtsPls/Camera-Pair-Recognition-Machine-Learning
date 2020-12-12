@@ -172,6 +172,13 @@ void BucketList_Delete(BucketList **b,int mode)
     if(*b==NULL)
         return;
 
+    //ST_SOFT_DELETE_MODE is 0
+    //ST_HARD_DELETE_MODE is 1
+    //And BUCKET_SOFT_DELETE MODE is 1
+    //BUCKET_HARD_DELETE_MODE is 2
+    //So to delete is mode - 1
+    if((*b)->negatives != NULL)
+        destroy_secTable(&((*b)->negatives),ST_SOFT_DELETE_MODE);
     //Start from the head of the list iterate through it 
     // and delete each node of the Bucket List 
     while ((*b)->head!=NULL)
@@ -200,6 +207,8 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode){
     //If the list contains only one bucket
     if((*b)->head == (*b)->tail){
         //Delete the bucket list
+        if((*b)->negatives != NULL)
+            destroy_secTable(&((*b)->negatives),ST_SOFT_DELETE_MODE);
         Bucket_Delete(&((*b)->head),mode);
         (*b)->head=NULL;
         (*b)->tail=NULL;
@@ -207,6 +216,8 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode){
     }
     //If the list contains multiple buckets
     else{
+        if((*b)->negatives != NULL)
+            destroy_secTable(&((*b)->negatives),ST_SOFT_DELETE_MODE);
         //Delete the first bucket and make the bucket head to the next
         Bucket *to_be_deleted=(*b)->head;
         (*b)->head = (*b)->head->next;
@@ -326,5 +337,65 @@ void bucketListWriteCliques(BucketList *lista, FILE *fp){
         }
         //Go to the next bucket node
         bucket = bucket->next;
+    }
+}
+
+
+//Functions take the bucket that needs updating, and where it needs to be pointing correctly at...
+BucketList *updateNegativeRelations(BucketList *to_upd, BucketList *to_replace){
+    secTable *negatives_to_upd = to_upd->negatives;
+    //Iterate through all the negative relations of the to update list
+    for(int i=0;i<negatives_to_upd->numOfBuckets;i++){
+        secondaryNode *tmp = negatives_to_upd->table[i];
+        while (tmp!=NULL)
+        {
+            for(int i=0;i<tmp->num_elements;i++){
+                //Get every bucketlist* and update them to point as negative
+                //To the new bucketlist
+                tmp->values[i] =(void*) updateSec((BucketList *) tmp->values[i],to_upd,to_replace);
+            }
+            tmp = tmp->next;
+        }
+        
+    }
+    to_upd->negatives = negatives_to_upd;
+    return to_upd;
+
+}
+
+//Function to merge negative Relations
+BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del){
+    secTable *neg = (*to_del)->negatives;
+    for(int i=0;i<neg->numOfBuckets;i++)
+    {
+        while (neg->table[i]!=NULL)
+        {
+            //Get the first value of this bucket node
+            void *nvalue;
+            neg->table[i] = getFirstVal(neg->table[i],&nvalue);
+            if(nvalue != NULL){
+                //If it does'nt exist to the new table, insert it
+                if(find_secTable(to_merge->negatives,nvalue)==0)
+                    to_merge->negatives = insert_secTable(to_merge->negatives,nvalue);
+            }
+        }
+    }
+    //Now its time to delete the negative values of the list...
+    //Because i delete it in the first val, it's better to free the negative sectable here...
+    
+    return to_merge;
+}
+
+//Function to find the given BucketList and update it
+BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_replace){
+    //Check if the bucket list that is going to be replaced already exists
+    //If it exists just delete the old, if it doesn't replace it....
+    if((find_secTable(re->negatives,to_replace) == 1)){
+        re->negatives = deletevalue_secTable(re->negatives,to_delete);
+        return re;
+    }
+    else{
+        re->negatives = replace_secTable(re->negatives,to_delete,to_replace);
+        return re;
     }
 }

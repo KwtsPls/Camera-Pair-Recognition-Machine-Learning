@@ -25,7 +25,7 @@ unsigned int HashString(void* Ptr,int buckets)
     unsigned int hash = 0;
     char *str = (char*)Ptr;
     int c;
-    while (c = *str++)
+    while ((c = *str++))
         hash = c + (hash << 6) + (hash << 16) - hash;
 
     return hash%buckets;
@@ -115,6 +115,7 @@ secTable *replace_secTable(secTable *st, void *old_value, void *new_value){
 
 //Function to get the next prime number
 int findNextPrime(int N){
+    int prime = 0;
     for(int i=N;i<MAX_PRIME;i++){
         int flag=0;
         for (int j = 2; j <= i / 2; ++j) {
@@ -124,9 +125,12 @@ int findNextPrime(int N){
                 break;
             }
         }
-        if(flag==0)
-            return i;
+        if(flag==0){
+            prime = i;
+            break;
+        }
     }
+    return prime;
 }
 
 //Function for reshaping the hash table
@@ -249,14 +253,27 @@ secondaryNode *getFirstVal(secondaryNode *node, void **value){
 
 }
 
+
 //Function to delete value
 secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
     node->num_elements--;
     void *tmp_value = node->values[node->num_elements];
     node->values[node->num_elements] = NULL;
+    
+    if(node->num_elements == 0){
+        secondaryNode *tmp = node;
+        node = node->next;
+        tmp->next=NULL;
+        free(tmp->values);
+        free(tmp);
+        tmp = NULL;
+    }
+    
     if(fun(value,tmp_value) == 1){
         return node;
     }
+
+        
 
     secondaryNode *ptr = node;
     while (ptr!=NULL){
@@ -268,6 +285,8 @@ secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
         }
         ptr = ptr->next;
     }
+
+    return node;
     
 }
 
@@ -300,4 +319,12 @@ int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func){
         return 0;
     }
 
+}
+
+
+//Function to delete value
+secTable *deletevalue_secTable(secTable *st, void *value){
+    int h = st->hashFunction(value,st->numOfBuckets);
+    st->table[h] = deletevalue(st->table[h],value,st->cmpFunction);
+    return st;
 }
