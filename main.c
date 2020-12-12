@@ -27,8 +27,12 @@ int main(){
     printf("Loading data...\n\n");
 
     int check = Initialize_dataset_X(X_name,&ht,&vocabulary);
-    if(check == -1)
+    if(check==-1) {
+        printf("Dataset initialization was not successful...");
+        deleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
+        destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
         return 1;
+    }
 
     printf("\nData loading was successful!\n\n");
 
