@@ -37,7 +37,7 @@ DataPreprocess.o : DataPreprocess.c DataPreprocess.h
 	gcc -g3 -c -Wall DataPreprocess.c
 
 BagOfWords.o : BagOfWords.c BagOfWords.h
-	gcc -g3 -c -Wall -BagOfWords.c
+	gcc -g3 -c -Wall BagOfWords.c
 
 clean:
-	rm main test main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o
+	rm main test main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o BagOfWords.o cliques.csv
