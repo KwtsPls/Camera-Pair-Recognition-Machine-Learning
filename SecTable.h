@@ -139,6 +139,12 @@ int find_secTable(secTable *st,void *value);
 //Function to find if an item exists in a block chain
 int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func);
 
+//Function to find if an item exists in the hash table
+void *getIndexedWord_secTable(secTable *st,char *value);
+
+//Function to find if an item exists in a block chain
+void *getIndexedWord_secondaryNode(secondaryNode *node,char *value,Compare compare_func);
+
 //Function to update the current tf value of a word
 secTable *updateTF_secTable(secTable *st,void *value);
 

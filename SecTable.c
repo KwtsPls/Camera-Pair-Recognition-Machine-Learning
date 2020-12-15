@@ -383,6 +383,35 @@ int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func){
 
 }
 
+//Function to find if an item exists in the hash table
+void *getIndexedWord_secTable(secTable *st,char *value){
+    int h = HashString(value,st->numOfBuckets);
+    return getIndexedWord_secondaryNode(st->table[h],value,st->cmpFunction);
+}
+
+//Function to find if an item exists in a block chain
+void *getIndexedWord_secondaryNode(secondaryNode *node,char *value,Compare compare_func){
+    //Bucket list is empty - the item cannot exist in this list
+    if(node==NULL){
+        return NULL;
+    }
+    else{
+        secondaryNode *cur = node;
+
+        //Iterate through the list and check if the value exists in a block
+        while(cur!=NULL){
+            for(int i=0;i<cur->num_elements;i++){
+                if(strcmp(((indexedWord*)cur->values[i])->word,value)==0)
+                    return cur->values[i];
+            }
+
+            cur = cur->next;
+        }
+
+        return NULL;
+    }
+}
+
 //Function to update the current tf value of a word
 secTable *updateTF_secTable(secTable *st,void *value){
 
@@ -494,7 +523,7 @@ secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
 
 
                 //Current word has a good tf-idf mean keep it
-                if(((indexedWord*)node->values[j])->tf_idf_mean > 0.000154) {
+                if(((indexedWord*)node->values[j])->tf_idf_mean > 0.000400) {
                     indexedWord *iw = createIndexedWord(((indexedWord*)node->values[j])->word,valid_counter);
                     iw->tf_idf_mean = ((indexedWord*)node->values[j])->tf_idf_mean;
                     iw->tf = ((indexedWord*)node->values[j])->tf;

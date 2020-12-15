@@ -236,6 +236,23 @@ int findKeyBucketEntry(HashTable *ht,char * spec_id){
     return -1;
 }
 
+//Function to return the dictionary of a spec if it exists in the table
+Dictionary *findSpecHashTable(HashTable *ht,char *spec_id){
+    int index = findKeyBucketEntry(ht,spec_id);
+    int h = hashCode(spec_id,ht->buckets_num);
+
+    Bucket *node = ht->table[h]->array[index]->set->head;
+    while(node!=NULL){
+        for(int i=0;i<node->cnt;i++){
+            if(strcmp(spec_id,node->spec_ids[i]->dict_name)==0)
+                return node->spec_ids[i];
+        }
+        node = node->next;
+    }
+
+    return NULL;
+}
+
 //Function to return the number of entries inside the hashtable
 int sizeHashTable(HashTable *ht){
 
@@ -631,6 +648,7 @@ void testCSVHashTable(char *filename, HashTable *ht){
 
 }
 
+//Function to check if two spec have a positive relation
 int checkPositiveAs(HashTable *ht, char *left, char *right){
     int h = hashCode(left, ht->buckets_num);
     int l_ind = findKeyBucketEntry(ht,left);
@@ -645,9 +663,9 @@ int checkPositiveAs(HashTable *ht, char *left, char *right){
     if(l_s == r_s)
         return 1;
     else return -1;
-}   
+}
 
-
+//Function to check if two specs have a negative relation
 int checkNegativeAs(HashTable *ht, char *left, char *right){
     int h = hashCode(left, ht->buckets_num);
     int l_ind = findKeyBucketEntry(ht,left);

@@ -5,6 +5,7 @@
 #include "ErrorHandler.h"
 #include "HashTable.h"
 #include "CsvReader.h"
+#include "BagOfWords.h"
 
 int errorCode;
 
@@ -42,6 +43,10 @@ int main(){
     vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht));
 
     printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
+
+    printf("\nChecking bow performance...\n\n");
+
+    test_bow_implementation(ht,vocabulary,"sigmod_large_labelled_dataset.csv");
 
     printf("\nCreating cliques...\n\n");
 

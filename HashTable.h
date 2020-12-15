@@ -64,6 +64,9 @@ int sizeHashTable(HashTable *ht);
 //Function to find a key bucket entry with the given spec_id and return its index
 int findKeyBucketEntry(HashTable *ht,char * spec_id);
 
+//Function to return the dictionary of a spec if it exists in the table
+Dictionary *findSpecHashTable(HashTable *ht,char *spec_id);
+
 //Function to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode);
 
@@ -92,9 +95,12 @@ BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTa
 //Function to add a negative relation between two ids
 HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp);
 
-
 void testCSVHashTable(char *filename, HashTable *ht);
+
+//Function to check if two spec have a positive relation
 int checkPositiveAs(HashTable *ht, char *left, char *right);
+
+//Function to check if two specs have a negative relation
 int checkNegativeAs(HashTable *ht, char *left, char *right);
 
 
