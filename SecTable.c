@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "SecTable.h"
+#include "BagOfWords.h"
 
+
+/*######################### Hash Functions ###############*/
 
 // Used Thomas Wang's function for hashing pointers
-unsigned int HashPointer(void* Ptr,int buckets)
-{
+unsigned int HashPointer(void* Ptr,int buckets){
     long Value = (long)Ptr;
     Value = ~Value + (Value << 15);
     Value = Value ^ (Value >> 12);
@@ -18,10 +21,8 @@ unsigned int HashPointer(void* Ptr,int buckets)
 
 }
 
-
 // Used sdbm hash function to hash strings
-unsigned int HashString(void* Ptr,int buckets)
-{
+unsigned int HashString(void* Ptr,int buckets){
     unsigned int hash = 0;
     char *str = (char*)Ptr;
     int c;
@@ -30,6 +31,22 @@ unsigned int HashString(void* Ptr,int buckets)
 
     return hash%buckets;
 }
+
+//Used sdbm hash function to hash strings
+unsigned int HashIndexedWord(void* Ptr,int buckets){
+    unsigned int hash = 0;
+    indexedWord *word = (indexedWord*)Ptr;
+    char *str = word->word;
+    int c;
+    while ((c = *str++))
+        hash = c + (hash << 6) + (hash << 16) - hash;
+
+    return hash%buckets;
+}
+
+/*############################################################*/
+
+/*################ Compare Functions #########################*/
 
 //Returns 1 if pointers are the same
 int ComparePointer(void *a, void *b)
@@ -43,8 +60,33 @@ int CompareString(void * a, void *b)
     return (strcmp((char *)a, (char *)b) == 0);
 }
 
+//Returns 1 if strings if two indexed words are the same
+int CompareIndexedWord(void * a, void *b)
+{
+    indexedWord *a_w = (indexedWord*)a;
+    indexedWord *b_w = (indexedWord*)b;
+    return (strcmp(a_w->word,b_w->word) == 0);
+}
+
+/*############################################################*/
+
+/*############# Delete Functions #############################*/
+
+//Function to delete strings
+void DeleteString(void *Ptr){
+    free(Ptr);
+}
+
+//Function to delete indexed words;
+void DeleteIndexedWord(void *Ptr){
+    deleteIndexedWord((indexedWord*)Ptr);
+}
+
+/*#############################################################*/
+
+
 //Function to create a new secondary hash table
-secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cmpFuncion,Data type){
+secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cmpFunction,Delete deleteFunction,Data type){
 
     secTable *st = malloc(sizeof(secTable));
     st->loadFactor = 0;
@@ -52,7 +94,8 @@ secTable *create_secTable(int size, int bucketSize,Hash hashFunction, Compare cm
     st->bucketSize=bucketSize;
     st->numOfBuckets = size;
     st->hashFunction = hashFunction;
-    st->cmpFunction = cmpFuncion;
+    st->cmpFunction = cmpFunction;
+    st->deleteFunction = deleteFunction;
     st->type = type;
     st->table = malloc(sizeof(secondaryNode*) * st->numOfBuckets);
 
@@ -109,7 +152,7 @@ secTable *insert_secTable(secTable *st, void *value){
 //Function to replace a value from the hash table with a given new one
 secTable *replace_secTable(secTable *st, void *old_value, void *new_value){
     int h = st->hashFunction(old_value, st->numOfBuckets);
-    st->table[h] = deletevalue(st->table[h],old_value,st->cmpFunction);
+    st->table[h] = deletevalue(st->table[h],old_value,st->cmpFunction,st->deleteFunction,ST_SOFT_DELETE_MODE);
     return insert_secTable(st, new_value);
 }
 
@@ -138,7 +181,7 @@ secTable *reshape_secTable(secTable **st){
     //Find the closest prime number of the current table size*2
     int new_size = findNextPrime((*st)->numOfBuckets*2);
     //Create a new hash table with doubled the size of the previous one
-    secTable *new_st = create_secTable(new_size,(*st)->bucketSize,(*st)->hashFunction,(*st)->cmpFunction,(*st)->type);
+    secTable *new_st = create_secTable(new_size,(*st)->bucketSize,(*st)->hashFunction,(*st)->cmpFunction,(*st)->deleteFunction,(*st)->type);
     //Iterate through the old hashtable and get every value
     //and insert it into the new hashtable
     for(int i=0;i<(*st)->numOfBuckets;i++){
@@ -170,12 +213,18 @@ void print_secondaryNode(secondaryNode *node,Data type){
     while(cur!=NULL){
         for(int i=0;i<cur->num_elements;i++){
             if(type==String) {
-                if(node->values[i]!=NULL)
-                    printf("%s\n", (char *) node->values[i]);
+                if(cur->values[i]!=NULL)
+                    printf("%s\n", (char *) cur->values[i]);
             }
             else if (type==Pointer) {
-                if(node->values[i]!=NULL)
-                    printf("%p\n", node->values[i]);
+                if(cur->values[i]!=NULL)
+                    printf("%p\n", cur->values[i]);
+            }
+            else if (type==indxWrd){
+                if(cur->values[i]!=NULL) {
+                    indexedWord *temp = (indexedWord*)cur->values[i];
+                    printf("%s : %d %lf %lf\n", temp->word,temp->index,temp->idf,temp->tf_idf_mean);
+                }
             }
         }
         cur = cur->next;
@@ -203,7 +252,7 @@ secondaryNode *create_secondaryNode(void *value,int size){
 //Function to delete a hash table
 void destroy_secTable(secTable **st,int mode){
     for(int i=0;i<(*st)->numOfBuckets;i++){
-        destroy_secondaryNode(&((*st)->table[i]),mode);
+        destroy_secondaryNode(&((*st)->table[i]),(*st)->deleteFunction,mode);
     }
     free((*st)->table);
     free(*st);
@@ -211,15 +260,15 @@ void destroy_secTable(secTable **st,int mode){
 }
 
 //Function to destroy a secondary node
-void destroy_secondaryNode(secondaryNode **node,int mode){
+void destroy_secondaryNode(secondaryNode **node,Delete deleteFunction,int mode){
 
     secondaryNode *cur = *node;
     while(cur!=NULL){
         for(int i=0;i<cur->num_elements;i++){
-            if(mode==ST_SOFT_DELETE_MODE)
+            if(mode==ST_SOFT_DELETE_MODE || deleteFunction==NULL)
                 cur->values[i]=NULL;
             else
-                free(cur->values[i]);
+                deleteFunction(cur->values[i]);
         }
         free(cur->values);
         secondaryNode *temp = cur;
@@ -255,7 +304,15 @@ secondaryNode *getFirstVal(secondaryNode *node, void **value){
 
 
 //Function to delete value
-secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
+secTable *deletevalue_secTable(secTable *st, void *value,int mode){
+    int h = st->hashFunction(value,st->numOfBuckets);
+    st->table[h] = deletevalue(st->table[h],value,st->cmpFunction,st->deleteFunction,mode);
+    st->num_elements--;
+    return st;
+}
+
+//Function to delete value
+secondaryNode *deletevalue(secondaryNode *node, void *value, Compare compareFunction,Delete deleteFunction,int mode){
     node->num_elements--;
     void *tmp_value = node->values[node->num_elements];
     node->values[node->num_elements] = NULL;
@@ -269,16 +326,21 @@ secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun){
         tmp = NULL;
     }
     
-    if(fun(value,tmp_value) == 1){
-        return node;
+    if(compareFunction(value,tmp_value) == 1) {
+        if(mode==ST_SOFT_DELETE_MODE)
+            return node;
+        else{
+            deleteFunction(tmp_value);
+            return node;
+        }
     }
-
-        
 
     secondaryNode *ptr = node;
     while (ptr!=NULL){
         for(int i=0;i<ptr->num_elements;i++){
-            if(fun(value,ptr->values[i]) == 1){
+            if(compareFunction(value,ptr->values[i]) == 1){
+                if(mode==ST_HARD_DELETE_MODE)
+                    deleteFunction(ptr->values[i]);
                 ptr->values[i] = tmp_value;
                 return node;
             }
@@ -321,10 +383,134 @@ int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func){
 
 }
 
+//Function to update the current tf value of a word
+secTable *updateTF_secTable(secTable *st,void *value){
 
-//Function to delete value
-secTable *deletevalue_secTable(secTable *st, void *value){
+    //Function was called by hashtable that does not contain indexed words
+    if(st->type!=indxWrd)
+        return st;
+
     int h = st->hashFunction(value,st->numOfBuckets);
-    st->table[h] = deletevalue(st->table[h],value,st->cmpFunction);
+    secondaryNode *node = st->table[h];
+    //Bucket list is empty - the item cannot exist in this list
+    if(node==NULL){
+        return st;
+    }
+    else{
+        secondaryNode *cur = node;
+
+        //Iterate through the list and check if the value exists in a block
+        while(cur!=NULL){
+            for(int i=0;i<cur->num_elements;i++){
+                if(st->cmpFunction(value,cur->values[i])==1) {
+                    ((indexedWord *) cur->values[i])->tf += 1.0;
+                    return st;
+                }
+            }
+
+            cur = cur->next;
+        }
+
+        return st;
+    }
+}
+
+//Function to update the mean of tf and the idf value
+secTable *update_tf_idf_values(secTable *st,secTable *unique_words,int text_len){
+
+    for(int i=0;i<unique_words->numOfBuckets;i++){
+        secondaryNode *node = unique_words->table[i];
+        while(node!=NULL){
+            for(int j=0;j<node->num_elements;j++)
+                st = update_tf_idf_word(st,(char *)node->values[j],text_len);
+
+            node = node->next;
+        }
+    }
+
     return st;
+}
+
+
+//Function to update the mean of tf and idf value of a given word
+secTable *update_tf_idf_word(secTable *st,char *value,int text_len){
+    indexedWord *iw = createIndexedWord(value,-1);
+    int h = st->hashFunction(iw,st->numOfBuckets);
+    secondaryNode *node = st->table[h];
+    //Bucket list is empty - the item cannot exist in this list
+    if(node==NULL){
+        deleteIndexedWord(iw);
+        return st;
+    }
+    else{
+        secondaryNode *cur = node;
+
+        //Iterate through the list and check if the value exists in a block
+        while(cur!=NULL){
+            for(int i=0;i<cur->num_elements;i++){
+                if(st->cmpFunction(iw,cur->values[i])==1) {
+                    ((indexedWord *) cur->values[i])->idf+=1.0;
+                    ((indexedWord *) cur->values[i])->tf_idf_mean += ((indexedWord *) cur->values[i])->tf/(double)text_len;
+                    ((indexedWord *) cur->values[i])->tf=0.0;
+                    deleteIndexedWord(iw);
+                    return st;
+                }
+            }
+
+            cur = cur->next;
+        }
+        deleteIndexedWord(iw);
+        return st;
+    }
+}
+
+
+//Function to evaluate the tf-idf mean of every word in the vocabulary
+secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
+
+    //Helping variable probably will be removed
+    int valid_counter=0;
+
+    //Create the new vocabulary
+    secTable *new_vocab = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
+
+    //Function was called by a table that does not store indexed words
+    if(vocabulary->type!=indxWrd)
+        return vocabulary;
+
+    //Iterate through every bucket and update the tfidf mean value for every word
+    for(int i=0;i<vocabulary->numOfBuckets;i++){
+        secondaryNode *node = vocabulary->table[i];
+        while(node!=NULL){
+            for(int j=0;j<node->num_elements;j++){
+                // n = num_texts : the total number of texts
+                // nt = ((indexedWord*)node->values[j])->idf : number of texts containing the current word
+                // idf = log(n/nt);
+                ((indexedWord*)node->values[j])->idf = log((double)num_texts/((indexedWord*)node->values[j])->idf);
+                // tfidf = tf*idf
+                // We calculate the mean by dividing with the total number of texts
+                // tfidf_mean = (tf*idf)/num_texts
+                ((indexedWord*)node->values[j])->tf_idf_mean = (((indexedWord*)node->values[j])->idf*((indexedWord*)node->values[j])->tf_idf_mean)/(double)num_texts;
+
+
+                //Current word has a good tf-idf mean keep it
+                if(((indexedWord*)node->values[j])->tf_idf_mean > 0.000154) {
+                    indexedWord *iw = createIndexedWord(((indexedWord*)node->values[j])->word,valid_counter);
+                    iw->tf_idf_mean = ((indexedWord*)node->values[j])->tf_idf_mean;
+                    iw->tf = ((indexedWord*)node->values[j])->tf;
+                    iw->idf = ((indexedWord*)node->values[j])->idf;
+                    new_vocab = insert_secTable(new_vocab,iw);
+                    valid_counter++;
+                }
+            }
+
+
+            node = node->next;
+        }
+    }
+
+    //Destroy previous vocabulary
+    destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
+
+    return new_vocab;
 }

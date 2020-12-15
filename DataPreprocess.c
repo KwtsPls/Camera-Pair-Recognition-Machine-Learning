@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "SecTable.h"
 #include "DataPreprocess.h"
+#include "BagOfWords.h"
 
 //Array with stopwords - temporary
 char *stopwords_array[]={"www","http","com","a","able","about","across","after","all","almost","also","am","among","an","and","any","are","as","at","be","because","been","but","by","can","cannot","could","dear","did","do","does","either","else","ever","every","for","from","get","got","had","has","have","he","her","hers","him","his","how","however","i","if","in","into","is","it","its","just","least","let","like","likely","may","me","might","most","must","my","neither","no","nor","not","of","off","often","on","only","or","other","our","own","rather","said","say","says","she","should","since","so","some","than","that","the","their","them","then","there","these","they","this","tis","to","too","twas","us","wants","was","we","were","what","when","where","which","while","who","whom","why","will","with","would","yet","you","your"};
@@ -11,7 +12,7 @@ char *stopwords_array[]={"www","http","com","a","able","about","across","after",
 
 //Function to create a hash table containing stopwords
 secTable *init_stopwords(){
-    secTable *st = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,String);
+    secTable *st = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
     int size = sizeof(stopwords_array)/ sizeof(stopwords_array[0]);
     //Insert every stopword from the array into the table
     for(int i=0;i<size;i++)
@@ -68,34 +69,62 @@ int check_utf16(char *word){
         return 0;
 }
 
+//Function to check if a word is a single non numeric character
+int single_character(char *word) {
+    if (strlen(word) > 1)
+        return 0;
+    else{
+        if(isdigit(word[0]))
+            return 0;
+        else
+            return 1;
+    }
+}
+
 //Function to remove stopwords from a given string
-char *remove_stopwords(char *text,secTable *stopwords,secTable **vocabulary){
+char *remove_stopwords(char *text,secTable *stopwords,secTable **vocabulary,secTable **unique_words,int *len){
 
     //Allocate space for the new text
     char *new_text = malloc(strlen(text)+1);
     memset(new_text,0,strlen(text)+1);
 
     char *cur;
+    char empty[1];
+    empty[0]=0;
 
     //For every word in the text check if it is a stopword and if it is ignore it
     while((cur = strsep(&text, " "))!= NULL){
 
         //If current word does is not a stopword store it
-        if(find_secTable(stopwords,cur)==0 && check_utf16(cur)==0 && strlen(cur)<15){
-            if(strlen(new_text)==0)
-                strcpy(new_text,cur);
-            else{
+        if(find_secTable(stopwords,cur)==0 && check_utf16(cur)==0 && strlen(cur)<15 && strcmp(cur,empty)!=0){
+
+            if (strlen(new_text) == 0)
+                strcpy(new_text, cur);
+            else {
                 strcat(new_text, " ");
                 strcat(new_text, cur);
             }
 
             //If the current word does not exist in the vocabulary add it
-            if(find_secTable(*vocabulary,cur)==0) {
-                char *indexed_word = malloc(strlen(cur) + 1);
-                strcpy(indexed_word, cur);
-                *vocabulary = insert_secTable(*vocabulary, indexed_word);
+            indexedWord *iw = createIndexedWord(cur,(*vocabulary)->num_elements);
+            if (find_secTable(*vocabulary, iw) == 0) {
+                *vocabulary = insert_secTable(*vocabulary, iw);
+                char *new_word = malloc(strlen(cur)+1);
+                strcpy(new_word,cur);
+                *unique_words = insert_secTable(*unique_words, new_word);
+            }
+            else{
+                if(find_secTable(*unique_words,cur)==0) {
+                    char *new_word = malloc(strlen(cur)+1);
+                    strcpy(new_word,cur);
+                    *unique_words = insert_secTable(*unique_words, new_word);
+                }
+                *vocabulary = updateTF_secTable(*vocabulary,iw);
+                deleteIndexedWord(iw);
             }
 
+
+            (*len)++;
         }
     }
 
@@ -107,15 +136,15 @@ char *remove_stopwords(char *text,secTable *stopwords,secTable **vocabulary){
 }
 
 //Function to preprocess a given string
-char *preprocess(char *text,secTable *stopwords,secTable **vocabulary){
+char *preprocess(char *text,secTable *stopwords,secTable **vocabulary,secTable **unique_words,int *len){
 
-    //printf("Before : %s\n",text);
+   //printf("Before : %s\n",text);
 
     //Text cleaning for the given string
     text = text_cleaning(text);
 
     //Remove stopwords from given text
-    text = remove_stopwords(text,stopwords,vocabulary);
+    text = remove_stopwords(text,stopwords,vocabulary,unique_words,len);
 
     //printf("AFTER : %s\n",text);
 

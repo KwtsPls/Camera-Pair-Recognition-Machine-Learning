@@ -39,4 +39,7 @@ void deleteDictionary(Dictionary **dic);
 //Function to return the number of key/value pairs in a dictionary
 int sizeDictionary(Dictionary *dict);
 
+//Function to concatenate all strings into a single node in the dictionary
+Dictionary *concatenateAllDictionary(Dictionary *dict);
+
 #endif //PROJECT_DICTIONARY_H

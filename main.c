@@ -22,7 +22,7 @@ int main(){
     HashTable *ht = initHashTable(TABLE_INIT_SIZE);
 
     //Hashtable for the vocabulary
-    secTable *vocabulary = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,String);
+    secTable *vocabulary = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
 
     printf("Loading data...\n\n");
 
@@ -38,6 +38,11 @@ int main(){
 
     printf("\nFound %d unique words...\n\n",vocabulary->num_elements);
 
+    //Get the updated vocabulary
+    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht));
+
+    printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
+
     printf("\nCreating cliques...\n\n");
 
     ht = csvParser("sigmod_large_labelled_dataset.csv",&ht);
@@ -46,22 +51,10 @@ int main(){
 
     printf("\nCreating file cliques.csv...\n");
 
-    // printHashTable(ht);
     //Creating File to write to
     csvWriteCliques(&ht);
 
     printf("\nFile created successfully!\n\n");
-
-    testCSVHashTable("sigmod_large_labelled_dataset.csv", ht);
-
-    int d = checkPositiveAs(ht, "www.pricedekho.com//1096","www.gosale.com//1428");
-    printf("%d\n",d);
-    d = checkNegativeAs(ht, "www.pricedekho.com//1096","www.gosale.com//1428");
-    printf("%d\n",d);
-
-
-
-
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);

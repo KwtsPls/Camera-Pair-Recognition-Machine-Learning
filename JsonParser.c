@@ -256,6 +256,11 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
 
     //Create a new dictionary for the current file
     Dictionary *dict = initDictionary(spec_id);
+    //Create a hashtable to save all unique words
+    //of the current file to help in the calculation of tf-idf
+    secTable *unique_words = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
+    //Length of the current json file
+    int text_len=0;
 
     fp = fopen(name, "r");
 
@@ -305,7 +310,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                     fclose(fp);
                     return;
                 }
-                value = preprocess(value,stopwords,vocabulary);
+                value = preprocess(value,stopwords,vocabulary,&unique_words,&text_len);
                 array_value[0] = malloc(strlen(value) + 1);
                 if(array_value[0] == NULL){
                     //MALLOC FAILED
@@ -374,7 +379,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                         }
                     }
                     //Store the new string in the array
-                    value = preprocess(value,stopwords,vocabulary);
+                    value = preprocess(value,stopwords,vocabulary,&unique_words,&text_len);
                     array_value[values_num] = malloc(strlen(value) + 1);
                     if(array_value[values_num] == NULL){
                         //MALLOC FAILURE
@@ -403,10 +408,15 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
         }
     }
 
-    *ht = insertHashTable(ht,dict);  
+
+    dict = concatenateAllDictionary(dict);
+    *ht = insertHashTable(ht,dict);
+    *vocabulary = update_tf_idf_values(*vocabulary,unique_words,text_len);
 
     fclose(fp);
     if (line)
         free(line);
+    destroy_secTable(&unique_words,ST_HARD_DELETE_MODE);
+
     return;
 }

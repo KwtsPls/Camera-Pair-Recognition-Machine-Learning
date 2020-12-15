@@ -75,7 +75,7 @@ BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize)
     lista->dirty_bit = 0;
 
     //Initialize the table with the negative relations
-    lista->negatives = create_secTable(ST_INIT_SIZE,SB_SIZE,HashPointer,ComparePointer,Pointer);
+    lista->negatives = create_secTable(ST_INIT_SIZE,SB_SIZE,HashPointer,ComparePointer,NULL,Pointer);
 
     //Return the new BucketList
     return lista;
@@ -391,7 +391,7 @@ BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_repl
     //Check if the bucket list that is going to be replaced already exists
     //If it exists just delete the old, if it doesn't replace it....
     if((find_secTable(re->negatives,to_replace) == 1)){
-        re->negatives = deletevalue_secTable(re->negatives,to_delete);
+        re->negatives = deletevalue_secTable(re->negatives,to_delete,ST_SOFT_DELETE_MODE);
         return re;
     }
     else{

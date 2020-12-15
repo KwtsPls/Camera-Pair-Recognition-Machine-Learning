@@ -12,8 +12,10 @@
 typedef unsigned int (*Hash)(void *, int size);
 // Compare functions for the different data types in the hash table
 typedef int (*Compare)(void *, void *);
+//Functions to destroy values in secondary nodes
+typedef void (*Delete)(void *);
 // Data types for the hash table
-typedef enum data_types {Pointer,String} Data;
+typedef enum data_types {Pointer,String,indxWrd} Data;
 
 typedef struct secondaryNode{
 
@@ -43,10 +45,14 @@ typedef struct SecTable{
     Hash hashFunction;
     //Pointer to compare function type
     Compare cmpFunction;
+    //Pointer to delete function type
+    Delete  deleteFunction;
     //The main table
     secondaryNode **table;
 
 }secTable;
+
+/*######## Hash Functions ############################*/
 
 // Used Thomas Wang's function for hashing pointers
 unsigned int HashPointer(void* Ptr,int buckets);
@@ -54,8 +60,36 @@ unsigned int HashPointer(void* Ptr,int buckets);
 //Used sdbm hash function to hash strings
 unsigned int HashString(void* Ptr,int buckets);
 
+//Used sdbm hash function to hash strings
+unsigned int HashIndexedWord(void* Ptr,int buckets);
+
+/*#####################################################*/
+
+/*######## Compare Functions ############################*/
+
+//Returns 1 if pointers are the same
+int ComparePointer(void *a, void *b);
+
+//Returns 1 if strings are the same
+int CompareString(void * a, void *b);
+
+//Returns 1 if strings if two indexed words are the same
+int CompareIndexedWord(void * a, void *b);
+
+/*#####################################################*/
+
+/*######## Delete Functions ############################*/
+
+//Function to delete strings
+void DeleteString(void *Ptr);
+
+//Function to delete indexed words;
+void DeleteIndexedWord(void *Ptr);
+
+/*######################################################*/
+
 //Function to create a new secondary hash table
-secTable *create_secTable(int size, int bucketSize, Hash hashFunction, Compare cmpFunction,Data type);
+secTable *create_secTable(int size, int bucketSize, Hash hashFunction, Compare cmpFunction,Delete deleteFunction,Data type);
 
 //Function to insert a new entry into the 
 secTable *insert_secTable(secTable *st, void *value);
@@ -65,9 +99,6 @@ secTable *replace_secTable(secTable *st, void *old_value, void *new_value);
 
 //Function for reshaping the hash table
 secTable *reshape_secTable(secTable **st);
-
-//Function to delete value
-secTable *deletevalue_secTable(secTable *st, void *value);
 
 //Function to get the next prime number
 int findNextPrime(int N);
@@ -82,24 +113,19 @@ secondaryNode *create_secondaryNode(void *value,int size);
 secondaryNode *getFirstVal(secondaryNode *node, void **value);
 
 //Function to destroy a secondary node
-void destroy_secondaryNode(secondaryNode **node,int mode);
+void destroy_secondaryNode(secondaryNode **node,Delete deleteFunction,int mode);
 
 //Function to delete value
-secondaryNode *deletevalue(secondaryNode *node, void *value, Compare fun);
+secTable *deletevalue_secTable(secTable *st, void *value,int mode);
 
-
+//Function to delete value
+secondaryNode *deletevalue(secondaryNode *node, void *value, Compare compareFunction,Delete deleteFunction,int mode);
 
 //Hash Function
 unsigned int HashPointer(void* Ptr,int buckets);
 
 //Function to delete a hash table
 void destroy_secTable(secTable **st,int mode);
-
-//Returns 1 if pointers are the same
-int ComparePointer(void *a, void *b);
-
-//Returns 1 if strings are the same
-int CompareString(void * a, void *b);
 
 //Function to print a hash table
 void print_secTable(secTable *st);
@@ -113,7 +139,16 @@ int find_secTable(secTable *st,void *value);
 //Function to find if an item exists in a block chain
 int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func);
 
+//Function to update the current tf value of a word
+secTable *updateTF_secTable(secTable *st,void *value);
 
+//Function to update the mean of tf and the idf value of all words in table unique_words
+secTable *update_tf_idf_values(secTable *st,secTable *unique_words,int text_len);
 
+//Function to update the mean of tf and idf value of a given word
+secTable *update_tf_idf_word(secTable *st,char *value,int text_len);
+
+//Function to evaluate the tf-idf mean of every word in the vocabulary
+secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts);
 
 #endif //SECTABLE_H 

@@ -193,3 +193,44 @@ int sizeDictionary(Dictionary *dict){
         //List doesn't exist....
         return 0;
 }
+
+//Function to concatenate all strings into a single node in the dictionary
+Dictionary *concatenateAllDictionary(Dictionary *dict){
+
+    char *final_value=NULL;
+
+    //Iterate through every key value pair and concatenate them into a single string
+    Dictionary_node *cur = dict->list;
+    while(cur!=NULL){
+
+        //Copy every value of the current key into final_value
+        for(int i=0;i<cur->values_num;i++){
+            if(final_value==NULL){
+                final_value = malloc(strlen(cur->value[i])+1);
+                strcpy(final_value,cur->value[i]);
+            }
+            else{
+                final_value = realloc(final_value,strlen(final_value)+1+strlen(cur->value[i])+1);
+                strcat(final_value," ");
+                strcat(final_value,cur->value[i]);
+            }
+        }
+
+        Dictionary_node *temp = cur;
+        cur = cur->next;
+
+        for(int i=0;i<temp->values_num;i++)
+            free(temp->value[i]);
+        free(temp->value);
+        free(temp->key);
+        free(temp);
+        temp=NULL;
+    }
+    dict->list=NULL;
+
+    char **new_array = malloc(sizeof(char*));
+    new_array[0] = final_value;
+    dict = insertDictionary(dict,"BOW",new_array,1);
+
+    return dict;
+}
