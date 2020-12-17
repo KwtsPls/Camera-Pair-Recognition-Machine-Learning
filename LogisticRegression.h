@@ -15,13 +15,16 @@ typedef struct logisticreg{
 logisticreg *create_logisticReg(int numofN);
 
 //Function to calculate logistic regressions
-logisticreg *fit_logisticRegression(logisticreg *tmp, double **X_train,int *y_train,int size);
+logisticreg *fit_pair_logisticRegression(logisticreg *model,double *xi,int yi);
 
 //Function to calculate euclidean distance
 double *euclidean_distance(double *x, double *y, int numofN);
 
 //Function to check if our model is trained
-double *inference_logisticRegression(logisticreg *model,double **X_test,int *y_test,int size);
+double predict_pair_logisticRegression(logisticreg *model,double *xi);
+
+//Function to calculate loss
+double loss_LogisticRegression(logisticreg *model, double **X_train,int *y_train,int size);
 
 //Function σ(t) = 1/1 + e^(-t)
 double sigmoid(double t);

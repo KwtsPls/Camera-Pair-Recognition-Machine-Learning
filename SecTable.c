@@ -523,7 +523,7 @@ secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
 
 
                 //Current word has a good tf-idf mean keep it
-                if(((indexedWord*)node->values[j])->tf_idf_mean > 0.003000) {
+                if(((indexedWord*)node->values[j])->tf_idf_mean > MIN_TF_IDF) {
                     indexedWord *iw = createIndexedWord(((indexedWord*)node->values[j])->word,valid_counter);
                     iw->tf_idf_mean = ((indexedWord*)node->values[j])->tf_idf_mean;
                     iw->tf = ((indexedWord*)node->values[j])->tf;

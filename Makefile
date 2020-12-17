@@ -22,13 +22,13 @@ ErrorHandler.o: ErrorHandler.c ErrorHandler.h
 	gcc -g3 -c -Wall ErrorHandler.c
 
 Dictionary.o: Dictionary.c Dictionary.h
-	gcc -g3 -c -Wall Dictionary.c
+	gcc -g3 -c -Wall  Dictionary.c
 
 Bucket.o : Bucket.c Bucket.h Dictionary.h
 	gcc -g3 -c -Wall Bucket.c
 
 CsvReader.o : CsvReader.c CsvReader.h
-	gcc -g3 -c -Wall CsvReader.c
+	gcc -g3 -c -Wall  CsvReader.c
 
 HashTable.o : HashTable.c HashTable.h SecTable.h
 	gcc -g3 -c -Wall HashTable.c

@@ -7,12 +7,12 @@
 logisticreg *create_logisticReg(int numofN){
     //Allocating size 
     logisticreg *lr = malloc(sizeof(logisticreg));
-
-    lr->error = 0.00420;   
+    printf("3 midenika\n");
+    lr->error = 0.000420;   
     lr->numofN = numofN;
     lr->vector_weights = malloc(numofN * sizeof(double));
     for(int i=0; i<lr->numofN; i++)
-        lr->vector_weights[i] = 1.0; 
+        lr->vector_weights[i] = 0.0; 
     return lr;
 }
 
@@ -21,78 +21,86 @@ logisticreg *create_logisticReg(int numofN){
 double *euclidean_distance(double *x, double *y, int numofN){
     double *z;
     z = malloc(sizeof(double) * numofN);
-    //Euclidean distance d(x,y) = √|(x_(i))^2 - (y_(i))^2|
-    for(int i=0; i<numofN;i++){
+    //Calculate the absolute distance between every value in the pair (x,y)
+    // zi = | xi - yi |
+    for(int i=1; i<numofN;i++){
         z[i] = fabs(x[i]-y[i]);
     }
+    z[0]=1.0;
     return z;
 }
 
 //Function to calculate logistic regressions
-logisticreg *fit_logisticRegression(logisticreg *model, double **X_train,int *y_train,int size){
+logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi){
 
     // η - learning rate
     double learning_rate = 0.001;
 
     //Initialize previous weights
-    double *prev_weight = malloc(sizeof(double)*model->numofN);
+    double *new_weight = malloc(sizeof(double)*model->numofN);
     int cnt = 0;
     //Changing weights 1 to 1, until the error is reached...
     while(1){  
         cnt++;
         for(int j=0;j<model->numofN;j++){
             double gradient=0.0;
-            for(int i=0;i<size;i++){
-                double *xi = X_train[i];
-                double xij = xi[j];
-
-                //Calculate w_T * x
-                double wtx=0.0;
-                for(int z=0;z<model->numofN;z++)
-                    wtx += model->vector_weights[z]*xi[z];
-                wtx = sigmoid(wtx);
-                //(σ(wT*xi) - yi)
-                wtx = (wtx - (double) y_train[i])*xij;
-                gradient += wtx;
-            }
-            prev_weight[j] = model->vector_weights[j];
-            model->vector_weights[j] = model->vector_weights[j] - learning_rate*gradient;
+            double xij = xi[j];
+            //Calculate w_T * x
+            for(int z=0;z<model->numofN;z++)
+                gradient += model->vector_weights[z]*xi[z];
+            gradient = sigmoid(gradient);
+            //(σ(w_T*xi) - yi)
+            gradient = (gradient - ((double) yi))*xij;
+            new_weight[j] = model->vector_weights[j] - learning_rate*gradient;
         }
 
-        /*int train_flag=0;
+        int train_flag=0;
         for(int j=0;j<model->numofN;j++){
-            if(fabs(model->vector_weights[j] - prev_weight[j])<model->error){
+            if(fabs(model->vector_weights[j] - new_weight[j])>=model->error){
                 train_flag = 1;
                 break;
             }
         }
-        printf("%d\n",cnt);
 
-        if(train_flag==1)
-            break;*/
-
-        printf("%d\n",cnt);
-        if(cnt==2)
+        for(int j=0;j<model->numofN; j++)
+            model->vector_weights[j] = new_weight[j];
+        
+        if(train_flag==0)
             break;
 
     }
        
 
-    free(prev_weight);
+    free(new_weight);
     return model;
 }
 
-double *inference_logisticRegression(logisticreg *model,double **X_test,int *y_test,int size){
-    double *y_pred = malloc(sizeof(double)*size);
-    for(int j=0;j<size;j++){
-        y_pred[j]=0.0;
-        for(int i=0; i<model->numofN; i++){
-            y_pred[j] += model->vector_weights[i] * X_test[j][i]; 
-        }
-        y_pred[j] = sigmoid(y_pred[j]);
+double predict_pair_logisticRegression(logisticreg *model,double *xi){
+    double y_pred=0.0;
+    for(int j=0; j<model->numofN; j++){
+        y_pred += model->vector_weights[j] * xi[j]; 
     }
+    y_pred = sigmoid(y_pred);
     
     return y_pred;
+}
+
+//Function to calculate loss
+double loss_LogisticRegression(logisticreg *model, double **X_train,int *y_train,int size){
+    double error=0.0; 
+    for(int i=0;i<size;i++){
+        double *xi = X_train[i];
+        double wtx=0.0;
+        for(int z=0;z<model->numofN;z++)
+            wtx += model->vector_weights[z]*xi[z];
+        wtx = sigmoid(wtx);
+        if(y_train[i]==1)
+            error += -(((double)y_train[i])*log(wtx));
+        else
+            error += -(((double)(1-y_train[i]))*log(1-wtx));
+    }
+    error = error/(double)size;
+    return error;
 }
 
 //Function σ(t) = 1/1 + e^(-t)

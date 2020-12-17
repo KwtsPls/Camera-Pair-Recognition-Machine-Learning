@@ -138,24 +138,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     // int olakala = 0;
     int lines = 0;
     int i=0;    //Number Of Lines Counter
-
     int train_size = linesRead-linesRead*0.1;
-    int test_size = linesRead-linesRead*0.9;
-    printf("%d %d %d %d\n",train_size,test_size,train_size+test_size,linesRead);
-
-    //double **X_train = malloc(sizeof(double *)*train_size);
-    //int *y_train = malloc(sizeof(int) *train_size);
-
-    double **X_train;
-    int *y_train;
-    double **X_test;
-    int *y_test;
-
-    //double **X_test = malloc(sizeof(double*)*(test_size+1));
-    //int *y_test = malloc(sizeof(int)*(test_size+1)); 
-
-    double **X = malloc(sizeof(double*)*linesRead);
-    int *y = malloc(sizeof(int)*linesRead);    
+    int epoch = 1000;
 
     //Read each line
     while((read = getline(&line, &len,fp))!=-1)
@@ -181,37 +165,28 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,"tf-idf");
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
   
-        //Load data 
-        /*if(lines<train_size){
-            X_train[lines - 1] = euclidean_distance(l_x,r_x,vocabulary->num_elements);
-            y_train[lines - 1] = label; 
+        if(lines<train_size){
+            double *xi = euclidean_distance(l_x,r_x,vocabulary->num_elements + 1);
+            regressor = fit_pair_logisticRegression(regressor,xi,label);
+            free(xi);
+            free(l_x);
+            free(r_x);
         }
         else{
-            X_test[lines - train_size] = euclidean_distance(l_x,r_x,vocabulary->num_elements);
-            y_test[lines - train_size] = label; 
-        }*/
+            double *xi = euclidean_distance(l_x,r_x,vocabulary->num_elements + 1);
+            double yi_pred = predict_pair_logisticRegression(regressor,xi);
+            printf("Target %d Prediction %f\n",label,yi_pred);
+            free(xi);
+            free(l_x);
+            free(r_x);
+        }
 
-        X[lines - 1] = euclidean_distance(l_x,r_x,vocabulary->num_elements);
-        y[lines - 1] = label; 
+        if(lines%epoch==0)
+            printf("%d\n",lines);
             
     }
 
-    X_train = X;
-    X_test = X + train_size;
-    y_train = y;
-    y_test = y + train_size;
 
-    regressor= fit_logisticRegression(regressor,X_train,y_train,train_size-1);
-    double *y_pred = inference_logisticRegression(regressor,X_test,y_test,test_size-1);
-
-
-    for(int i=0;i<test_size;i++){
-        printf("\nTarget: %d Prediction %f\n",y_test[i],y_pred[i]);
-    }
-
-
-    free(X_train);
-    free(X_test);
     free(line);
     fclose(fp);
     delete_logisticReg(&regressor);
