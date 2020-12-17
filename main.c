@@ -44,21 +44,17 @@ int main(){
 
     printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
 
-    printf("\nChecking bow performance...\n\n");
-
-    // test_bow_implementation(ht,vocabulary,"sigmod_large_labelled_dataset.csv");
-
     printf("\nCreating cliques...\n\n");
 
     int linesRead = 0;
     ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht, &linesRead);
 
-    printf("%d\n",linesRead);
+    printf("\nFinished creating cliques!\n\n");
 
-    printf("Learning Time.... \n");
+    printf("\nBegin Training...\n\n");
+
     csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
 
-    printf("\nFinished creating cliques!\n\n");
 
     printf("\nCreating file cliques.csv...\n");
 
