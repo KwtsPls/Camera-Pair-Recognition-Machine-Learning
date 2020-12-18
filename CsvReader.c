@@ -116,37 +116,47 @@ void csvWriteCliques(HashTable **ht){
 
 
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead){
+   
+
     FILE *fp;
+    fp = fopen(filename,"r");
     char *line = NULL;
     size_t len = 0;
     size_t read;
-
+    int i=0;    //Number Of Lines Counter
 
     logisticreg *regressor;
-    regressor = create_logisticReg(vocabulary->num_elements,CONCAT_VECTORS);
-    //Open file
-    fp = fopen(filename,"r");
-    //Check if file Opened
-    if(fp==NULL)
-    {
-        errorCode = OPENING_FILE;
-        fclose(fp);
-        print_error();
-        return;
-    }
+    regressor = create_logisticReg(vocabulary->num_elements,ABSOLUTE_DISTANCE);
 
-    int lines = 0;
-    int i=0;    //Number Of Lines Counter
-    int train_size = linesRead-linesRead*0.67;
+    
+    int train_size = linesRead-linesRead*0.2;
     printf("%d\n",train_size);
-    int epoch = 1000;
     double error = 0.0;
 
-    //Read each line
-    while((read = getline(&line, &len,fp))!=-1)
-    {
-        if(i==0) //Skip First Line cause its Left_spec, Right_Spec, label
-        {
+    double precision_1=0.0;
+    double recall_1=0.0;
+    double f1_1=0.0;
+
+    int true_positive_1=0;
+    int false_positive_1=0;
+    int false_negative_1=0;
+
+    double precision_0=0.0;
+    double recall_0=0.0;
+    double f1_0=0.0;
+
+    int true_positive_0=0;
+    int false_positive_0=0;
+    int false_negative_0=0;
+
+    int lines=0;
+    int epoch = 1000;
+
+
+
+    while((read = getline(&line, &len,fp))!=-1){
+
+        if(i==0){               //Skip First Line cause its Left_spec, Right_Spec, label
             i++;
             continue;
         }
@@ -165,15 +175,34 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,"tf-idf");
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
-        double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
+        double *xi = euclidean_distance(l_x, r_x, regressor->numofN);
 
         if(lines<train_size){
+            if(label==1){
+                for(int k=0;k<11;k++)
+                    regressor = fit_pair_logisticRegression(regressor, xi, label);
+            }
             regressor = fit_pair_logisticRegression(regressor, xi, label);
         }
         else{
             double yi_pred = predict_pair_logisticRegression(regressor,xi);
             printf("Target %d Prediction %f\n",label,yi_pred);
+            int pred = (int) round(yi_pred);
+                if(label==1 && pred==label)
+                    true_positive_1++;
+                if(label==0 && pred==1)
+                    false_positive_1++;
+                if(label==1 && pred==0)
+                    false_negative_1++;
+
+                if(label==0 && pred==label)
+                    true_positive_0++;
+                if(label==1 && pred==0)
+                    false_positive_0++;
+                if(label==0 && pred==1)
+                    false_negative_0++;
         }
+        
 
         error+=loss_LogisticRegression(regressor,xi,label);
         if(lines%epoch==0) {
@@ -181,10 +210,23 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
             error=0.0;
         }
 
+
         free(l_x);
         free(r_x);
         free(xi);
     }
+
+
+    precision_1 = (double)true_positive_1/((double)true_positive_1 + (double)false_positive_1);
+    recall_1 = (double)true_positive_1/((double)true_positive_1 + (double)false_negative_1);
+    f1_1 = 2*(precision_1*recall_1/(precision_1+recall_1));
+
+    precision_0 = (double)true_positive_0/((double)true_positive_0 + (double)false_positive_0);
+    recall_0 = (double)true_positive_0/((double)true_positive_0 + (double)false_negative_0);
+    f1_0 = 2*(precision_0*recall_0/(precision_0+recall_0));
+
+    printf("\n\nFor positive class:\n\nPrecision: %f\n\nRecall: %f\n\nf1 score: %f\n\n",precision_1,recall_1,f1_1);
+    printf("\n\nFor negative class:\n\nPrecision: %f\n\nRecall: %f\n\nf1 score: %f\n\n",precision_0,recall_0,f1_0);
 
     free(line);
     fclose(fp);
