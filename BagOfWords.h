@@ -20,7 +20,5 @@ void deleteIndexedWord(indexedWord *iw);
 //Function to return an array representing a bow with tf-idf values for a given spec id
 double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mode);
 
-//Helper function to test bow
-void test_bow_implementation(HashTable *ht,secTable *vocabulary,char *filename);
 
 #endif //PROJECT_BAGOFWORDS_H

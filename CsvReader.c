@@ -123,7 +123,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
 
     logisticreg *regressor;
-    regressor = create_logisticReg(vocabulary->num_elements+1);
+    regressor = create_logisticReg(vocabulary->num_elements,CONCAT_VECTORS);
     //Open file
     fp = fopen(filename,"r");
     //Check if file Opened
@@ -135,11 +135,12 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         return;
     }
 
-    // int olakala = 0;
     int lines = 0;
     int i=0;    //Number Of Lines Counter
-    int train_size = linesRead-linesRead*0.1;
+    int train_size = linesRead-linesRead*0.67;
+    printf("%d\n",train_size);
     int epoch = 1000;
+    double error = 0.0;
 
     //Read each line
     while((read = getline(&line, &len,fp))!=-1)
@@ -164,28 +165,26 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,"tf-idf");
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
-  
+        double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
+
         if(lines<train_size){
-            double *xi = euclidean_distance(l_x,r_x,vocabulary->num_elements + 1);
-            regressor = fit_pair_logisticRegression(regressor,xi,label);
-            free(xi);
-            free(l_x);
-            free(r_x);
+            regressor = fit_pair_logisticRegression(regressor, xi, label);
         }
         else{
-            double *xi = euclidean_distance(l_x,r_x,vocabulary->num_elements + 1);
             double yi_pred = predict_pair_logisticRegression(regressor,xi);
             printf("Target %d Prediction %f\n",label,yi_pred);
-            free(xi);
-            free(l_x);
-            free(r_x);
         }
 
-        if(lines%epoch==0)
-            printf("%d\n",lines);
-            
-    }
+        error+=loss_LogisticRegression(regressor,xi,label);
+        if(lines%epoch==0) {
+            printf("%d %f\n", lines / epoch, loss_LogisticRegression(regressor, xi, label));
+            error=0.0;
+        }
 
+        free(l_x);
+        free(r_x);
+        free(xi);
+    }
 
     free(line);
     fclose(fp);

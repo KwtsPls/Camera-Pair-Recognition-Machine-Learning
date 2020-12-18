@@ -26,16 +26,17 @@ void deleteIndexedWord(indexedWord *iw){
 double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mode){
 
 
+    //Return bag of words with tf-idf values
     if(strcmp(mode,"tf-idf")==0){
         //Get the length of the vocabulary
         int len = vocabulary->num_elements;
 
         //Initialize the array representing the bow
-        double *bow = malloc(sizeof(double)*(len+1));
-        double *idf_array = malloc(sizeof(double)*(len+1));
+        double *bow = malloc(sizeof(double)*len);
+        double *idf_array = malloc(sizeof(double)*len);
 
         //Initialize every value at zero
-        for(int i=1;i<len+1;i++) {
+        for(int i=0;i<len;i++) {
             bow[i] = 0.0;
             idf_array[i]=0.0;
         }
@@ -52,32 +53,30 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
         while((cur = strsep(&text, " "))!= NULL){
             if((iw=getIndexedWord_secTable(vocabulary,cur))!=NULL){
                 text_len++;
-                bow[iw->index+1]+=1.0;
-                idf_array[iw->index+1] = iw->idf;
+                bow[iw->index]+=1.0;
+                idf_array[iw->index] = iw->idf;
             }
         }
 
-        for(int i=1;i<len+1;i++){
+        for(int i=0;i<len;i++){
             //calculate tf-idf value for the word in this text
             if(bow[i]!=0.0)
                 bow[i] = (bow[i]/(double)text_len)*idf_array[i];
         }
 
-        //Add an additional column for bias
-        bow[0]=1.0;
-
         free(idf_array);
         return bow;
     }
+    //Return simple bag of words
     else{
         //Get the length of the vocabulary
         int len = vocabulary->num_elements;
 
         //Initialize the array representing the bow
-        double *bow = malloc(sizeof(double)*len+1);
+        double *bow = malloc(sizeof(double)*len);
 
         //Initialize every value at zero
-        for(int i=1;i<len+1;i++) {
+        for(int i=0;i<len;i++) {
             bow[i] = 0.0;
         }
 
@@ -91,60 +90,10 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
         //Iterate through the text to find it's length and calculate how many times each word from our vocabulary exists
         while((cur = strsep(&text, " "))!= NULL){
             if((iw=getIndexedWord_secTable(vocabulary,cur))!=NULL){
-                bow[iw->index+1]+=1.0;
+                bow[iw->index]+=1.0;
             }
         }
 
-        //Add an additional column for bias
-        bow[0]=1.0;
-
         return bow;
     }
-}
-
-//Helper function to test bow
-void test_bow_implementation(HashTable *ht,secTable *vocabulary,char *filename){
-
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0;
-    size_t read;
-
-    //Open file
-    fp = fopen(filename,"r");
-    //Check if file Opened
-    if(fp==NULL)
-    {
-        errorCode = OPENING_FILE;
-        fclose(fp);
-        print_error();
-        return ;
-    }
-
-    int i=0;    //Number Of Lines Counter
-    //Read each line
-    while((read = getline(&line, &len,fp))!=-1)
-    {
-        if(i==0) //Skip First Line cause its Left_spec, Right_Spec, label
-        {
-            i++;
-            continue;
-        }
-
-        char *left_sp,*right_sp;
-        //Take left_spec_id
-        left_sp = strtok(line,",");
-        //Take right_spec_id
-        right_sp = strtok(NULL,",");
-
-        double *bow_left = getBagOfWords(ht,vocabulary,left_sp,"tf-idf");
-        double *bow_right = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
-
-        free(bow_left);
-        free(bow_right);
-        i++;    //New line Read
-    }
-
-    free(line);
-    fclose(fp);
 }
