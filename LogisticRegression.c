@@ -7,7 +7,7 @@
 logisticreg *create_logisticReg(int numofN,int mode){
     //Allocating size 
     logisticreg *lr = malloc(sizeof(logisticreg));
-    lr->error = 0.000420;
+    lr->error = 0.000001;
     //Vocabulary length + 1 for the bias
     if(mode==ABSOLUTE_DISTANCE)
         lr->numofN = numofN+1;
@@ -57,7 +57,7 @@ double *concatenate_vectors(double *x,double *y, int numofN){
 logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi){
 
     // η - learning rate
-    double learning_rate = 0.0001;
+    double learning_rate = 0.0004;
 
     //Initialize previous weights
     double *new_weight = malloc(sizeof(double)*model->numofN);
@@ -77,18 +77,18 @@ logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi)
             new_weight[j] = model->vector_weights[j] - learning_rate*gradient;
         }
 
-        /*int train_flag=0;
+        int train_flag=0;
         for(int j=0;j<model->numofN;j++){
-            if(fabs(model->vector_weights[j] - new_weight[j])>=model->error){
+            if(fabs(model->vector_weights[j] - new_weight[j])<model->error){
                 train_flag = 1;
                 break;
             }
-        }*/
+        }
 
         for(int j=0;j<model->numofN; j++)
             model->vector_weights[j] = new_weight[j];
         
-        if(cnt==2)
+        if(train_flag==1)
             break;
     }
        

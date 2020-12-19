@@ -4,7 +4,7 @@
 #include "HashTable.h"
 #include "CsvReader.h"
 #include "BagOfWords.h"
-
+#include "Metrics.h"
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename,HashTable **ht, int *linesRead)
@@ -112,41 +112,35 @@ void csvWriteCliques(HashTable **ht){
 
     //Close the file
     fclose(fp);
-}   
+}
 
 
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead){
+
     FILE *fp;
+    fp = fopen(filename,"r");
     char *line = NULL;
     size_t len = 0;
     size_t read;
+    int i=0;    //Number Of Lines Counter
 
-
+    //Create the model for the training
     logisticreg *regressor;
     regressor = create_logisticReg(vocabulary->num_elements,CONCAT_VECTORS);
-    //Open file
-    fp = fopen(filename,"r");
-    //Check if file Opened
-    if(fp==NULL)
-    {
-        errorCode = OPENING_FILE;
-        fclose(fp);
-        print_error();
-        return;
-    }
+    //Initialize the metrics for the training
+    LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
 
-    int lines = 0;
-    int i=0;    //Number Of Lines Counter
-    int train_size = linesRead-linesRead*0.67;
+    int train_size = linesRead-linesRead*0.82;
     printf("%d\n",train_size);
-    int epoch = 1000;
     double error = 0.0;
+    int lines=0;
+    int epoch = 1000;
 
-    //Read each line
-    while((read = getline(&line, &len,fp))!=-1)
-    {
-        if(i==0) //Skip First Line cause its Left_spec, Right_Spec, label
-        {
+
+
+    while((read = getline(&line, &len,fp))!=-1){
+
+        if(i==0){ //Skip First Line cause its Left_spec, Right_Spec, label
             i++;
             continue;
         }
@@ -168,12 +162,19 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
 
         if(lines<train_size){
+            /*if(label==1){
+                for(int k=0;k<1;k++)
+                    regressor = fit_pair_logisticRegression(regressor, xi, label);
+            }*/
             regressor = fit_pair_logisticRegression(regressor, xi, label);
         }
         else{
             double yi_pred = predict_pair_logisticRegression(regressor,xi);
             printf("Target %d Prediction %f\n",label,yi_pred);
+            int pred = (int) round(yi_pred);
+            metrics = update_LearningMetrics(metrics,pred,label);
         }
+
 
         error+=loss_LogisticRegression(regressor,xi,label);
         if(lines%epoch==0) {
@@ -181,12 +182,20 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
             error=0.0;
         }
 
+
         free(l_x);
         free(r_x);
         free(xi);
     }
 
+    //Print the metrics from the predictions after training
+    metrics = evaluate_LearningMetrics(metrics);
+    print_LearningMetrics(metrics);
+
+
+
     free(line);
     fclose(fp);
     delete_logisticReg(&regressor);
+    destroyLearningMetrics(&metrics);
 }
