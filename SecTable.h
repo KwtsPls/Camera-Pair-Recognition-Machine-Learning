@@ -7,7 +7,13 @@
 #define ST_SOFT_DELETE_MODE 0
 #define ST_HARD_DELETE_MODE 1
 #define MAX_PRIME 100000
+<<<<<<< HEAD
 #define MIN_TF_IDF 0.000200
+||||||| e827466
+#define MIN_TF_IDF 0.004000
+=======
+#define MIN_TF_IDF 0.000900
+>>>>>>> 6d913283a7f1b127602d5f257aca2b5d869a0d14
 
 // Hash functions for the different data types in the hash table
 typedef unsigned int (*Hash)(void *, int size);
