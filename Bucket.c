@@ -320,7 +320,7 @@ void bucketListWriteCliques(BucketList *lista, FILE *fp){
                     strcat(line,",");
                     strcat(line,cur->spec_ids[j]->dict_name);
                     int er = fprintf(fp,"%s\n",line);
-                    //Returned negative number, error occured
+                    //Returned negative number, error occurred
                     if(er<0)
                     {
                         errorCode = WRITING_TO_FILE;
@@ -374,7 +374,7 @@ BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del){
             void *nvalue;
             neg->table[i] = getFirstVal(neg->table[i],&nvalue);
             if(nvalue != NULL){
-                //If it does'nt exist to the new table, insert it
+                //If it doesn't exist to the new table, insert it
                 if(find_secTable(to_merge->negatives,nvalue)==0)
                     to_merge->negatives = insert_secTable(to_merge->negatives,nvalue);
             }
@@ -389,7 +389,7 @@ BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del){
 //Function to find the given BucketList and update it
 BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_replace){
     //Check if the bucket list that is going to be replaced already exists
-    //If it exists just delete the old, if it doesn't replace it....
+    //If it exists just delete the old one, if it doesn't replace it....
     if((find_secTable(re->negatives,to_replace) == 1)){
         re->negatives = deletevalue_secTable(re->negatives,to_delete,ST_SOFT_DELETE_MODE);
         return re;
@@ -423,7 +423,6 @@ BucketList *bucketListWriteNegativeCliques(BucketList *lista,FILE *fp){
         }
         bucket = bucket->next;
     }
-    lista->dirty_bit = 1;
     return lista;
 }
 

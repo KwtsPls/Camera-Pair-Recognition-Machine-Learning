@@ -104,5 +104,4 @@ int checkPositiveAs(HashTable *ht, char *left, char *right);
 int checkNegativeAs(HashTable *ht, char *left, char *right);
 
 
-
 #endif //PROJECT_HASHTABLE_H 

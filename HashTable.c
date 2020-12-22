@@ -333,7 +333,7 @@ void deleteKeyBucket(keyBucket **destroyed,int mode){
     //Iterate through the KeyBucket
     for(int i=0;i<temp->num_entries;i++){
         if(temp->array[i]!=NULL) {
-            //Free the space of the KeyBUcketEntry
+            //Free the space of the KeyBucketEntry
             free(temp->array[i]->key);
             temp->array[i]->key=NULL;
             BucketList_Delete(&temp->array[i]->set, mode);
@@ -437,7 +437,6 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
     if((*ht)->table[right_h]->array[right_index]->set!=(*ht)->table[left_h]->array[left_index]->set) {
 
         if (left_cnt < right_cnt) {
-            //keyBucketEntry *old_bucket = (*ht)->table[left_h]->array[left_index];
             (*ht) = changePointerHashTable(ht, (*ht)->table[left_h]->array[left_index],
                                            (*ht)->table[right_h]->array[right_index]);
 
@@ -457,12 +456,11 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
                     left_h, left_index);
         }
         else {
-            //keyBucketEntry *old_bucket = (*ht)->table[right_h]->array[right_index];
             (*ht) = changePointerHashTable(ht, (*ht)->table[right_h]->array[right_index],
                                            (*ht)->table[left_h]->array[left_index]);
 
             
-            //Change the negative Relations, from the set of the left buck to point to the right bcuk
+            //Change the negative Relations, from the set of the left buck to point to the right bucket
             (*ht)->table[right_h]->array[right_index]->set = updateNegativeRelations(
                 (*ht)->table[right_h]->array[right_index]->set,
                 (*ht)->table[left_h]->array[left_index]->set);
@@ -582,9 +580,11 @@ HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp
     BucketList *right_pt = ht->table[right_h]->array[right_index]->set;
 
     //Insert the left clique's pointer into the negative set of the right clique
-    ht->table[left_h]->array[left_index]->set->negatives = insert_secTable(ht->table[left_h]->array[left_index]->set->negatives,right_pt);
-    //Similarly for the right clique's pointer  
-    ht->table[right_h]->array[right_index]->set->negatives = insert_secTable(ht->table[right_h]->array[right_index]->set->negatives,left_pt);
+    if(find_secTable(ht->table[left_h]->array[left_index]->set->negatives,right_pt)==0)
+        ht->table[left_h]->array[left_index]->set->negatives = insert_secTable(ht->table[left_h]->array[left_index]->set->negatives,right_pt);
+    //Similarly for the right clique's pointer
+    if(find_secTable(ht->table[right_h]->array[right_index]->set->negatives,left_pt)==0)
+        ht->table[right_h]->array[right_index]->set->negatives = insert_secTable(ht->table[right_h]->array[right_index]->set->negatives,left_pt);
     
     return ht;
 }

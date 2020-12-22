@@ -104,7 +104,6 @@ void csvWriteCliques(HashTable **ht){
                     (*ht)->table[i]->array[j]->set->dirty_bit=0;
                     //Write the bucketList to the file
                     bucketListWriteCliques((*ht)->table[i]->array[j]->set,fp);
-
                 }
             }
         }
@@ -146,8 +145,10 @@ void csvWriteNegativeCliques(HashTable **ht){
             for(int j=0;j<(*ht)->table[i]->num_entries;j++)
             {
                 //Write the bucketList to the file
-                (*ht)->table[i]->array[j]->set=bucketListWriteNegativeCliques((*ht)->table[i]->array[j]->set,fp);
-
+                if((*ht)->table[i]->array[j]->set->dirty_bit==0) {
+                    (*ht)->table[i]->array[j]->set = bucketListWriteNegativeCliques((*ht)->table[i]->array[j]->set, fp);
+                    (*ht)->table[i]->array[j]->set->dirty_bit = 1;
+                }
             }
         }
     }

@@ -47,18 +47,19 @@ int main(int argc, char *argv[]){
     printf("\nCreating cliques...\n\n");
 
     int linesRead = 0;
-    ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht, &linesRead);
+    ht = csvParser("sigmod_large_labelled_dataset.csv",&ht, &linesRead);
 
     printf("\nFinished creating cliques!\n\n");
 
     printf("\nBegin Training...\n\n");
 
-    csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
+    //csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
 
     printf("\nCreating file cliques.csv...\n");
 
     //Creating File to write to
     csvWriteCliques(&ht);
+    int print_neg_flag=1;
     if(print_neg_flag == 1)
         csvWriteNegativeCliques(&ht);
 

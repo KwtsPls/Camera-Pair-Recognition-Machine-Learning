@@ -158,7 +158,7 @@ secTable *update_tf_idf_word(secTable *st,char *value,int text_len);
 //Function to evaluate the tf-idf mean of every word in the vocabulary
 secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts);
 
-//Function to write negative Cluques 
+//Function to write negative Cliques
 void secTable_writeNegativeCliques(secTable *st, char *left_sp, FILE *fp);
 
 #endif //SECTABLE_H 
