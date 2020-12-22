@@ -20,10 +20,13 @@ logisticreg *create_logisticReg(int numofN,int mode);
 logisticreg *fit_pair_logisticRegression(logisticreg *model,double *xi,int yi);
 
 //Function to calculate euclidean distance
-double *euclidean_distance(double *x, double *y, int numofN);
+double *absolute_distance(double *x, double *y, int numofN);
 
 //Function to concatenate two given arrays into one
 double *concatenate_vectors(double *x,double *y, int numofN);
+
+//Function to return the norm || x - y ||
+double norm_distance(double *x, double *y, int numofN);
 
 //Function to check if our model is trained
 double predict_pair_logisticRegression(logisticreg *model,double *xi);

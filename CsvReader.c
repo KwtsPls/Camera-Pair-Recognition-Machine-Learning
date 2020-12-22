@@ -172,7 +172,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
 
-    int train_size = linesRead-linesRead*0.82;
+    int train_size = linesRead-linesRead*0.2;
     printf("%d\n",train_size);
     double error = 0.0;
     int lines=0;
@@ -203,17 +203,15 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
         double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
 
+
         if(lines<train_size){
-            /*if(label==1){
-                for(int k=0;k<1;k++)
-                    regressor = fit_pair_logisticRegression(regressor, xi, label);
-            }*/
             regressor = fit_pair_logisticRegression(regressor, xi, label);
         }
         else{
             double yi_pred = predict_pair_logisticRegression(regressor,xi);
             printf("Target %d Prediction %f\n",label,yi_pred);
-            int pred = (int) round(yi_pred);
+            int pred;
+            if(yi_pred>0.09) pred=1; else pred=0;
             metrics = update_LearningMetrics(metrics,pred,label);
         }
         
@@ -234,8 +232,6 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Print the metrics from the predictions after training
     metrics = evaluate_LearningMetrics(metrics);
     print_LearningMetrics(metrics);
-
-
 
     free(line);
     fclose(fp);

@@ -11,24 +11,6 @@ int errorCode;
 
 int main(int argc, char *argv[]){
 
-    //Flag for printing negative associations
-    int print_neg_flag = 0;
-   
-    
-    //Default option is printing only positive associations.
-    if(argc == 1)
-        printf("Printing only positive associations in cliques.csv\n To print negative associations in neg_cliques.csv run programm with -n flag\n E.g: ./main -n\n");
-
-    if(argc >= 2){
-        if(strcmp("-n",argv[1]) == 0){
-            printf("Printing negative associations also in neg_cliques.csv\n");
-            print_neg_flag = 1;
-        }
-        else{
-            printf("Printing only positive associations in cliques.csv\n To print negative associations in neg_cliques.csv run programm with -n flag\n E.g: ./main -n\n");
-        }
-    }
-
     char *X_name = get_datasetX_name();
     //Dataset X not found - program will terminate
     if(X_name==NULL) {
@@ -36,8 +18,6 @@ int main(int argc, char *argv[]){
         print_error();
         return 1;
     }
-
-
 
     //Hashtable containing the cliques
     HashTable *ht = initHashTable(TABLE_INIT_SIZE);
@@ -73,7 +53,7 @@ int main(int argc, char *argv[]){
 
     printf("\nBegin Training...\n\n");
 
-    // csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
+    csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
 
     printf("\nCreating file cliques.csv...\n");
 

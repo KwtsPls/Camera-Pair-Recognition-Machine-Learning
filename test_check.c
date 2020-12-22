@@ -255,6 +255,56 @@ void test_dictionary_update(){
     free(num_array);
 }
 
+//Function to test the merge function of the dictionary struct
+void test_dictionary_concatenate(){
+
+    char name[5]="Dict";
+    Dictionary *dict = initDictionary(name);
+
+    int N=2000;
+    int len=0;
+
+    //Add N key/value pairs into the dictionary
+    //The values are a single item array in this test
+    for(int i=0;i<N;i++){
+        char *key = create_key(i);
+        char **value = create_value(i);
+        len += strlen(value[0])+1;
+        dict = insertDictionary(dict,key,value,1);
+
+        //Free the allocated memory for the test key
+        //The values are deleted when the dictionary is deleted
+        free(key);
+    }
+
+    int M=50;
+    int *num_array = malloc(sizeof(int)*M);
+    for(int i=0;i<M;i++) num_array[i] = N+i;
+
+    char *key = create_key(N);
+    char **value = create_multiple_value(num_array,M);
+    for(int i=0;i<M;i++){
+        if(i<M-1)
+            len += strlen(value[i])+1;
+        else
+            len += strlen(value[i]);
+    }
+    dict = insertDictionary(dict,key,value,M);
+
+    //Merge the dictionary into a single key-value pair
+    dict = concatenateAllDictionary(dict);
+
+    TEST_ASSERT(sizeDictionary(dict)==1);
+    TEST_ASSERT(dict->list->values_num==1);
+    TEST_ASSERT(strlen(dict->list->value[0])==len);
+
+    deleteDictionary(&dict);
+    free(key);
+    free(num_array);
+}
+
+
+
 /*############# HASHTABLE TEST UNITS ##########*/
 
 //Create an empty hashtable
@@ -335,7 +385,8 @@ void test_hashtable_reshape(){
     //Current hashtable size must be the double of the old one
     int old_size = ht->buckets_num;
     ht = reshapeHashTable(&ht,dict);
-    TEST_ASSERT(ht->buckets_num==2*old_size);
+    int new_size = findNextPrime(2*old_size);
+    TEST_ASSERT(ht->buckets_num==new_size);
     TEST_ASSERT(sizeHashTable(ht)==N+1);
 
     free(key);
@@ -361,7 +412,8 @@ void test_hashtable_cliques(){
     }
 
     //Call the csvParser function to read the csv test dataset and create the cliques from it accordingly
-    ht = csvParser(DATASET_PATH,&ht);
+    int lines=0;
+    ht = csvParser(DATASET_PATH,&ht,&lines);
 
     //In this test there are 5 cliques created
     //For each category we'll check the number of items in each clique
@@ -439,7 +491,8 @@ void test_hashtable_write_file(){
     }
 
     //Call the csvParser function to read the csv test dataset and create the cliques from it accordingly
-    ht = csvParser(DATASET_PATH,&ht);
+    int lines=0;
+    ht = csvParser(DATASET_PATH,&ht,&lines);
     //Create the file containing the pairs
     csvWriteCliques(&ht);
 
@@ -482,15 +535,30 @@ void test_hashtable_write_file(){
 }
 
 
+
+/*############# SECTABLE TEST UNITS ##########*/
+
+//Function to create three empty secTable
+//One to test an empty table for strings
+//One to test an empty table for storing pointers
+//One to test an empty table for storing indexed word struct
+void test_sectable_create(){
+
+}
+
+
+
 TEST_LIST = {
-        { "dictionary_create", 	  test_dictionary_create    },
-        { "dictionary_insert", 	  test_dictionary_insert    },
-        { "dictionary_find",      test_dictionary_find      },
-        { "dictionary_update",    test_dictionary_update    },
-        { "hashtable_create",     test_hashtable_create     },
-        { "hashtable_insert",     test_hashtable_insert     },
-        { "hashtable_reshape",    test_hashtable_reshape    },
-        { "hashtable_cliques",    test_hashtable_cliques    },
-        { "hashtable_write_file", test_hashtable_write_file },
+        { "dictionary_create", 	    test_dictionary_create       },
+        { "dictionary_insert", 	    test_dictionary_insert       },
+        { "dictionary_find",        test_dictionary_find         },
+        { "dictionary_update",      test_dictionary_update       },
+        { "dictionary_concatenate", test_dictionary_concatenate  },
+        { "hashtable_create",       test_hashtable_create        },
+        { "hashtable_insert",       test_hashtable_insert        },
+        { "hashtable_reshape",      test_hashtable_reshape       },
+        { "hashtable_cliques",      test_hashtable_cliques       },
+        { "hashtable_write_file",   test_hashtable_write_file    },
+        { "sectable_create",        test_sectable_create         },
         { NULL, NULL }
 };

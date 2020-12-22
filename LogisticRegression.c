@@ -7,7 +7,7 @@
 logisticreg *create_logisticReg(int numofN,int mode){
     //Allocating size 
     logisticreg *lr = malloc(sizeof(logisticreg));
-    lr->error = 0.000001;
+    lr->error = 0.1;
     //Vocabulary length + 1 for the bias
     if(mode==ABSOLUTE_DISTANCE)
         lr->numofN = numofN+1;
@@ -23,7 +23,7 @@ logisticreg *create_logisticReg(int numofN,int mode){
 
 
 //Function to calculate euclidean distance
-double *euclidean_distance(double *x, double *y, int numofN){
+double *absolute_distance(double *x, double *y, int numofN){
     double *z;
     z = malloc(sizeof(double) * numofN);
     //Calculate the absolute distance between every value in the pair (x,y)
@@ -31,7 +31,6 @@ double *euclidean_distance(double *x, double *y, int numofN){
     for(int i=1; i<numofN;i++){
         z[i] = fabs(x[i-1]-y[i-1]);
     }
-
     //Add an additional column for bias w0
     z[0]=1.0;
 
@@ -54,11 +53,22 @@ double *concatenate_vectors(double *x,double *y, int numofN){
     return z;
 }
 
+//Function to return the norm || x - y ||
+double norm_distance(double *x, double *y, int numofN){
+    double norm=0.0;
+    for(int i=0; i<numofN;i++){
+        norm += (x[i]-y[i])*(x[i]-y[i]);
+    }
+    norm = sqrt(norm);
+
+    return norm;
+}
+
 //Function to calculate logistic regressions
 logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi){
 
     // η - learning rate
-    double learning_rate = 0.0004;
+    double learning_rate = 0.004;
 
     //Initialize previous weights
     double *new_weight = malloc(sizeof(double)*model->numofN);
@@ -79,19 +89,18 @@ logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi)
             new_weight[j] = model->vector_weights[j] - learning_rate*gradient;
         }
 
-        int train_flag=0;
-        for(int j=0;j<model->numofN;j++){
-            if(fabs(model->vector_weights[j] - new_weight[j])<model->error){
-                train_flag = 1;
-                break;
-            }
-        }
+        //Calculate ||w(t+1) - w(t)||
+        //double wt1_wt = norm_distance(new_weight,model->vector_weights,model->numofN);
 
-        //Update the old weights
+        //Update the current weights
         for(int j=0;j<model->numofN; j++)
             model->vector_weights[j] = new_weight[j];
-        
-        if(train_flag==1)
+
+        //If ||w(t+1) - w(t)|| < ε stop the training
+        //if(wt1_wt<model->error)
+        //    break;
+
+        if(cnt==4)
             break;
     }
        
