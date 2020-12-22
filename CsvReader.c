@@ -114,6 +114,48 @@ void csvWriteCliques(HashTable **ht){
     fclose(fp);
 }
 
+void csvWriteNegativeCliques(HashTable **ht){
+    FILE *fp;
+    //Open file to write to...
+    fp = fopen("neg_cliques.csv","w+");
+    //Check if file Opened
+    if(fp==NULL)
+    {
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return;
+    }
+
+    //Write first line into file of the line
+    int err = fprintf(fp,"left_spec_id,right_spec_id\n");
+    //Something went wrong while writing to the file....
+    if(err<0)
+    {
+        errorCode = WRITING_TO_FILE;
+        print_error();
+    }
+
+    //Iterate through the Hash Table
+    for(int i=0;i<(*ht)->buckets_num;i++)
+    {
+        //If the table is not Null iterate through it
+        if((*ht)->table[i]!=NULL)
+        {
+            //Iterate through the array of table...
+            for(int j=0;j<(*ht)->table[i]->num_entries;j++)
+            {
+                //Write the bucketList to the file
+                (*ht)->table[i]->array[j]->set=bucketListWriteNegativeCliques((*ht)->table[i]->array[j]->set,fp);
+
+            }
+        }
+    }
+
+    //Close the file
+    fclose(fp);
+}
+
 
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead){
 
@@ -159,7 +201,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,"tf-idf");
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
-        double *xi = euclidean_distance(l_x, r_x, regressor->numofN);
+        double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
 
         if(lines<train_size){
             /*if(label==1){

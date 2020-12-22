@@ -11,6 +11,10 @@ HashTable *csvParser(char *filename, HashTable **ht, int *linesRead);
 
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead);
 
+
+void csvWriteNegativeCliques(HashTable **ht);
+
+
 //Function to create a new csv to write the cliques into
 void csvWriteCliques(HashTable **ht);
 

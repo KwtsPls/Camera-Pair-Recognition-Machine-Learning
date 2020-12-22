@@ -399,3 +399,77 @@ BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_repl
         return re;
     }
 }
+
+//Function that writes Negative Cliques to file it updates the dirty bit to 1.
+BucketList *bucketListWriteNegativeCliques(BucketList *lista,FILE *fp){
+    Bucket *bucket = lista->head;
+    //Write every set of bucket to the file
+    while(bucket!=NULL){
+        //Iterate through the bucket list and take an item from the dict as left_spec
+        //And get the next specs after left and write them as a set in the fp by calling the secTable_writeNegativeCliques
+        for(int i=0;i<bucket->cnt;i++){
+            //Create space for storing the left_spec_id
+            char *left_spec = malloc(strlen(bucket->spec_ids[i]->dict_name)+1);
+            if(left_spec==NULL)
+            {
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                continue;
+            }
+            //Copy its name
+            strcpy(left_spec,bucket->spec_ids[i]->dict_name);
+            secTable_writeNegativeCliques(lista->negatives,left_spec,fp);
+            free(left_spec);
+        }
+        bucket = bucket->next;
+    }
+    lista->dirty_bit = 1;
+    return lista;
+}
+
+
+void rightSpecNegativeCliques(BucketList *set, char *left_sp, FILE *fp){
+    Bucket *bucket = set->head;
+    //Write every negative Clique set of bucket to the file
+    while(bucket!=NULL){
+        //Iterate through the bucket list and take an item from the dict as right_spec
+        for(int i=0;i<bucket->cnt;i++){
+            char *line;
+            //Create space for storing the left_spec_id
+            char *right_spec = malloc(strlen(bucket->spec_ids[i]->dict_name)+1);
+            if(right_spec==NULL)
+            {
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                continue;
+            }
+            //Copy its name
+            strcpy(right_spec,bucket->spec_ids[i]->dict_name);
+            
+            //Create space for the line that is going to be written in the fp File
+            line = malloc(strlen(right_spec)+strlen(left_sp)+2);
+            if(line==NULL)
+            {
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                continue;
+            }
+            //Make left_Sp, Right_Spec\n
+
+            strcpy(line,left_sp);
+            strcat(line,",");
+            strcat(line,right_spec);
+
+            int er = fprintf(fp,"%s\n",line);
+            if(er<0)
+            {
+                errorCode = WRITING_TO_FILE;
+                print_error();
+            }
+            //Free space that was allocated for the string of line
+            free(line);
+            free(right_spec);
+        }
+        bucket = bucket->next;
+    }
+}

@@ -122,7 +122,13 @@ secTable *insert_secTable(secTable *st, void *value){
             st->loadFactor = st->num_elements/(st->numOfBuckets*(st->bucketSize/sizeof(value)));
         }
         else{
+            //If already exists don't do insert it again...
+            if(find_secTable(st,value) == 1)
+                return st;
+
+            
             int current_num = getNumElements_secondaryNode(st->table[h]);
+        
             //There is enough space in the first block of the bucket insert the new entry
             if(current_num < (st->bucketSize/sizeof(value))){
                 st->table[h]->values[current_num] = value;
@@ -542,4 +548,29 @@ secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
 
     return new_vocab;
+}
+
+
+//Function to write negative Cluques 
+void secTable_writeNegativeCliques(secTable *st, char *left_sp, FILE *fp){
+    //Iterate through every negative association
+    for(int i=0; i<st->numOfBuckets; i++){
+        secondaryNode *temp;
+        temp = st->table[i];
+        //Iterate every node of the list in the bucket
+        while (temp!=NULL){
+            for(int j=0; j<temp->num_elements; j++){
+                //Get pointer to the bucket list
+                BucketList *set = (BucketList *) (temp->values[j]);
+               
+                //It was not printed
+                if(set->dirty_bit == 0){
+                    rightSpecNegativeCliques(set, left_sp, fp);
+                }
+
+            }
+            temp = temp->next;
+        }
+        
+    }
 }

@@ -80,11 +80,18 @@ BucketList *updateNegativeRelations(BucketList *to_upd, BucketList *to_replace);
 //Function that writes Cliques to file
 void bucketListWriteCliques(BucketList *lista, FILE *fp);
 
+//Function that writes Negative Cliques to file
+BucketList *bucketListWriteNegativeCliques(BucketList *lista,FILE *fp);
+
 //Function for merging negative relations
 BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del);
 
 //Function to find the given BucketList and update it
 BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_replace);
+
+//Function to print the right Spec negative cliques
+void rightSpecNegativeCliques(BucketList *set, char *left_sp, FILE *fp);
+
 
 
 #endif
