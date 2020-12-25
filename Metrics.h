@@ -32,6 +32,9 @@ LearningMetrics *update_LearningMetrics(LearningMetrics *metrics,int yi_pred,int
 //Function to evaluate precision,recall and f1 after the training for each class
 LearningMetrics *evaluate_LearningMetrics(LearningMetrics *metrics);
 
+//Function to count the metric form the given predictions
+LearningMetrics *calculate_LearningMetrics(LearningMetrics *metrics,int *y,double *pred,int size,int n);
+
 //Function to print the evaluations
 void print_LearningMetrics(LearningMetrics *metrics);
 

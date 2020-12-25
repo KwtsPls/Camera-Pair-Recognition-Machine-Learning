@@ -1,6 +1,6 @@
 #Make part for the main function of the program
 main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o
-	gcc -g3 -lm main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o -o main -lm
+	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o -o main -lm
 
 #Make part for the test part of the program using acutest library
 test: test_check.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o

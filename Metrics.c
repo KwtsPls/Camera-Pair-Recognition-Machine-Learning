@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "Metrics.h"
+
 
 //Function to initialize the metrics for a classification problem
 LearningMetrics *init_LearningMetrics(char *pos_tag,char *neg_tag){
@@ -73,4 +75,13 @@ void destroyLearningMetrics(LearningMetrics **metrics){
     free((*metrics)->pos_tag);
     free((*metrics)->neg_tag);
     free(*metrics);
+}
+
+//Function to count the metric form the given predictions
+LearningMetrics *calculate_LearningMetrics(LearningMetrics *metrics,int *y,double *pred,int size,int n){
+    for(int i=0;i<(n-size);i++){
+        int yi_pred = round(pred[i]);
+        metrics = update_LearningMetrics(metrics,yi_pred,y[size+i]);
+    }
+    return metrics;
 }

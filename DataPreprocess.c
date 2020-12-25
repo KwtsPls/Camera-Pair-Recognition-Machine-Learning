@@ -150,3 +150,47 @@ char *preprocess(char *text,secTable *stopwords,secTable **vocabulary,secTable *
 
     return text;
 }
+
+//Function to swap integers
+void swap_int(int *a,int *b){
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+//Function to swap doubles
+void swap_vectors(double **a,double **b){
+    double *temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+//Function to swap strings
+void swap_string(char **a,char **b){
+    char *temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+//Function to return an integer in range
+int random_int(int n){
+    int e =  n/RAND_MAX;
+    int mod = n % RAND_MAX;
+    int r = (rand()%RAND_MAX)*e + (rand()%mod);
+    return r;
+}
+
+//Function to shuffle the given data
+void shuffle_data(double **X,int *y,char **pairs,int n,int random_state){
+
+    //For the given number of random_state shuffle the array
+    for(int k=0;k<random_state;k++){
+        for(int i=0;i<n;i++){
+            int random_index = random_int(n);
+            swap_int(&y[i],&y[random_index]);
+            swap_vectors(&X[i],&X[random_index]);
+            swap_string(&pairs[i],&pairs[random_index]);
+        }
+    }
+
+}

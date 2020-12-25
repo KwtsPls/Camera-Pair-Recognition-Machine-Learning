@@ -17,7 +17,7 @@ typedef struct logisticreg{
 logisticreg *create_logisticReg(int numofN,int mode);
 
 //Function to calculate logistic regressions
-logisticreg *fit_pair_logisticRegression(logisticreg *model,double *xi,int yi);
+logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high);
 
 //Function to calculate euclidean distance
 double *absolute_distance(double *x, double *y, int numofN);
@@ -29,13 +29,16 @@ double *concatenate_vectors(double *x,double *y, int numofN);
 double norm_distance(double *x, double *y, int numofN);
 
 //Function to check if our model is trained
-double predict_pair_logisticRegression(logisticreg *model,double *xi);
+double *predict_logisticRegression(logisticreg *model,double **X,int train,int n);
 
 //Function to calculate loss
 double loss_LogisticRegression(logisticreg *model, double *xi,int yi);
 
 //Function σ(t) = 1/1 + e^(-t)
 double sigmoid(double t);
+
+//Perfom the training based on the model
+logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size);
 
 //Function to free memory for the logistic regression struct
 void delete_logisticReg(logisticreg **del);

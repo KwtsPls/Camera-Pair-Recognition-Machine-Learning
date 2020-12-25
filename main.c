@@ -6,6 +6,7 @@
 #include "HashTable.h"
 #include "CsvReader.h"
 #include "BagOfWords.h"
+#include "DataPreprocess.h"
 
 int errorCode;
 
@@ -47,13 +48,13 @@ int main(int argc, char *argv[]){
     printf("\nCreating cliques...\n\n");
 
     int linesRead = 0;
-    ht = csvParser("sigmod_large_labelled_dataset.csv",&ht, &linesRead);
+    ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht, &linesRead);
 
     printf("\nFinished creating cliques!\n\n");
 
     printf("\nBegin Training...\n\n");
 
-    //csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
+    csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
 
     printf("\nCreating file cliques.csv...\n");
 

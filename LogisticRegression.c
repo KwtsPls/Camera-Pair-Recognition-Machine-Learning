@@ -17,7 +17,7 @@ logisticreg *create_logisticReg(int numofN,int mode){
 
     lr->vector_weights = malloc(lr->numofN * sizeof(double));
     for(int i=0; i<lr->numofN; i++)
-        lr->vector_weights[i] = 0.0;
+        lr->vector_weights[i] = 0.925;
     return lr;
 }
 
@@ -65,7 +65,7 @@ double norm_distance(double *x, double *y, int numofN){
 }
 
 //Function to calculate logistic regressions
-logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi){
+logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high){
 
     // η - learning rate
     double learning_rate = 0.004;
@@ -78,29 +78,43 @@ logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi)
         cnt++;
         for(int j=0;j<model->numofN;j++){
             double gradient=0.0;
-            double xij = xi[j];
-            //Calculate w_T * x
-            for(int z=0;z<model->numofN;z++)
-                gradient += model->vector_weights[z]*xi[z];
-            gradient = sigmoid(gradient);
-            //(σ(w_T*xi) - yi)
-            gradient = (gradient - ((double) yi))*xij;
+            double h=0.0;
+            for(int i=low;i<high;i++){
+                if(y[i]==1){
+                    for(int k=0;k<11;k++){
+                        double *xi = X[i];
+                        double xij = xi[j];
+                        //Calculate w_T * x
+                        for(int z=0;z<model->numofN;z++)
+                            h += model->vector_weights[z]*xi[z];
+                        h = sigmoid(h);
+                        //(σ(w_T*xi) - yi)
+                        h = (h - ((double) y[i]))*xij;
+                        gradient += h;
+                    }
+                }
+                else{
+                    double *xi = X[i];
+                    double xij = xi[j];
+                    //Calculate w_T * x
+                    for(int z=0;z<model->numofN;z++)
+                        h += model->vector_weights[z]*xi[z];
+                    h = sigmoid(h);
+                    //(σ(w_T*xi) - yi)
+                    h = (h - ((double) y[i]))*xij;
+                    gradient += h;                   
+                }
+            }
             // w(t+1) = w(t) - η*gradient 
             new_weight[j] = model->vector_weights[j] - learning_rate*gradient;
         }
-
-        //Calculate ||w(t+1) - w(t)||
-        //double wt1_wt = norm_distance(new_weight,model->vector_weights,model->numofN);
 
         //Update the current weights
         for(int j=0;j<model->numofN; j++)
             model->vector_weights[j] = new_weight[j];
 
-        //If ||w(t+1) - w(t)|| < ε stop the training
-        //if(wt1_wt<model->error)
-        //    break;
 
-        if(cnt==4)
+        if(cnt==5)
             break;
     }
        
@@ -109,12 +123,49 @@ logisticreg *fit_pair_logisticRegression(logisticreg *model, double *xi, int yi)
     return model;
 }
 
-double predict_pair_logisticRegression(logisticreg *model,double *xi){
-    double y_pred=0.0;
-    for(int j=0; j<model->numofN; j++){
-        y_pred += model->vector_weights[j] * xi[j]; 
+//Perfom the training based on the model
+logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size){
+    int batches = 16;
+    int n = size/batches;
+    int r = size%batches;
+
+    //Perform a mini-batch training
+    int low;
+    int high;
+    for(int i=0;i<(n-1);i++){
+        low = i*batches;
+        high = (i+1)*batches;
+        model = fit_logisticRegression(model,X,y,low,high);
+
+        if((i*batches)%1024==0)
+            printf("%d\n",i);
+
     }
-    y_pred = sigmoid(y_pred);
+
+    if(r==0){
+        return model;
+    }
+    //If a pair remains train it
+    else{
+        low = high;
+        high = high + r;
+        model = fit_logisticRegression(model,X,y,low,high);
+    }
+
+    return model;
+}
+
+double *predict_logisticRegression(logisticreg *model,double **X,int train,int n){
+    double *y_pred=malloc(sizeof(double)*(n-train));
+    for(int i=0;i<(n-train);i++){
+        double yi_pred=0.0;
+        for(int j=0; j<model->numofN; j++){
+            double *xi = X[train+i]; 
+            yi_pred += model->vector_weights[j] * xi[j]; 
+        }
+        yi_pred = sigmoid(yi_pred);
+        y_pred[i] = yi_pred;
+    }
     
     return y_pred;
 }
@@ -141,6 +192,7 @@ double sigmoid(double t){
     sigma = (double) 1.0 / ((double) (1.0 + exp((double) (-t))));
     return sigma;
 }
+
 
 //Function to free memory for the logistic regression struct
 void delete_logisticReg(logisticreg **del){

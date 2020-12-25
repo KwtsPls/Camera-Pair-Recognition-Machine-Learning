@@ -5,6 +5,7 @@
 #include "CsvReader.h"
 #include "BagOfWords.h"
 #include "Metrics.h"
+#include "DataPreprocess.h"
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename,HashTable **ht, int *linesRead)
@@ -165,29 +166,26 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     char *line = NULL;
     size_t len = 0;
     size_t read;
-    int i=0;    //Number Of Lines Counter
+    int lines=0;
 
     //Create the model for the training
     logisticreg *regressor;
     regressor = create_logisticReg(vocabulary->num_elements,CONCAT_VECTORS);
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
-
     int train_size = linesRead-linesRead*0.2;
-    printf("%d\n",train_size);
-    double error = 0.0;
-    int lines=0;
-    int epoch = 1000;
+    double **X = malloc(sizeof(double)*linesRead);
+    int *y = malloc(sizeof(int)*linesRead);
+    char **pairs = malloc(sizeof(char*)*linesRead);
 
 
 
     while((read = getline(&line, &len,fp))!=-1){
 
-        if(i==0){ //Skip First Line cause its Left_spec, Right_Spec, label
-            i++;
+        if(lines==0){ //Skip First Line cause its Left_spec, Right_Spec, label
+            lines++;
             continue;
         }
-        lines++;
 
 
         char *left_sp,*right_sp,*lbl_str;
@@ -204,33 +202,35 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
         double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
 
+        X[lines-1]=xi;
+        y[lines-1]=label;
+        char *new_pair = malloc(strlen(left_sp)+1+strlen(right_sp)+1);
+        strcpy(new_pair,left_sp);
+        strcat(new_pair,",");
+        strcat(new_pair,right_sp);
+        pairs[lines-1]=new_pair;
 
-        if(lines<train_size){
-            regressor = fit_pair_logisticRegression(regressor, xi, label);
-        }
-        else{
-            double yi_pred = predict_pair_logisticRegression(regressor,xi);
-            printf("Target %d Prediction %f\n",label,yi_pred);
-            int pred;
-            if(yi_pred>0.09) pred=1; else pred=0;
-            metrics = update_LearningMetrics(metrics,pred,label);
-        }
-        
-
-
-        error+=loss_LogisticRegression(regressor,xi,label);
-        if(lines%epoch==0) {
-            printf("%d %f\n", lines / epoch, loss_LogisticRegression(regressor, xi, label));
-            error=0.0;
-        }
-
-
+        lines++;
         free(l_x);
         free(r_x);
-        free(xi);
     }
 
+    printf("\nShuffling data\n\n");
+    //Shuffle the loaded data
+    shuffle_data(X,y,pairs,linesRead,2);
+
+    printf("\nStart training...\n\n");
+    //Perfom the training
+    regressor = train_logisticRegression(regressor,X,y,train_size);
+
+    //Get the predictions from the model
+    double *pred = predict_logisticRegression(regressor,X,train_size,linesRead);
+
+    for(int i=0;i<(linesRead-train_size);i++)
+        printf("Target %d Prediction %f\n",y[train_size+i],pred[i]);
+
     //Print the metrics from the predictions after training
+    metrics = calculate_LearningMetrics(metrics,y,pred,train_size,linesRead);
     metrics = evaluate_LearningMetrics(metrics);
     print_LearningMetrics(metrics);
 

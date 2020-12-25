@@ -9,11 +9,11 @@
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename, HashTable **ht, int *linesRead);
 
+//Function for learning
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead);
 
-
+//Function for writing negative cliques
 void csvWriteNegativeCliques(HashTable **ht);
-
 
 //Function to create a new csv to write the cliques into
 void csvWriteCliques(HashTable **ht);
