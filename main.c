@@ -12,6 +12,20 @@ int errorCode;
 
 int main(int argc, char *argv[]){
 
+    //Check if the correct number of arguments was given
+    if(argsCheck(argc)==0)
+        return 1;
+
+    //Initialize the flags for the training to be begin
+    char *f;
+    int n;
+    char *v;
+    char *b;
+    if(initArgs(argc,argv,&f,&n,&v,&b)==0){
+        cleanArgs(f,v,b);
+        return 1;
+    }
+
     char *X_name = get_datasetX_name();
     //Dataset X not found - program will terminate
     if(X_name==NULL) {
