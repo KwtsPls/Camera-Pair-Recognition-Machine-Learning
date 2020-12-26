@@ -159,7 +159,7 @@ void csvWriteNegativeCliques(HashTable **ht){
 }
 
 
-void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead){
+void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type){
 
     FILE *fp;
     fp = fopen(filename,"r");
@@ -170,7 +170,10 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     //Create the model for the training
     logisticreg *regressor;
-    regressor = create_logisticReg(vocabulary->num_elements,CONCAT_VECTORS);
+    int steps=1;
+    int batches=1;
+    double learning_rate=0.004;
+    regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate);
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
     int train_size = linesRead-linesRead*0.2;
@@ -198,9 +201,9 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         //Label to integer
         int label = atoi(lbl_str);
 
-        double *l_x = getBagOfWords(ht,vocabulary,left_sp,"tf-idf");
-        double *r_x = getBagOfWords(ht,vocabulary,right_sp,"tf-idf");
-        double *xi = concatenate_vectors(l_x, r_x, regressor->numofN);
+        double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
+        double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
+        double *xi=vectorize(l_x,r_x,regressor->numofN,vector_type);
 
         X[lines-1]=xi;
         y[lines-1]=label;
@@ -233,6 +236,9 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     metrics = calculate_LearningMetrics(metrics,y,pred,train_size,linesRead);
     metrics = evaluate_LearningMetrics(metrics);
     print_LearningMetrics(metrics);
+
+    //Save the statistics
+    printStatistics(regressor);
 
     free(line);
     fclose(fp);

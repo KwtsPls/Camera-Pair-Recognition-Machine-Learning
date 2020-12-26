@@ -10,14 +10,19 @@
 typedef struct logisticreg{
     int numofN;
     double *vector_weights;
-    double error;
+    double learning_rate;
+    int steps;
+    int batches;
 }logisticreg;
-
-//Function to create Logistic Regressions
-logisticreg *create_logisticReg(int numofN,int mode);
 
 //Function to calculate logistic regressions
 logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high);
+
+//Function to create Logistic Regressionsrning rate
+logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate);
+
+//Function to create the vector for training
+double *vectorize(double *x, double *y, int numofN,int type);
 
 //Function to calculate euclidean distance
 double *absolute_distance(double *x, double *y, int numofN);
@@ -39,6 +44,9 @@ double sigmoid(double t);
 
 //Perfom the training based on the model
 logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size);
+
+//Function to print statistics to file
+void printStatistics(logisticreg *model);
 
 //Function to free memory for the logistic regression struct
 void delete_logisticReg(logisticreg **del);

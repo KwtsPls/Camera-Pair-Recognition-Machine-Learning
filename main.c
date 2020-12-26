@@ -21,10 +21,10 @@ int main(int argc, char *argv[]){
     //Initialize the flags for the training to be begin
     char *f=NULL;
     int n;
-    char *v=NULL;
+    int v;
     char *b=NULL;
     if(initArgs(argc,argv,&f,&n,&v,&b)==0){
-        cleanArgs(f,v,b);
+        cleanArgs(f,b);
         return 1;
     }
 
@@ -85,7 +85,9 @@ int main(int argc, char *argv[]){
 
     printf("\nBegin Training...\n\n");
 
-    csvLearning(f,ht,vocabulary,linesRead);
+    printf("%s\n",b);
+
+    csvLearning(f,ht,vocabulary,linesRead,b,v);
 
     printf("\nCreating file cliques.csv...\n");
 
@@ -104,6 +106,6 @@ int main(int argc, char *argv[]){
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
     free(X_name);
-    cleanArgs(f,v,b);
+    cleanArgs(f,b);
     return 0;
 }

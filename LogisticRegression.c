@@ -2,12 +2,23 @@
 #include <math.h>
 #include <stdlib.h>
 #include "LogisticRegression.h"
+#include <errno.h>
+#include "ErrorHandler.h"
+
 
 //Function to create Logistic Regressions
-logisticreg *create_logisticReg(int numofN,int mode){
+logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate){
     //Allocating size 
     logisticreg *lr = malloc(sizeof(logisticreg));
-    lr->error = 0.1;
+    
+    //Number of steps that learning needs
+    lr->steps = steps;
+
+    //Number of batches
+    lr->batches = batches;
+
+    // η - learning rate
+    lr->learning_rate = learning_rate;
     //Vocabulary length + 1 for the bias
     if(mode==ABSOLUTE_DISTANCE)
         lr->numofN = numofN+1;
@@ -17,10 +28,18 @@ logisticreg *create_logisticReg(int numofN,int mode){
 
     lr->vector_weights = malloc(lr->numofN * sizeof(double));
     for(int i=0; i<lr->numofN; i++)
-        lr->vector_weights[i] = 0.925;
+        lr->vector_weights[i] = 0.0;
     return lr;
 }
 
+
+//Function to create the vector for training
+double *vectorize(double *x, double *y, int numofN,int type){
+    if(type==ABSOLUTE_DISTANCE)
+        return absolute_distance(x,y,numofN);
+    else   
+        return concatenate_vectors(x,y,numofN);
+}
 
 //Function to calculate euclidean distance
 double *absolute_distance(double *x, double *y, int numofN){
@@ -67,21 +86,19 @@ double norm_distance(double *x, double *y, int numofN){
 //Function to calculate logistic regressions
 logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high){
 
-    // η - learning rate
-    double learning_rate = 0.004;
-
+    
     //Initialize previous weights
     double *new_weight = malloc(sizeof(double)*model->numofN);
     int cnt = 0;
     //Changing weights 1 to 1, until the error is reached...
-    while(1){  
+    for(int s=0;s<model->steps;s++){  
         cnt++;
         for(int j=0;j<model->numofN;j++){
             double gradient=0.0;
             double h=0.0;
             for(int i=low;i<high;i++){
                 if(y[i]==1){
-                    for(int k=0;k<11;k++){
+                    for(int k=0;k<10;k++){
                         double *xi = X[i];
                         double xij = xi[j];
                         //Calculate w_T * x
@@ -106,16 +123,13 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
                 }
             }
             // w(t+1) = w(t) - η*gradient 
-            new_weight[j] = model->vector_weights[j] - learning_rate*gradient;
+            new_weight[j] = model->vector_weights[j] - model->learning_rate*gradient;
         }
 
         //Update the current weights
         for(int j=0;j<model->numofN; j++)
             model->vector_weights[j] = new_weight[j];
 
-
-        if(cnt==5)
-            break;
     }
        
 
@@ -125,19 +139,18 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
 
 //Perfom the training based on the model
 logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size){
-    int batches = 16;
-    int n = size/batches;
-    int r = size%batches;
+    int n = size/(model->batches);
+    int r = size%(model->batches);
 
     //Perform a mini-batch training
     int low;
     int high;
     for(int i=0;i<(n-1);i++){
-        low = i*batches;
-        high = (i+1)*batches;
+        low = i*(model->batches);
+        high = (i+1)*(model->batches);
         model = fit_logisticRegression(model,X,y,low,high);
 
-        if((i*batches)%1024==0)
+        if((i*(model->batches))%1024==0)
             printf("%d\n",i);
 
     }
@@ -155,6 +168,7 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
     return model;
 }
 
+//Fucntion for predicting the 
 double *predict_logisticRegression(logisticreg *model,double **X,int train,int n){
     double *y_pred=malloc(sizeof(double)*(n-train));
     for(int i=0;i<(n-train);i++){
@@ -199,4 +213,60 @@ void delete_logisticReg(logisticreg **del){
     free((*del)->vector_weights);
     free((*del));
     *del = NULL;
+}
+
+
+//Function to print statistics to file
+void printStatistics(logisticreg *model){
+    FILE *fp;
+    //Open file to write to...
+    fp = fopen("stats.txt","w+");
+
+    int err = 0;
+
+    //Check if file Opened
+    if(fp==NULL){
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return;
+    }
+
+    //Print everything from our model, so we can use it again in another program
+    for(int i=0;i<5;i++){
+        switch (i){
+        case 0:
+            err=fprintf(fp,"Number of N : %d\n",model->numofN);
+            break;
+        case 1:
+            err = fprintf(fp,"Weights:\n");
+            if(err<0){
+                    errorCode = WRITING_TO_FILE;
+                    print_error();
+            }
+            for(int j=0;j<model->numofN;j++){
+                err = fprintf(fp,"%f\n",model->vector_weights[j]);
+                    //Something went wrong while writing to the file....
+                if(err<0){
+                    errorCode = WRITING_TO_FILE;
+                    print_error();
+                }
+            }
+            break;
+        case 2:
+            err=fprintf(fp,"Steps : %d\n",model->steps);
+            break;
+        case 3:
+            err=fprintf(fp,"Learning rate : %f\n",model->learning_rate);
+            break;
+        case 4:
+            err=fprintf(fp,"Batches : %d\n",model->batches);
+        }
+        //Something went wrong while writing to the file....
+        if(err<0){
+            errorCode = WRITING_TO_FILE;
+            print_error();
+        }
+    }
+    fclose(fp);
 }

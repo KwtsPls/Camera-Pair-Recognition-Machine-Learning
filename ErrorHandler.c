@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ErrorHandler.h"
+#include "LogisticRegression.h"
 
 int errorCode;
 
@@ -33,7 +34,7 @@ int argsCheck(int argNum)
 }
 
 //Function to use the values of the arguments given by the command line
-int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
+int initArgs(int argc,char *argv[],char **f,int *n,int *v,char **b)
 {
     int ff=0,fn=0,fv=0,fb=0;
     for(int i=1;i<argc;i++)
@@ -88,11 +89,12 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
                 //check if the argument was already given
                 if(fv==0)
                 {
-                    if(strcmp(argv[i + 1],"abs")==0 || strcmp(argv[i + 1],"concat")==0){
-                        //Get the vectorization to be used
-                        *v = (char *) malloc(strlen(argv[i + 1]) + 1);
-                        strcpy(*v, argv[i + 1]);
-                        fv = 1;
+                    fv = 1;
+                    if(strcmp(argv[i + 1],"abs")==0){
+                        *v =ABSOLUTE_DISTANCE;
+                    }
+                    else if(strcmp(argv[i + 1],"concat")==0){
+                        *v=CONCAT_VECTORS;
                     }
                     else{
                         errorCode=FLAG_ERROR;
@@ -114,8 +116,8 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
                 {
                     if(strcmp(argv[i + 1],"bow")==0 || strcmp(argv[i + 1],"tf-idf")==0) {
                         //Get the type of values the vectors can have tf-idf/bow
-                        *v = (char *) malloc(strlen(argv[i + 1]) + 1);
-                        strcpy(*v, argv[i + 1]);
+                        *b = (char *) malloc(strlen(argv[i + 1]) + 1);
+                        strcpy(*b, argv[i + 1]);
                         fb = 1;
                     }
                     else{
@@ -143,11 +145,9 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
 }
 
 //Function to delete the given arguments for the command line
-void cleanArgs(char *f,char *v,char *b){
+void cleanArgs(char *f,char *b){
     if(f!=NULL)
         free(f);
-    if(v!=NULL)
-        free(v);
     if(b!=NULL)
         free(b);
 }
