@@ -12,15 +12,17 @@ int errorCode;
 
 int main(int argc, char *argv[]){
 
+    /* Check for valid arguments and datasets */
+
     //Check if the correct number of arguments was given
     if(argsCheck(argc)==0)
         return 1;
 
     //Initialize the flags for the training to be begin
-    char *f;
+    char *f=NULL;
     int n;
-    char *v;
-    char *b;
+    char *v=NULL;
+    char *b=NULL;
     if(initArgs(argc,argv,&f,&n,&v,&b)==0){
         cleanArgs(f,v,b);
         return 1;
@@ -33,6 +35,11 @@ int main(int argc, char *argv[]){
         print_error();
         return 1;
     }
+
+    /*############################################*/
+
+
+    /* Initialize structs to be used for the training */
 
     //Hashtable containing the cliques
     HashTable *ht = initHashTable(TABLE_INIT_SIZE);
@@ -49,7 +56,6 @@ int main(int argc, char *argv[]){
         destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
         return 1;
     }
-
     printf("\nData loading was successful!\n\n");
 
     printf("\nFound %d unique words...\n\n",vocabulary->num_elements);
@@ -59,29 +65,45 @@ int main(int argc, char *argv[]){
 
     printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
 
+    /*###################################################*/
+
+
+
+    /* Create cliques and negative relations from the given file */
+
     printf("\nCreating cliques...\n\n");
 
     int linesRead = 0;
-    ht = csvParser("sigmod_medium_labelled_dataset.csv",&ht, &linesRead);
+    ht = csvParser(f,&ht, &linesRead);
 
     printf("\nFinished creating cliques!\n\n");
 
+    /*#####################################################*/
+
+
+    /* Start the training of the model */
+
     printf("\nBegin Training...\n\n");
 
-    csvLearning("sigmod_medium_labelled_dataset.csv",ht,vocabulary,linesRead);
+    csvLearning(f,ht,vocabulary,linesRead);
 
     printf("\nCreating file cliques.csv...\n");
 
-    //Creating File to write to
+    /*#####################################*/
+
+
+    /* Write the statistics of the program and free all allocated memory */
+
+    //Save the create cliques into a file
     csvWriteCliques(&ht);
-    int print_neg_flag=1;
-    if(print_neg_flag == 1)
-        csvWriteNegativeCliques(&ht);
+    //If the flag for negative cliques is on write the negative cliques as well in a different file
+    if(n == 1) csvWriteNegativeCliques(&ht);
 
     printf("\nFile created successfully!\n\n");
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
     free(X_name);
+    cleanArgs(f,v,b);
     return 0;
 }

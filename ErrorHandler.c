@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "ErrorHandler.h"
 
 int errorCode;
@@ -23,7 +25,7 @@ int argsCheck(int argNum)
     //Wrong number of arguments
     if(argNum!=9) {
         errorCode=ARGS_ERROR;
-        printError(errorCode);
+        print_error();
         return 0;
     }
 
@@ -70,7 +72,7 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
                     }
                     else{
                         errorCode=FLAG_ERROR;
-                        printError(errorCode);
+                        print_error();
                         return 0;
                     }
                 }
@@ -94,7 +96,7 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
                     }
                     else{
                         errorCode=FLAG_ERROR;
-                        printError(errorCode);
+                        print_error();
                         return 0;
                     }
                 }
@@ -118,7 +120,7 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
                     }
                     else{
                         errorCode=FLAG_ERROR;
-                        printError(errorCode);
+                        print_error();
                         return 0;
                     }
                 }
@@ -132,7 +134,7 @@ int initArgs(int argc,char *argv[],char **f,int *n,char **v,char **b)
             //Wrong flag was given as argument
             else{
                 errorCode=FLAG_ERROR;
-                printError(errorCode);
+                print_error();
                 return 0;
             }
         }
@@ -146,6 +148,6 @@ void cleanArgs(char *f,char *v,char *b){
         free(f);
     if(v!=NULL)
         free(v);
-    if(b!-NULL)
+    if(b!=NULL)
         free(b);
 }
