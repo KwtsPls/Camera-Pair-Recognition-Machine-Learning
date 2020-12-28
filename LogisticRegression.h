@@ -22,7 +22,7 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
 logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate);
 
 //Parsing a file that is the stats of the previous state of the model
-logisticreg *create_logisticReg_fromFile(char *filename);
+logisticreg *create_logisticReg_fromFile(char *filename,char **sigmod_filename);
 
 //Function to create the vector for training
 double *vectorize(double *x, double *y, int numofN,int type);
@@ -49,7 +49,7 @@ double sigmoid(double t);
 logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size);
 
 //Function to print statistics to file
-void printStatistics(logisticreg *model);
+void printStatistics(logisticreg *model,char *filename);
 
 //Function to free memory for the logistic regression struct
 void delete_logisticReg(logisticreg **del);

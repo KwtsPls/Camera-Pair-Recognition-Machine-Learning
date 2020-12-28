@@ -33,7 +33,7 @@ logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double
 }
 
 //Parsing a file that is the stats of the previous state of the model
-logisticreg *create_logisticReg_fromFile(char *filename){
+logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename){
     //Allocating size
     logisticreg *model = malloc(sizeof(logisticreg));
 
@@ -63,8 +63,11 @@ logisticreg *create_logisticReg_fromFile(char *filename){
         switch (i){
             char *str;
         case 0:
-            //Allocating to new string for safe breaking of string
-            // str = strdup(line);
+            str = strtok(line," \n");
+            printf("str:%s\n",str);
+            *sigmod_filename = strdup(str);
+            break;
+        case 1:
             //Number
             str = strtok(line," :\n");
             //Of
@@ -75,28 +78,22 @@ logisticreg *create_logisticReg_fromFile(char *filename){
             //Number of N:
             str = strtok(NULL," :\n");
             model->numofN = atoi(str);
-            // free(str);            
-            break;
-        case 1:
-            if(linesRead == 2)
-                model->vector_weights = malloc(sizeof(double)*(model->numofN));
-            else
-                model->vector_weights[linesRead-3] = atof(line);
             break;
         case 2:
-            //Allocating to new string for safe breaking of string
-            // str = strdup(line);
+            if(linesRead == 3)
+                model->vector_weights = malloc(sizeof(double)*(model->numofN));
+            else
+                model->vector_weights[linesRead-4] = atof(line);
+            break;
+        case 3:
             //Steps
             str = strtok(line," :\n");
             
             //Steps :
             str = strtok(NULL," :\n");
-            model->steps = atoi(str);
-            // free(str);            
+            model->steps = atoi(str);            
             break;
-        case 3:
-            //Allocating to new string for safe breaking of string
-            // str = strdup(line);
+        case 4:
             //Learning
             str = strtok(line," :\n");
             //rate
@@ -105,23 +102,19 @@ logisticreg *create_logisticReg_fromFile(char *filename){
             //Learning rate :
             str = strtok(NULL," :\n");
             model->learning_rate = atof(str);
-            // free(str);
             break;
-        case 4:
-            //Allocating to new string for safe breaking of string
-            // str = strdup(line);
+        case 5:
             //Batches
             str = strtok(line," :\n");
             
             //Batches :
             str = strtok(NULL," :\n");
             model->learning_rate = atoi(str);
-            // free(str);
         }
         //When parsing weights need to parse every one of them so i needs to be increased only when we parsed every weight
-        if(i!=1)
+        if(i!=2)
             i++;
-        else if(linesRead - 2 == model->numofN)
+        else if(linesRead - 3 == model->numofN)
             i++;
     }
     free(line);    
@@ -317,7 +310,7 @@ void delete_logisticReg(logisticreg **del){
 
 
 //Function to print statistics to file
-void printStatistics(logisticreg *model){
+void printStatistics(logisticreg *model, char *filename){
     FILE *fp;
     //Open file to write to...
     fp = fopen("stats.txt","w+");
@@ -332,6 +325,12 @@ void printStatistics(logisticreg *model){
         return;
     }
 
+    err = fprintf(fp,"%s\n",filename);
+    if(err<0){
+        errorCode = WRITING_TO_FILE;
+        print_error();
+    }
+            
     //Print everything from our model, so we can use it again in another program
     for(int i=0;i<5;i++){
         switch (i){

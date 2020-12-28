@@ -170,8 +170,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     //Create the model for the training
     logisticreg *regressor;
-    int steps=10;
-    int batches=32;
+    int steps=1;
+    int batches=1;
     double learning_rate=0.004;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate);
     //Initialize the metrics for the training
@@ -237,8 +237,17 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     metrics = evaluate_LearningMetrics(metrics);
     print_LearningMetrics(metrics);
 
+    for(int i=0;i<linesRead;i++){
+        free(pairs[i]);
+        free(X[i]);
+    }
+
+    free(X);
+    free(y);
+    free(pairs);
+    free(pred);
     //Save the statistics
-    printStatistics(regressor);
+    printStatistics(regressor,filename);
 
     free(line);
     fclose(fp);
