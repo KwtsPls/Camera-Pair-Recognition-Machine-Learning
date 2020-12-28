@@ -18,4 +18,7 @@ void csvWriteNegativeCliques(HashTable **ht);
 //Function to create a new csv to write the cliques into
 void csvWriteCliques(HashTable **ht);
 
+//Function for inference
+void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticreg *model, char *bow_type, int vector_type);
+
 #endif

@@ -4,7 +4,7 @@
 #include "LogisticRegression.h"
 #include <errno.h>
 #include "ErrorHandler.h"
-
+#include <string.h>
 
 //Function to create Logistic Regressions
 logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate){
@@ -31,6 +31,106 @@ logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double
         lr->vector_weights[i] = 0.0;
     return lr;
 }
+
+//Parsing a file that is the stats of the previous state of the model
+logisticreg *create_logisticReg_fromFile(char *filename){
+    //Allocating size
+    logisticreg *model = malloc(sizeof(logisticreg));
+
+
+    //File parsing
+
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+    int linesRead = 0;
+    int i = 0;
+
+    //Open file to read..
+    fp = fopen("stats.txt","r");
+
+    //Check if file Opened
+    if(fp==NULL){
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return NULL;
+    }
+
+    while((read = getline(&line, &len,fp))!=-1){
+        linesRead++;
+        switch (i){
+            char *str;
+        case 0:
+            //Allocating to new string for safe breaking of string
+            // str = strdup(line);
+            //Number
+            str = strtok(line," :\n");
+            //Of
+            str = strtok(NULL," :\n");
+            //N
+            str = strtok(NULL," :\n");
+
+            //Number of N:
+            str = strtok(NULL," :\n");
+            model->numofN = atoi(str);
+            // free(str);            
+            break;
+        case 1:
+            if(linesRead == 2)
+                model->vector_weights = malloc(sizeof(double)*(model->numofN));
+            else
+                model->vector_weights[linesRead-3] = atof(line);
+            break;
+        case 2:
+            //Allocating to new string for safe breaking of string
+            // str = strdup(line);
+            //Steps
+            str = strtok(line," :\n");
+            
+            //Steps :
+            str = strtok(NULL," :\n");
+            model->steps = atoi(str);
+            // free(str);            
+            break;
+        case 3:
+            //Allocating to new string for safe breaking of string
+            // str = strdup(line);
+            //Learning
+            str = strtok(line," :\n");
+            //rate
+            str = strtok(NULL," :\n");
+            
+            //Learning rate :
+            str = strtok(NULL," :\n");
+            model->learning_rate = atof(str);
+            // free(str);
+            break;
+        case 4:
+            //Allocating to new string for safe breaking of string
+            // str = strdup(line);
+            //Batches
+            str = strtok(line," :\n");
+            
+            //Batches :
+            str = strtok(NULL," :\n");
+            model->learning_rate = atoi(str);
+            // free(str);
+        }
+        //When parsing weights need to parse every one of them so i needs to be increased only when we parsed every weight
+        if(i!=1)
+            i++;
+        else if(linesRead - 2 == model->numofN)
+            i++;
+    }
+    free(line);    
+    fclose(fp);
+
+    return model;
+
+}
+
 
 
 //Function to create the vector for training
@@ -193,9 +293,9 @@ double loss_LogisticRegression(logisticreg *model, double *xi,int yi){
     wtx = sigmoid(wtx);
 
     if(yi==1)
-        error = -(((double)yi)*log(wtx));
+        error = -(((double)yi)*log10(wtx));
     else
-        error = -(((double)(1.0-yi))*log(1.0-wtx));
+        error = -(((double)(1.0-yi))*log10(1.0-wtx));
 
     return error;
 }

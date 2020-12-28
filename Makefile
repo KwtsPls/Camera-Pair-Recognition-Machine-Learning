@@ -1,6 +1,8 @@
 #Make part for the main function of the program
-main: main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o
+main: Inference.o main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o
 	gcc -g3 main.o JsonParser.o ErrorHandler.o Dictionary.o  Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o -o main -lm
+	gcc -g3 Inference.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o -o inference -lm
+
 
 #Make part for the test part of the program using acutest library
 test: test_check.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o
@@ -44,6 +46,9 @@ LogisticRegression.o : LogisticRegression.c LogisticRegression.h
 
 Metrics.o : Metrics.c Metrics.h
 	gcc -g3 -c -Wall Metrics.c
+
+Inference.o : Inference.c
+	gcc -g3 -c -Wall Inference.c
 
 clean:
 	rm main test main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o BagOfWords.o cliques.csv LogisticRegression.o Metrics.o

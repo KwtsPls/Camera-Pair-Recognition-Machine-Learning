@@ -21,6 +21,9 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
 //Function to create Logistic Regressionsrning rate
 logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate);
 
+//Parsing a file that is the stats of the previous state of the model
+logisticreg *create_logisticReg_fromFile(char *filename);
+
 //Function to create the vector for training
 double *vectorize(double *x, double *y, int numofN,int type);
 

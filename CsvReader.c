@@ -170,8 +170,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     //Create the model for the training
     logisticreg *regressor;
-    int steps=1;
-    int batches=1;
+    int steps=10;
+    int batches=32;
     double learning_rate=0.004;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate);
     //Initialize the metrics for the training
@@ -244,4 +244,96 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     fclose(fp);
     delete_logisticReg(&regressor);
     destroyLearningMetrics(&metrics);
+}
+
+//Function for inference
+void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticreg *model, char *bow_type, int vector_type){
+    FILE *fp;
+    fp = fopen(filename,"r");
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+    int lines=0;
+
+    //Firstly count the lines inside the file
+    int linesRead = 0;
+
+    while((read = getline(&line, &len,fp))!=-1)
+        linesRead++;
+
+    free(line);
+    line = NULL;
+    //Close the file and reopen it
+    fclose(fp);
+
+    //Decrease the linesRead cause left_spec,right_spec,label line was read...
+    linesRead--;
+
+    //Initialize the metrics for the training
+    LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
+    double **X = malloc(sizeof(double)*linesRead);
+    int *y = malloc(sizeof(int)*linesRead);
+    char **pairs = malloc(sizeof(char*)*linesRead);
+
+    fp = fopen(filename,"r");
+
+
+    while((read = getline(&line, &len,fp))!=-1){
+
+        if(lines==0){ //Skip First Line cause its Left_spec, Right_Spec, label
+            lines++;
+            continue;
+        }
+
+
+        char *left_sp,*right_sp,*lbl_str;
+        //Take left_spec_id
+        left_sp = strtok(line,",");
+        //Take right_spec_id
+        right_sp = strtok(NULL,",");
+        //Take label
+        lbl_str = strtok(NULL,",");
+        //Label to integer
+        int label = atoi(lbl_str);
+
+        double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
+        double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
+        double *xi=vectorize(l_x,r_x,model->numofN,vector_type);
+
+        X[lines-1]=xi;
+        y[lines-1]=label;
+        char *new_pair = malloc(strlen(left_sp)+1+strlen(right_sp)+1);
+        strcpy(new_pair,left_sp);
+        strcat(new_pair,",");
+        strcat(new_pair,right_sp);
+        pairs[lines-1]=new_pair;
+
+        lines++;
+        free(l_x);
+        free(r_x);
+    }
+
+    //Get the predictions from the model
+    double *pred = predict_logisticRegression(model,X,0,linesRead);
+
+    for(int i=0;i<linesRead;i++)
+        printf("Target %d Prediction %f\n",y[i],pred[i]);
+
+    //Print the metrics from the predictions after training
+    metrics = calculate_LearningMetrics(metrics,y,pred,0,linesRead);
+    metrics = evaluate_LearningMetrics(metrics);
+    print_LearningMetrics(metrics);
+
+    for(int i=0;i<linesRead;i++){
+        free(X[i]);
+        free(pairs[i]);
+    }
+    free(pred);
+    free(X);
+    free(y);
+    free(pairs);
+    destroyLearningMetrics(&metrics);
+    free(line);
+    fclose(fp);
+
 }
