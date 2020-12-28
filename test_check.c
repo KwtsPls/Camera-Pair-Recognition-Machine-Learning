@@ -13,6 +13,17 @@ int num_pairs(int N){
     return N*(N-1)/2;
 }
 
+//Helper function to find the summation of different combinations between negative relations
+int num_neg_pairs(int A[],int n){
+    int sum=0;
+    for(int i=0;i<n;i++){
+        for(int j=i+1;j<n;j++) {
+            sum += A[i] * A[j];
+        }
+    }
+    return sum;
+}
+
 //Create a new int dynamically
 int *create_int(int value){
     int *n = malloc(sizeof(int));
@@ -86,6 +97,16 @@ void insert_and_test_hashtable(HashTable **ht,Dictionary *dict,int total){
     int h = hashCode(dict->dict_name,(*ht)->buckets_num);
     int index = findKeyBucketEntry(*ht,dict->dict_name);
     TEST_ASSERT( getTopKeyBucketEntry((*ht)->table[h],index) == dict);
+}
+
+//Insert check for secTable
+void insert_and_test_secTable(secTable **st,void *entry,int total){
+
+    *st = insert_secTable(*st,entry);
+    TEST_ASSERT((*st)->num_elements==total);
+
+    //Search for the inserted value
+    TEST_ASSERT(find_secTable(*st,entry)==1);
 }
 
 /*################ DICTIONARY TEST UNITS ################*/
@@ -431,22 +452,27 @@ void test_hashtable_cliques(){
     //Search for number of items in each clique created
     int h = hashCode(food_key,ht->buckets_num);
     int index = findKeyBucketEntry(ht,food_key);
+    BucketList *food_ptr = ht->table[h]->array[index]->set;
     TEST_ASSERT( ht->table[h]->array[index]->set->num_entries == 10);
 
     h = hashCode(neg_key,ht->buckets_num);
     index = findKeyBucketEntry(ht,neg_key);
+    BucketList *neg_ptr = ht->table[h]->array[index]->set;
     TEST_ASSERT( ht->table[h]->array[index]->set->num_entries == 27);
 
     h = hashCode(pos_key,ht->buckets_num);
     index = findKeyBucketEntry(ht,pos_key);
+    BucketList *pos_ptr = ht->table[h]->array[index]->set;
     TEST_ASSERT( ht->table[h]->array[index]->set->num_entries == 32);
 
     h = hashCode(veh_key,ht->buckets_num);
     index = findKeyBucketEntry(ht,veh_key);
+    BucketList *veh_ptr = ht->table[h]->array[index]->set;
     TEST_ASSERT( ht->table[h]->array[index]->set->num_entries == 3);
 
     h = hashCode(num_key,ht->buckets_num);
     index = findKeyBucketEntry(ht,num_key);
+    BucketList *num_ptr = ht->table[h]->array[index]->set;
     TEST_ASSERT( ht->table[h]->array[index]->set->num_entries == 5);
 
 
@@ -468,6 +494,40 @@ void test_hashtable_cliques(){
         }
         cur = cur->next;
     }
+
+    //Extra testing for the negative relations
+    //In this test dataset each clique is negatively related with each other clique
+    //So for every clique check if it holds a negative pointer to each of the other cliques
+    TEST_ASSERT(find_secTable(food_ptr->negatives,neg_ptr)==1);
+    TEST_ASSERT(find_secTable(food_ptr->negatives,pos_ptr)==1);
+    TEST_ASSERT(find_secTable(food_ptr->negatives,veh_ptr)==1);
+    TEST_ASSERT(find_secTable(food_ptr->negatives,num_ptr)==1);
+    TEST_ASSERT(find_secTable(food_ptr->negatives,food_ptr)==0);
+
+    TEST_ASSERT(find_secTable(neg_ptr->negatives,food_ptr)==1);
+    TEST_ASSERT(find_secTable(neg_ptr->negatives,pos_ptr)==1);
+    TEST_ASSERT(find_secTable(neg_ptr->negatives,veh_ptr)==1);
+    TEST_ASSERT(find_secTable(neg_ptr->negatives,num_ptr)==1);
+    TEST_ASSERT(find_secTable(neg_ptr->negatives,neg_ptr)==0);
+
+    TEST_ASSERT(find_secTable(pos_ptr->negatives,neg_ptr)==1);
+    TEST_ASSERT(find_secTable(pos_ptr->negatives,food_ptr)==1);
+    TEST_ASSERT(find_secTable(pos_ptr->negatives,veh_ptr)==1);
+    TEST_ASSERT(find_secTable(pos_ptr->negatives,num_ptr)==1);
+    TEST_ASSERT(find_secTable(pos_ptr->negatives,pos_ptr)==0);
+
+    TEST_ASSERT(find_secTable(veh_ptr->negatives,neg_ptr)==1);
+    TEST_ASSERT(find_secTable(veh_ptr->negatives,pos_ptr)==1);
+    TEST_ASSERT(find_secTable(veh_ptr->negatives,food_ptr)==1);
+    TEST_ASSERT(find_secTable(veh_ptr->negatives,num_ptr)==1);
+    TEST_ASSERT(find_secTable(veh_ptr->negatives,veh_ptr)==0);
+
+    TEST_ASSERT(find_secTable(num_ptr->negatives,neg_ptr)==1);
+    TEST_ASSERT(find_secTable(num_ptr->negatives,pos_ptr)==1);
+    TEST_ASSERT(find_secTable(num_ptr->negatives,veh_ptr)==1);
+    TEST_ASSERT(find_secTable(num_ptr->negatives,food_ptr)==1);
+    TEST_ASSERT(find_secTable(num_ptr->negatives,num_ptr)==0);
+
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
 }
@@ -495,6 +555,9 @@ void test_hashtable_write_file(){
     ht = csvParser(DATASET_PATH,&ht,&lines);
     //Create the file containing the pairs
     csvWriteCliques(&ht);
+    //Create file containing the negative relations
+    csvWriteNegativeCliques(&ht);
+
 
     FILE *fp;
 
@@ -529,8 +592,42 @@ void test_hashtable_write_file(){
     //Check if the lines of the created file are equal to the number of total pairs
     TEST_ASSERT( count == line_num );
 
+    //For the negative relations file
+    //In the test dataset each type clique is negative related to all the other cliques
+    //thus the number of negative relations to be printed must be equal to
+    //the summation of the mults between the number of elements of each different clique
+    //always considering not to print duplicates
+
+    FILE *nfp;
+
+    nfp = fopen("neg_cliques.csv","r");
+    TEST_ASSERT( nfp != NULL );
+    //One line for the title of the csv file
+    int cliques_array[5];
+    cliques_array[0]=10;
+    cliques_array[1]=27;
+    cliques_array[2]=32;
+    cliques_array[3]=3;
+    cliques_array[4]=5;
+
+    //Get the actual number of negative pairs
+    int neg_num = num_neg_pairs(cliques_array,5);
+
+
+    //Count the lines inside the file
+    int neg_count=0;
+    for (char c = getc(nfp); c != EOF; c = getc(nfp)) {
+        if (c == '\n')
+            neg_count = neg_count + 1;
+    }
+
+    //neg_count is decreased by 1 to ignore the title of the csv output
+    TEST_ASSERT((neg_count-1)==neg_num);
+
     fclose(fp);
     remove("cliques.csv");
+    fclose(nfp);
+    remove("neg_cliques.csv");
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
 }
 
@@ -543,9 +640,165 @@ void test_hashtable_write_file(){
 //One to test an empty table for storing pointers
 //One to test an empty table for storing indexed word struct
 void test_sectable_create(){
+    //Create hashtable for strings
+    secTable *st_str = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
+    TEST_ASSERT( st_str!=NULL );
+    TEST_ASSERT( st_str->numOfBuckets == ST_INIT_SIZE);
+    TEST_ASSERT( st_str->table != NULL );
+    TEST_ASSERT( st_str->cmpFunction != NULL );
+    TEST_ASSERT( st_str->hashFunction != NULL );
+    TEST_ASSERT( st_str->deleteFunction != NULL);
+    TEST_ASSERT( st_str->type == String);
 
+    //Create hash table for void pointers
+    secTable *st_ptr = create_secTable(ST_INIT_SIZE,SB_SIZE,HashPointer,ComparePointer,NULL,Pointer);
+    TEST_ASSERT( st_ptr!=NULL );
+    TEST_ASSERT( st_ptr->numOfBuckets == ST_INIT_SIZE);
+    TEST_ASSERT( st_ptr->table != NULL );
+    TEST_ASSERT( st_ptr->cmpFunction != NULL );
+    TEST_ASSERT( st_ptr->hashFunction != NULL );
+    TEST_ASSERT( st_ptr->deleteFunction == NULL);
+    TEST_ASSERT( st_ptr->type == Pointer);
+
+    //Create hash table for indexed words
+    secTable *st_indx = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
+    TEST_ASSERT( st_indx!=NULL );
+    TEST_ASSERT( st_indx->numOfBuckets == ST_INIT_SIZE);
+    TEST_ASSERT( st_indx->table != NULL );
+    TEST_ASSERT( st_indx->cmpFunction != NULL );
+    TEST_ASSERT( st_indx->hashFunction != NULL );
+    TEST_ASSERT( st_indx->deleteFunction != NULL);
+    TEST_ASSERT( st_indx->type == indxWrd);
+
+    destroy_secTable(&st_str,ST_HARD_DELETE_MODE);
+    destroy_secTable(&st_indx,ST_HARD_DELETE_MODE);
+    destroy_secTable(&st_ptr,ST_HARD_DELETE_MODE);
 }
 
+
+//Function to test the insertion of new elements in a secTable
+void test_sectable_insert(){
+
+    //Create a hash table for strings for the test
+    secTable *st = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
+
+    int N=40000;
+
+    for(int i=0;i<N;i++){
+        char *key = create_key(i);
+        insert_and_test_secTable(&st,key,i+1);
+    }
+
+    destroy_secTable(&st,ST_HARD_DELETE_MODE);
+}
+
+//Function to test the search of an items in the secTable
+void test_sectable_find(){
+
+    //Create a hash table for strings for the test
+    secTable *st = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
+
+    int N=40000;
+
+    //Check for values that surely exist in the table
+    for(int i=0;i<N;i++){
+        char *key = create_key(i);
+        st = insert_secTable(st,key);
+        TEST_ASSERT(find_secTable(st,key)==1);
+    }
+
+    int M=1000;
+
+    //Check for values that don't exist in the table
+    for(int i=N;i<N+M;i++){
+        char *key = create_key(i);
+        TEST_ASSERT(find_secTable(st,key)==0);
+        free(key);
+    }
+
+    //Do some random searches
+    for(int i=0;i<M;i++){
+        int random_index = rand()%(N*2);
+        char *key=create_key(random_index);
+
+        //Check if the key actually exists
+        int flag=0;
+        int h = st->hashFunction(key,st->numOfBuckets);
+        secondaryNode *node = st->table[h];
+        if(node!=NULL){
+            secondaryNode *cur = node;
+            //Iterate through the list and check if the value exists in a block
+            while(cur!=NULL){
+                for(int i=0;i<cur->num_elements;i++){
+                    if(st->cmpFunction(key,cur->values[i])==1) {
+                        flag = 1;
+                        break;
+                    }
+                }
+                cur = cur->next;
+            }
+        }
+
+        //Test the find function with the results of the manual search
+        TEST_ASSERT(find_secTable(st,key)==flag);
+
+        free(key);
+    }
+
+    destroy_secTable(&st,ST_HARD_DELETE_MODE);
+}
+
+
+//Function to check the reshape function of secTable struct
+void test_sectable_reshape(){
+
+    secTable *st = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
+
+    int N=1000;
+
+    for(int i=0;i<N;i++){
+        char *key = create_key(i);
+        st = insert_secTable(st,key);
+    }
+
+    //Current hashtable size must be the double of the old one
+    int old_size = st->numOfBuckets;
+    st = reshape_secTable(&st);
+    int new_size = findNextPrime(2*old_size);
+    TEST_ASSERT(st->numOfBuckets=new_size);
+    //Check if the actual size of the table has changed
+    TEST_ASSERT(st->num_elements==N);
+
+    destroy_secTable(&st,BUCKET_HARD_DELETE_MODE);
+}
+
+
+//Function to test the delete function of secTable
+void test_sectable_delete(){
+
+    //Create a hash table for strings for the test
+    secTable *st = create_secTable(ST_INIT_SIZE,SB_SIZE,HashString,CompareString,DeleteString,String);
+
+    int N=10000;
+
+    //Insert values into the table
+    for(int i=0;i<N;i++){
+        char *key = create_key(i);
+        st = insert_secTable(st,key);
+    }
+
+    int random_index = rand()%N;
+    char *key = create_key(random_index);
+
+    TEST_ASSERT(find_secTable(st,key)==1);
+    int old_size = st->num_elements;
+    st = deletevalue_secTable(st,key,ST_HARD_DELETE_MODE);
+    TEST_ASSERT(find_secTable(st,key)==0);
+    TEST_ASSERT(st->num_elements== old_size-1);
+
+    free(key);
+    destroy_secTable(&st,BUCKET_HARD_DELETE_MODE);
+}
 
 
 TEST_LIST = {
@@ -560,5 +813,9 @@ TEST_LIST = {
         { "hashtable_cliques",      test_hashtable_cliques       },
         { "hashtable_write_file",   test_hashtable_write_file    },
         { "sectable_create",        test_sectable_create         },
+        { "sectable_insert",        test_sectable_insert         },
+        { "sectable_find",          test_sectable_find           },
+        { "sectable_reshape",       test_sectable_reshape        },
+        { "sectable_delete",        test_sectable_delete         },
         { NULL, NULL }
 };

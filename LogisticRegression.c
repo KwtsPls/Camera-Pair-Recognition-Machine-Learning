@@ -60,8 +60,8 @@ logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename)
 
     while((read = getline(&line, &len,fp))!=-1){
         linesRead++;
+        char *str;
         switch (i){
-            char *str;
         case 0:
             str = strtok(line," \n");
             printf("str:%s\n",str);
@@ -230,7 +230,7 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
     return model;
 }
 
-//Perfom the training based on the model
+//Perform the training based on the model
 logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size){
     int n = size/(model->batches);
     int r = size%(model->batches);
@@ -261,7 +261,7 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
     return model;
 }
 
-//Fucntion for predicting the 
+//Function for predicting the
 double *predict_logisticRegression(logisticreg *model,double **X,int train,int n){
     double *y_pred=malloc(sizeof(double)*(n-train));
     for(int i=0;i<(n-train);i++){
