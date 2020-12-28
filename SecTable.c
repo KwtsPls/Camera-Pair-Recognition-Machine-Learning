@@ -516,7 +516,7 @@ secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
                 // n = num_texts : the total number of texts
                 // nt = ((indexedWord*)node->values[j])->idf : number of texts containing the current word
                 // idf = log(n/nt);
-                ((indexedWord*)node->values[j])->idf = log((double)num_texts/((indexedWord*)node->values[j])->idf);
+                ((indexedWord*)node->values[j])->idf = log10((double)num_texts/((indexedWord*)node->values[j])->idf);
                 // tfidf = tf*idf
                 // We calculate the mean by dividing with the total number of texts
                 // tfidf_mean = (tf*idf)/num_texts
