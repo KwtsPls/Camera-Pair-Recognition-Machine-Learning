@@ -1003,4 +1003,13 @@ char *dict_names[1000]={
 "milk",
 "moor"};
 
+char *json_keys[12]={"<page title>","camera type","color","display size","flash type","megapixels"
+        ,"optical sensor size","optical sensor type","returns policy","shooting modes","warranty  labor","warranty  parts"};
+
+char *title_value = "Buy Olympus SP-100 Digital Camera, 16MP, 50x Zoom, Black Cameras - Digital - Point & Shoot V103070BU000 today at PC Connection";
+
+int json_values[12]={1,1,1,1,1,1,1,1,1,17,1,1};
+
+int json_size=12;
+
 #endif//PROJECT_TEST_NAMES_H

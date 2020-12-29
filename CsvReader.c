@@ -170,9 +170,19 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     //Create the model for the training
     logisticreg *regressor;
+<<<<<<< HEAD
     int steps=1;
     int batches=256;
     double learning_rate=0.004;
+||||||| 8ee2d17
+    int steps=1;
+    int batches=1;
+    double learning_rate=0.004;
+=======
+    int steps=5;
+    int batches=2;
+    double learning_rate=0.0008;
+>>>>>>> fc4ae592c838532c4dd5cd41734824783b69abed
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate);
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
@@ -223,7 +233,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     shuffle_data(X,y,pairs,linesRead,2);
 
     printf("\nStart training...\n\n");
-    //Perfom the training
+    //Perform the training
     regressor = train_logisticRegression(regressor,X,y,train_size);
 
     //Get the predictions from the model
