@@ -75,8 +75,10 @@ int main(int argc, char *argv[]){
     printf("\nLoading Regressor...\n\n");
 
     char *filename;
+    char *bow_type;
+    int vector_type;
 
-    logisticreg *model = create_logisticReg_fromFile("stats.txt",&filename);
+    logisticreg *model = create_logisticReg_fromFile("stats.txt",&filename,&bow_type,&vector_type);
     if(model == NULL){
         printf("Stats.txt doesn't exist. Pls rerun firstly the ./main, and then run this main for the inference\n");
         return 1;
@@ -100,15 +102,16 @@ int main(int argc, char *argv[]){
 
     printf("\nBegin Inference...\n\n");
 
-    printf("tf-idf\n");
+    printf("%s\n",bow_type);
 
-    csvInference(argv[2], ht, vocabulary, model, "tf-idf", CONCAT_VECTORS);
+    csvInference(argv[2], ht, vocabulary, model, bow_type, vector_type);
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
     free(X_name);
     delete_logisticReg(&model);
 
+    free(bow_type);
     free(filename);
 
 

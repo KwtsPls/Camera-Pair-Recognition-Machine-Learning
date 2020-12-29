@@ -171,7 +171,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Create the model for the training
     logisticreg *regressor;
     int steps=1;
-    int batches=1;
+    int batches=256;
     double learning_rate=0.004;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate);
     //Initialize the metrics for the training
@@ -247,7 +247,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     free(pairs);
     free(pred);
     //Save the statistics
-    printStatistics(regressor,filename);
+    printStatistics(regressor,filename,bow_type,vector_type);
 
     free(line);
     fclose(fp);
@@ -285,6 +285,12 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     char **pairs = malloc(sizeof(char*)*linesRead);
 
     fp = fopen(filename,"r");
+   
+    char **right_spec_array;
+    char **left_spec_array; 
+
+    right_spec_array = malloc(sizeof(char*)*linesRead);
+    left_spec_array = malloc(sizeof(char*)*linesRead);
 
 
     while((read = getline(&line, &len,fp))!=-1){
@@ -305,6 +311,11 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
         //Label to integer
         int label = atoi(lbl_str);
 
+        //Storing right_spec and left_spec to an array for printing them to file
+
+        right_spec_array[lines - 1] = strdup(right_sp);
+        left_spec_array[lines-1] = strdup(left_sp);    
+    
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
         double *xi=vectorize(l_x,r_x,model->numofN,vector_type);
@@ -325,8 +336,31 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     //Get the predictions from the model
     double *pred = predict_logisticRegression(model,X,0,linesRead);
 
-    for(int i=0;i<linesRead;i++)
-        printf("Target %d Prediction %f\n",y[i],pred[i]);
+
+    //Creating file for the predictions
+    FILE *fp2;
+    fp2 = fopen("predictions.csv","w+");
+    int err = fprintf(fp2,"left_sp,right_sp,prediction\n");
+    if(err<0){
+        errorCode = WRITING_TO_FILE;
+        print_error();
+    }
+    for(int i=0;i<linesRead;i++){
+        err = fprintf(fp2,"%s,%s,%f\n",left_spec_array[i],right_spec_array[i],pred[i]);
+        if(err<0){
+            errorCode = WRITING_TO_FILE;
+            print_error();
+        }
+        free(left_spec_array[i]);
+        free(right_spec_array[i]);
+    }
+
+    free(left_spec_array);
+    free(right_spec_array);
+
+    fclose(fp2);
+
+
 
     //Print the metrics from the predictions after training
     metrics = calculate_LearningMetrics(metrics,y,pred,0,linesRead);

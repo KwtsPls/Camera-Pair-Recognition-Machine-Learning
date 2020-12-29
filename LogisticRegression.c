@@ -33,7 +33,7 @@ logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double
 }
 
 //Parsing a file that is the stats of the previous state of the model
-logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename){
+logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename,char **bow_type, int *vector_type){
     //Allocating size
     logisticreg *model = malloc(sizeof(logisticreg));
 
@@ -63,9 +63,22 @@ logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename)
         switch (i){
             char *str;
         case 0:
-            str = strtok(line," \n");
-            printf("str:%s\n",str);
+            //Filename,bowtype,vector_type
+            str = strtok(line," ,\n");
+            //FIlename
             *sigmod_filename = strdup(str);
+            
+            str = strtok(NULL," ,\n");
+            //bowtype
+            *bow_type = strdup(str);
+
+            //vector_type from string to Int
+            str=strtok(NULL," ,\n");
+            if(strcmp("abs",str) == 0)
+                *vector_type = ABSOLUTE_DISTANCE;
+            else
+                *vector_type = CONCAT_VECTORS;    
+
             break;
         case 1:
             //Number
@@ -310,7 +323,7 @@ void delete_logisticReg(logisticreg **del){
 
 
 //Function to print statistics to file
-void printStatistics(logisticreg *model, char *filename){
+void printStatistics(logisticreg *model, char *filename,char *bow_type, int vector_type){
     FILE *fp;
     //Open file to write to...
     fp = fopen("stats.txt","w+");
@@ -325,7 +338,17 @@ void printStatistics(logisticreg *model, char *filename){
         return;
     }
 
-    err = fprintf(fp,"%s\n",filename);
+    char *vector_string;
+    if(vector_type == CONCAT_VECTORS)
+        vector_string = strdup("concat");
+    else
+        vector_string = strdup("abs");
+    
+
+    err = fprintf(fp,"%s,%s,%s\n",filename,bow_type,vector_string);
+   
+    free(vector_string);
+   
     if(err<0){
         errorCode = WRITING_TO_FILE;
         print_error();
