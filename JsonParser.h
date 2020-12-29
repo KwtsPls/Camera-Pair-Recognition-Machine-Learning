@@ -12,6 +12,6 @@ char *get_datasetX_name();
 int Initialize_dataset_X(char *,HashTable **,secTable **);
 
 //Function to read data from json files
-void parse_json_file(char *,char *,HashTable **,secTable *stopwords,secTable **vocabulary);
+Dictionary *parse_json_file(char *,char *,secTable *stopwords,secTable **vocabulary);
 
 #endif //PROJECT_JSONPARSER_H

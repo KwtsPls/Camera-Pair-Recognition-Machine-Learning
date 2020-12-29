@@ -154,9 +154,9 @@ double *concatenate_vectors(double *x,double *y, int numofN){
     double *z;
     z = malloc(sizeof(double) * numofN);
     //Concatenate the vectors x and y
-    for(int i=1; i<=(numofN-1)/2;i++) {
-        z[i] = x[i-1];
-        z[i+(numofN-1)/2] = y[i-1];
+    for(int i=0; i<(numofN-1)/2;i++) {
+        z[i+1] = x[i];
+        z[i+1+(numofN-1)/2] = y[i];
     }
 
     //Add an additional column for bias w0
@@ -191,7 +191,7 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
             double h=0.0;
             for(int i=low;i<high;i++){
                 if(y[i]==1){
-                    for(int k=0;k<10;k++){
+                    for(int k=0;k<5;k++){
                         double *xi = X[i];
                         double xij = xi[j];
                         //Calculate w_T * x
@@ -243,9 +243,8 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
         high = (i+1)*(model->batches);
         model = fit_logisticRegression(model,X,y,low,high);
 
-        if((i*(model->batches))%1024==0)
-            printf("%d\n",i);
-
+        if((i*(model->batches))%1024==0 && i!=0)
+            printf("%d\n",i*(model->batches));
     }
 
     if(r==0){

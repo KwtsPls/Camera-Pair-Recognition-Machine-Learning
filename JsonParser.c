@@ -227,7 +227,11 @@ int Initialize_dataset_X(char *name,HashTable **ht,secTable **vocabulary){
                     strcat(spec_id,token);
 
                     //Read specs from json file
-                    parse_json_file(file_name,spec_id,ht,stopwords,vocabulary);
+                    Dictionary *dict = parse_json_file(file_name,spec_id,stopwords,vocabulary);
+                    //Concatenate all key-values to one sentence and insert the dictionary into the hashtable
+                    dict = concatenateAllDictionary(dict);
+                    *ht = insertHashTable(ht,dict);
+
 
                     free(spec_id);
                     free(file_name);
@@ -248,7 +252,7 @@ int Initialize_dataset_X(char *name,HashTable **ht,secTable **vocabulary){
 
 
 //Function to read data from json files
-void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords,secTable **vocabulary){
+Dictionary *parse_json_file(char *name,char* spec_id,secTable *stopwords,secTable **vocabulary){
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
@@ -267,7 +271,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
     if (fp == NULL){
         errorCode=JSON_FILE_UNABLE_TO_OPEN;
         print_error();
-        return;
+        return NULL;
     }
 
     //String for strtok
@@ -308,7 +312,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                     errorCode = MALLOC_FAILURE;
                     print_error();
                     fclose(fp);
-                    return;
+                    return NULL;
                 }
                 value = preprocess(value,stopwords,vocabulary,&unique_words,&text_len);
                 array_value[0] = malloc(strlen(value) + 1);
@@ -318,7 +322,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                     print_error();
                     fclose(fp);
                     free(array_value);
-                    return;
+                    return NULL;
                 }
                 strcpy(array_value[0], value);
                 free(value);
@@ -346,7 +350,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                     errorCode = MALLOC_FAILURE;
                     print_error();
                     fclose(fp);
-                    return;
+                    return NULL;
                 }
 
                 while ((read = getline(&array_line, &len, fp)) != -1) {
@@ -375,7 +379,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                             errorCode = MALLOC_FAILURE;
                             print_error();
                             fclose(fp);
-                            return;
+                            return NULL;
                         }
                     }
                     //Store the new string in the array
@@ -389,7 +393,7 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
                         fclose(fp);
                         errorCode = MALLOC_FAILURE;
                         print_error();
-                        return;
+                        return NULL;
                     }
                     strcpy(array_value[values_num], value);
                     free(value);
@@ -409,8 +413,6 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
     }
 
 
-    dict = concatenateAllDictionary(dict);
-    *ht = insertHashTable(ht,dict);
     *vocabulary = update_tf_idf_values(*vocabulary,unique_words,text_len);
 
     fclose(fp);
@@ -418,5 +420,5 @@ void parse_json_file(char *name,char* spec_id,HashTable **ht,secTable *stopwords
         free(line);
     destroy_secTable(&unique_words,ST_HARD_DELETE_MODE);
 
-    return;
+    return dict;
 }

@@ -45,7 +45,8 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
         Dictionary *dict = findSpecHashTable(ht,spec_id);
 
         int text_len=0;
-        char *text = dict->list->value[0];
+        char *text = strdup(dict->list->value[0]);
+        char *temp = text;
         char *cur=NULL;
         indexedWord *iw;
 
@@ -65,6 +66,7 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
         }
 
         free(idf_array);
+        free(temp);
         return bow;
     }
     //Return simple bag of words
@@ -83,7 +85,8 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
         //Get the dictionary holding the information of the current spec
         Dictionary *dict = findSpecHashTable(ht,spec_id);
 
-        char *text = dict->list->value[0];
+        char *text = strdup(dict->list->value[0]);
+        char *temp = text;
         char *cur=NULL;
         indexedWord *iw;
 
@@ -94,6 +97,7 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
             }
         }
 
+        free(temp);
         return bow;
     }
 }
