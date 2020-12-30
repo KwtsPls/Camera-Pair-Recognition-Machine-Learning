@@ -7,7 +7,7 @@
 #define ST_SOFT_DELETE_MODE 0
 #define ST_HARD_DELETE_MODE 1
 #define MAX_PRIME 100000
-#define MIN_TF_IDF 0.001200
+#define MIN_TF_IDF 0.000800
 
 // Hash functions for the different data types in the hash table
 typedef unsigned int (*Hash)(void *, int size);
@@ -157,6 +157,12 @@ secTable *update_tf_idf_word(secTable *st,char *value,int text_len);
 
 //Function to evaluate the tf-idf mean of every word in the vocabulary
 secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts);
+
+//Function to write the vocabulary into a file
+void writeVocab_secTable(secTable *st);
+
+//Function to create a vocabulary from the file
+secTable *initVocab_secTable(char *filename);
 
 //Function to write negative Cliques
 void secTable_writeNegativeCliques(secTable *st, char *left_sp, FILE *fp);

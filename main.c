@@ -101,7 +101,10 @@ int main(int argc, char *argv[]){
     //If the flag for negative cliques is on write the negative cliques as well in a different file
     if(n == 1) csvWriteNegativeCliques(&ht);
 
-    printf("\nFile created successfully!\n\n");
+    //Save the vocabulary
+    writeVocab_secTable(vocabulary);
+
+    printf("\nFiles created successfully!\n\n");
 
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);

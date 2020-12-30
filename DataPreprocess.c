@@ -106,21 +106,22 @@ char *remove_stopwords(char *text,secTable *stopwords,secTable **vocabulary,secT
             }
 
             //If the current word does not exist in the vocabulary add it
-            indexedWord *iw = createIndexedWord(cur,(*vocabulary)->num_elements);
-            if (find_secTable(*vocabulary, iw) == 0) {
-                *vocabulary = insert_secTable(*vocabulary, iw);
-                char *new_word = malloc(strlen(cur)+1);
-                strcpy(new_word,cur);
-                *unique_words = insert_secTable(*unique_words, new_word);
-            }
-            else{
-                if(find_secTable(*unique_words,cur)==0) {
-                    char *new_word = malloc(strlen(cur)+1);
-                    strcpy(new_word,cur);
+            if(vocabulary!=NULL) {
+                indexedWord *iw = createIndexedWord(cur, (*vocabulary)->num_elements);
+                if (find_secTable(*vocabulary, iw) == 0) {
+                    *vocabulary = insert_secTable(*vocabulary, iw);
+                    char *new_word = malloc(strlen(cur) + 1);
+                    strcpy(new_word, cur);
                     *unique_words = insert_secTable(*unique_words, new_word);
+                } else {
+                    if (find_secTable(*unique_words, cur) == 0) {
+                        char *new_word = malloc(strlen(cur) + 1);
+                        strcpy(new_word, cur);
+                        *unique_words = insert_secTable(*unique_words, new_word);
+                    }
+                    *vocabulary = updateTF_secTable(*vocabulary, iw);
+                    deleteIndexedWord(iw);
                 }
-                *vocabulary = updateTF_secTable(*vocabulary,iw);
-                deleteIndexedWord(iw);
             }
 
 

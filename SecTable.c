@@ -545,6 +545,89 @@ secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
     return new_vocab;
 }
 
+//Function to write the vocabulary into a file
+void writeVocab_secTable(secTable *st){
+
+    if(st->type!=indxWrd)
+        return;
+
+    FILE *fp;
+    //Open file to write to...
+    fp = fopen("vocabulary.txt","w+");
+    int err = 0;
+    //Check if file Opened
+    if(fp==NULL){
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return;
+    }
+
+    //Iterate through the table to write down every indexed word
+    for(int i=0;i<st->numOfBuckets;i++){
+        if(st->table[i]!=NULL){
+            secondaryNode *node = st->table[i];
+            while(node!=NULL){
+                for(int j=0;j<node->num_elements;j++){
+                    indexedWord *idx = (indexedWord*)node->values[j];
+                    err = fprintf(fp,"%s %d %f %f\n",idx->word,idx->index,idx->idf,idx->tf_idf_mean);
+                    if(err<0){
+                        errorCode = WRITING_TO_FILE;
+                        print_error();
+                    }
+                }
+                node = node->next;
+            }
+        }
+    }
+    fclose(fp);
+}
+
+//Function to create a vocabulary from the file
+secTable *initVocab_secTable(char *filename){
+
+    //Hashtable for the vocabulary
+    secTable *vocabulary = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
+
+    FILE *fp;
+    //Open file to write to...
+    fp = fopen(filename,"r");
+    //Check if file Opened
+    if(fp==NULL){
+        errorCode = OPENING_FILE;
+        fclose(fp);
+        print_error();
+        return NULL;
+    }
+
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+
+    //Parse the file in which is stored the vocabulary
+    while((read = getline(&line, &len,fp))!=-1){
+        char *str; char *word;
+        int index; double idf; double mean;
+        word = strtok(line," ");
+        str = strtok(NULL," ");
+        index = atoi(str);
+        str = strtok(NULL," ");
+        idf = atof(str);
+        str = strtok(NULL," ");
+        mean = atof(str);
+
+        indexedWord *idx = createIndexedWord(word,index);
+        idx->idf=idf;
+        idx->tf_idf_mean=mean;
+
+        vocabulary = insert_secTable(vocabulary,idx);
+    }
+
+    free(line);
+    fclose(fp);
+    return vocabulary;
+}
+
 
 //Function to write negative Cliques
 void secTable_writeNegativeCliques(secTable *st, char *left_sp, FILE *fp){

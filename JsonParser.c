@@ -412,8 +412,8 @@ Dictionary *parse_json_file(char *name,char* spec_id,secTable *stopwords,secTabl
         }
     }
 
-
-    *vocabulary = update_tf_idf_values(*vocabulary,unique_words,text_len);
+    if(vocabulary!=NULL)
+        *vocabulary = update_tf_idf_values(*vocabulary,unique_words,text_len);
 
     fclose(fp);
     if (line)

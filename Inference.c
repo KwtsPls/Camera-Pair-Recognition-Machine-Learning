@@ -45,27 +45,20 @@ int main(int argc, char *argv[]){
     //Hashtable containing the cliques
     HashTable *ht = initHashTable(TABLE_INIT_SIZE);
 
-    //Hashtable for the vocabulary
-    secTable *vocabulary = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
-
     printf("Loading data...\n\n");
 
-    
-    int check = Initialize_dataset_X(X_name,&ht,&vocabulary);
+    int check = Initialize_dataset_X(X_name,&ht,NULL);
     if(check==-1) {
         printf("Dataset initialization was not successful...");
         deleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
-        destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
         return 1;
     }
+
+    secTable *vocabulary = initVocab_secTable("vocabulary.txt");
+
+    printf("\nWord vector size : %d \n\n",vocabulary->num_elements);
+
     printf("\nData loading was successful!\n\n");
-
-    printf("\nFound %d unique words...\n\n",vocabulary->num_elements);
-
-    //Get the updated vocabulary
-    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht));
-
-    printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
 
 
     /*###################################################*/
