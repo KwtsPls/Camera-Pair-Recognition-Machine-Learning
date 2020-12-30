@@ -74,7 +74,13 @@ int main(int argc, char *argv[]){
     printf("\nCreating cliques...\n\n");
 
     int linesRead = 0;
-    ht = csvParser(f,&ht, &linesRead);
+    int pos_num=0;
+    int neg_num=0;
+    ht = csvParser(f,&ht, &linesRead,&pos_num,&neg_num);
+
+    int ratio = neg_num/pos_num;
+    printf("\n0 to 1 ratio is %d\n\n",ratio);
+
 
     printf("\nFinished creating cliques!\n\n");
 
@@ -87,7 +93,7 @@ int main(int argc, char *argv[]){
 
     printf("%s\n",b);
 
-    csvLearning(f,ht,vocabulary,linesRead,b,v);
+    csvLearning(f,ht,vocabulary,linesRead,b,v,ratio);
 
     printf("\nCreating file cliques.csv...\n");
 

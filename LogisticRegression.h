@@ -13,13 +13,14 @@ typedef struct logisticreg{
     double learning_rate;
     int steps;
     int batches;
+    int ratio;
 }logisticreg;
 
 //Function to calculate logistic regressions
 logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high);
 
-//Function to create Logistic Regressionsrning rate
-logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate);
+//Function to create a Logistic Regression model
+logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate,int ratio);
 
 //Parsing a file that is the stats of the previous state of the model
 logisticreg *create_logisticReg_fromFile(char *filename,char **sigmod_filename, char **bow_type, int *vector_type);

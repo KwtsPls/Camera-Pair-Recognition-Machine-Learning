@@ -8,7 +8,7 @@
 #include "DataPreprocess.h"
 
 //Parser for finding pairs of spec_ids in the csv file
-HashTable *csvParser(char *filename,HashTable **ht, int *linesRead)
+HashTable *csvParser(char *filename,HashTable **ht, int *linesRead,int *pos_num,int *neg_num)
 {
     FILE *fp;
     char *line = NULL;
@@ -47,10 +47,16 @@ HashTable *csvParser(char *filename,HashTable **ht, int *linesRead)
         lbl_str = strtok(NULL,",");
         //Label to integer
         int label = atoi(lbl_str);
-        if(label == 1) //They're the same
-            *ht = createCliqueHashTable(ht, left_sp,right_sp);
-        else if (label == 0) //Negative relation
-            *ht = negativeRelationHashTable((*ht),left_sp,right_sp);
+        //They're the same
+        if(label == 1) {
+            *ht = createCliqueHashTable(ht, left_sp, right_sp);
+            (*pos_num)++;
+        }
+        //Negative relation
+        else if (label == 0) {
+            *ht = negativeRelationHashTable((*ht), left_sp, right_sp);
+            (*neg_num)++;
+        }
 
 
         i++;    //New line Read
@@ -159,7 +165,7 @@ void csvWriteNegativeCliques(HashTable **ht){
 }
 
 
-void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type){
+void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type,int ratio){
 
     FILE *fp;
     fp = fopen(filename,"r");
@@ -173,7 +179,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     int steps=5;
     int batches=2;
     double learning_rate=0.02;
-    regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate);
+    regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
     int train_size = linesRead-linesRead*0.2;

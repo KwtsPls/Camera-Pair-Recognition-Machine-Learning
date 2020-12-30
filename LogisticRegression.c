@@ -7,7 +7,7 @@
 #include <string.h>
 
 //Function to create Logistic Regressions
-logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate){
+logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate,int ratio){
     //Allocating size 
     logisticreg *lr = malloc(sizeof(logisticreg));
     
@@ -16,6 +16,11 @@ logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double
 
     //Number of batches
     lr->batches = batches;
+
+    if(ratio==0)
+        lr->ratio=1;
+    else
+        lr->ratio=ratio;
 
     // η - learning rate
     lr->learning_rate = learning_rate;
@@ -36,7 +41,8 @@ logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double
 logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename,char **bow_type, int *vector_type){
     //Allocating size
     logisticreg *model = malloc(sizeof(logisticreg));
-
+    //Ratio is not important in inference
+    model->ratio=1;
 
     //File parsing
 
@@ -204,7 +210,7 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
             double h=0.0;
             for(int i=low;i<high;i++){
                 if(y[i]==1){
-                    for(int k=0;k<5;k++){
+                    for(int k=0;k<model->ratio;k++){
                         double *xi = X[i];
                         double xij = xi[j];
                         //Calculate w_T * x

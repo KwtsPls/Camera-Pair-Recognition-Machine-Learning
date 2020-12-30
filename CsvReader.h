@@ -7,10 +7,10 @@
 #include <errno.h>
 
 //Parser for finding pairs of spec_ids in the csv file
-HashTable *csvParser(char *filename, HashTable **ht, int *linesRead);
+HashTable *csvParser(char *filename, HashTable **ht, int *linesRead,int *pos_num,int *neg_num);
 
 //Function for learning
-void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type);
+void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type,int ratio);
 
 //Function for writing negative cliques
 void csvWriteNegativeCliques(HashTable **ht);
