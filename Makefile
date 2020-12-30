@@ -55,4 +55,4 @@ Inference.o : Inference.c
 	gcc -g3 -c -Wall Inference.c
 
 clean:
-	rm main test main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o BagOfWords.o cliques.csv LogisticRegression.o Metrics.o test_machine_learning.o Inference.o
+	rm main test main.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o BagOfWords.o cliques.csv LogisticRegression.o Metrics.o test_machine_learning.o Inference.o neg_cliques.csv predictions.csv inference learning_test

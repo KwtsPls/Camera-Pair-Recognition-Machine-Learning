@@ -84,7 +84,9 @@ int main(int argc, char *argv[]){
 
 
     int linesRead = 0;
-    ht = csvParser(filename,&ht, &linesRead);
+    int pos=0;
+    int neg=0;
+    ht = csvParser(filename,&ht, &linesRead,&pos,&neg);
 
     printf("\nFinished creating cliques!\n\n");
 
