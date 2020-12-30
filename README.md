@@ -126,12 +126,127 @@ H συνάρτηση αυτή απελευθερώνει τη μνήμη, που
 Η συνάρτηση αυτή χρησιμοποιείται για να αλλάξουμε σωστά τους δείκτες στην νέα λίστα που θα διαμορφωθεί από το merge. Προσπελαύνουμε όλα τα στοιχεία που βρίσκονται στην clique_bucket βρίσκουμε τις θέσεις τους στο HashTable και ο δείκτης της λίστας τους set αλλάζει και ορίζεται να δείχνει εκεί που θα βρίσκεται η merged List. Κατα τη διάρκεια του βρόγχου παρακάμπτεται το old_bucket και δεν αλλάζουμε τον δείκτη του.
 #### `BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTable **ht,int h,int index)`
 Η συνάρτηση αυτή ενώνει δύο διαφορετικές λίστες μεταξύ τους. Στην μία περίπτωση, όπου η λίστα που min_List (η λίστα με τα λιγότερα num_entries) είναι γεμάτος ο κόμβος της κεφαλής της, προστίθεται στο τέλος της Max_list απελευθερώνεται ο χώρος που είχε δεσμευτεί από το δείκτη της min_list, το hashTable δείχνει σωστά στη νέα λίστα και επιστρέφεται η λίστα. Αλλιώς προσπελαύνεται κάθε στοιχείο της κεφαλής min_list και προστίθεται στη Max_List. Ο πρώτος κόμβος της min_list διαγράφεται. Αν η min_list άδειασε διαγράφουμε την υπόλοιπη λίστα θέτουμε τους δείκτες του HashTable να δείχνουν σωστά και επιστρέφουμε τη λίστα. Αλλιώς κάνουμε το ίδιο που κάναμε στην αρχική μας περίπτωση αφού τώρα θα έχουμε μία γεμάτη min_list.
+#### `HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp)`
+Η συνάρτηση αυτή χρησιμοποίειται για να εισάγει μία αρνητική συσχέτιση μεταξύ του `left_sp` και του `right_sp`.
+## LogisticRegression.h
+#### logisticreg
+Η δομή είναι μια απλή δομή μοντέλου logistic Regression. `int numOfN` είναι ο αριθμός των weights. `double *vector_weights` είναι ο πίνακας με τις τιμές των weights. `double learning_rate` είναι το "η", learning rate. `int steps` είναι ο αριθμός επαναλήψεων για ένα train session. `int batches` είναι ο αριθμός των διανυσμάτων που θα χρησιμοποιηθούν για κάποιο train. `int ratio` είναι ο αριθμός των επαναλήψεων που θα γίνουν όταν το αποτέλεσμα ενός διανύσματος είναι το 1.
+#### Functions
+#### `logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high)`
+Η συνάρτηση εφαρμόζει τον μαθηματικό τύπο της logisticRegression για έκεινη τη στιγμή. To low και το high καθορίζονται από το batch, που είναι ουσιαστικά, το με πόσα διανύσματα θα γίνει η εφαρμογή του τύπου.
+#### `logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate,int ratio)`
+Δημιουργεί το μοντέλο στη μνήμη.
+#### `logisticreg *create_logisticReg_fromFile(char *filename,char **sigmod_filename, char **bow_type, int *vector_type)`
+Διαβάζει ένα αρχείο, στην περιπτώση μας το *stats.txt*, και δημιουργεί το μοντέλο από εκεί. 
+#### `double *vectorize(double *x, double *y, int numofN,int type)`
+Δημιουργεί ένα διάνυσμα μεταξύ των left_spec_bagOfWords και right_spec_bagOfWords, ανάλογα με τον τύπο καλείται η το `absolute_distance` ή `concatenate_vectors`. 
+Αυτό το διάνυσμα αποθηκεύεται σε έναν πίνακα και χρησιμοποιείται και για το training και για το inference.
+#### `double *absolute_distance(double *x, double *y, int numofN)`
+Επιστρέφεται η απόλυτη απόσταση 2 διανυσμάτων.
+#### `double *concatenate_vectors(double *x,double *y, int numofN)`
+Επιστρέφεται η ένωση 2 διανυσμάτων.
+#### `double *predict_logisticRegression(logisticreg *model,double **X,int train,int n)`
+Yπολογίζεται ξεχωριστά το άθροισμα για κάθε ξεχωριστό διάνυσμα του X, το απότελεσμα του κάθε αθροίσματος αν δοθεί ως όρισμα στη `sigmoid` είναι η προβλεπόμενη τιμή. Επιστρέφονται όλες οι προβλεπόμενες τιμές.
+#### `double loss_LogisticRegression(logisticreg *model, double *xi,int yi)`
+Επιστρέφεται το error της τιμής που προβλέψαμε.
+#### `double sigmoid(double t)`
+Είναι η εφαρμογή του μαθηματικού τύπου της σιγμοιδής.
+#### `logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size)`
+Η συνάρτηση χωρίζει σε μικρότερους πίνακες τα διανύσματα που περιέχει ο πίνακας X (batch) και καλεί την `fit_logisticRegression` για να κάνει train το μοντέλο. 
+#### `void printStatistics(logisticreg *model,char *filename,char *bow_type, int vector_type)`
+H συνάρτηση αυτή τυπώνει σε ένα αρχείο ό,τι χρησιμοποιήθηκε κατα τη διάρκεια της διαδικασίας του training. Έτσι ώστε να μπορεί διαφορετική main να το διαβάσει και να δημιουργήσει το μοντέλο εκπαιδευμένο.
+#### `void delete_logisticReg(logisticreg **del)`
+Διαγράφει το μοντέλο και απελευθερώνει κατάλληλα τη μνήμη.
+## Metrics.h
+#### metrics
+Ουσιαστικά η δομή αυτή αποθηκεύει και υπολογίζει το recall, το precision και το f1_score του μοντέλου μας.
+## SecTable.h
+#### secondaryNode
+Είναι μια απλή δομή κόμβου λίστας στην οποία αποθηκεύονται σε πίνακα `int num_elements` στοιχεία `void **values`, δηλαδή ή θα είναι Pointer, αλλιώς διεύθυνση μνήμης για τις αρνητικές συσχετίσεις, ή θα είναι String ή θα είναι indexedWord. Υπάρχει ένας δείκτης `secondaryNode *next` για τον επόμενο κόμβο.
+#### secondaryTable
+Είναι ένα Hash Table, στο οποίο το υλοποιήσαμε με τέτοιο τρόπο έτσι ώστε να μπορεί να χρησιμοποιηθεί για να αποθηκεύουμε διαφορετικά δεδομένα στον κώδικα μας. `Data type` είναι ο τύπος του στοιχείου που έχει αποθηκευτεί στη δομή. `float loadFactor` είναι η μεταβλητή για το πότε θα κάνει reshape το Hash Table. `int numOfBuckets` είναι ο αριθμός των κουβάδων του Hash Table. `int num_elements` είναι ο τρέχων αριθμός στοιχείων που έχει αποθηκευτεί στο Hash Table. `int bucketSize` είναι το μέγεθος του κάθε κουβά. `Hash hashFunction` είναι δείκτης σε συνάρτηση κατακερματισμού, που βοηθάει, όταν έχουμε διαφορετικούς τύπους στοιχείων. Ομοίως έχουμε `Compare cmpFunction`, `Delete deleteFunction` οι οποίες αντίστοιχα συγκρίνουν και διαγράφουν στοιχεία του HashTable. `secondaryNode **table` είναι ο πίνακας στον οποίο αποθηκεύονται τα στοιχεία μας.
+#### Functions
+#### `secTable *create_secTable(int size, int bucketSize, Hash hashFunction, Compare cmpFunction,Delete deleteFunction,Data type)`
+H συνάρτηση αυτή δημιουργεί και αρχικοποιεί έναν πίνακα κατακερματισμού secTable.
+#### `secTable *insert_secTable(secTable *st, void *value)`
+Η συνάρτηση αυτή αποθηκεύει το αντικείμενο value στο secTable.
+#### `secTable *replace_secTable(secTable *st, void *old_value, void *new_value)`
+Η συνάρτηση αυτή βρίσκει την παλιά εγγραφή στο secTable και την αντικαθιστά με την καινούργια. Αν υπάρχει ήδη απλά διαγράφεται η παλιά εγγραφή. Αλλιώς διαγράφεται η παλιά και εισάγεται η καινούργια.
+#### `secTable *reshape_secTable(secTable **st)`
+H συνάρτηση αυτή χρησιμοποιείται για την αναδημιουργία του Hash Table. Όταν υπάρξει overflow στο HashTable, πάμε και το δημιουργούμε από την αρχή και ξανα εισάγουμε τις εγγραφές μας καλύτερα στα Bucket του.
+#### `int findNextPrime(int N)`
+Η συνάρτηση αυτή βρίσκει τον επόμενο πρώτο αριθμό μετά το Ν. Αυτή η συνάρτηση χρησιμεύει στην αναζήτηση του επόμενου βέλτιστου μεγέθους για το Hash Table.
+#### `int getNumElements_secondaryNode(secondaryNode *node)`
+Αυτή η συνάρτηση επιστρέφει τον ακέραιο αριθμό των στοιχείων που περιέχονται στο πρώτο κόμβο της αλυσίδας node.
+#### `secondaryNode *create_secondaryNode(void *value,int size)`
+Αυτή η συνάρτηση δημιουργεί και αρχικοποιεί ένα αντικείμενο κόμβου secondaryNode, εισάγοντας και το πρώτο στοιχείο value.
+#### `secondaryNode *getFirstVal(secondaryNode *node, void **value)`
+Επιστρέφει το πρώτο στοιχείο του κόμβου, node.
+#### `void destroy_secondaryNode(secondaryNode **node,Delete deleteFunction,int mode)`
+Καταστρέφει και απελευθερώνει τη μνήμη που είχε δεσμεύσει ο κόμβος και τα στοιχεία που αποθήκευε. Τo mode παίρνει τιμές `ST_SOFT_DELETE_MODE` ή `ST_HARD_DELETE_MODE`, αντίστοιχα δεν διαγράφονται ολικώς τα δεδομένα, αλλά καταστρέφεται η δομή, ή διαγράφεται η δομή με τα δεδομένα της.
+#### `secTable *deletevalue_secTable(secTable *st, void *value,int mode)`
+Διαγράφεται από το secTable το στοιχείο αυτό. Ανάλογα και με το mode, `ST_SOFT_DELETE_MODE` : διαγράφεται μόνο από τη δομή ή `ST_HARD_DELETE_MODE` : διαγράφεται και από τη μνήμη.
+#### `secondaryNode *deletevalue(secondaryNode *node, void *value, Compare compareFunction,Delete deleteFunction,int mode)`
+Η συνάρτηση αυτή διαγράφει το στοιχείο value από τον κόμβο, ισχύει ότι ισχύει παραπάνω.
+#### `void destroy_secTable(secTable **st,int mode)`
+Απελευθερώνει και διαγράφει όλη τη δομή secTable από τη μνήμη, το mode είναι ίδιο, οπώς και στις υπόλοιπες delete και destroy συναρτήσεις.
+#### `int find_secTable(secTable *st,void *value)`
+Βρίσκει αν κάποιο στοιχείο υπάρχει στο secTable, επιστρέφει 1 αν υπάρχει, αλλιώς 0.
+#### `int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func)`
+Βρίσκει αν κάποιο στοιχείο υπάρχει στο secondaryNode, επιστρέφει 1 αν υπάρχει, αλλιώς 0.
+#### `void *getIndexedWord_secTable(secTable *st,char *value)`
+Βρίσκει αν υπάρχει η λέξη value αποθηκευμένη ως indexedWord στη δομή. Αν ναι επιστρέφει την indexedWord, αλλιώς επιστρέφει NULL.
+#### `void *getIndexedWord_secondaryNode(secondaryNode *node,char *value,Compare compare_func)`
+Βρίσκει αν υπάρχει η λέξη value αποθηκευμένη ως indexedWord στη δομή. Αν ναι επιστρέφει την indexedWord, αλλιώς επιστρέφει NULL.
+#### `void *getIndexedWord_secTable(secTable *st,char *value)`
+H συνάρτηση αυτή επιτρέφει μια δομή indexedWord για το δοσμένο value χρησιμοποιώντας τη συνάρτηση getIndexedWord_secondaryNode() η οποία αναζητά σε έναν bucket του secTable την το indexedWord το οποίο έχει σαν πεδίο word το string value.
+#### `secTable *updateTF_secTable(secTable *st,void *value)`
+Η συνάρτηση αυτή αναζητά ένα indexedWord σαρώνοντας το hash table και αν το βρει τότε αυξάνει το πεδίο tf αυτού του indexed word κατα 1.
+#### `secTable *update_tf_idf_values(secTable *st,secTable *unique_words,int text_len)`
+Η συνάρτηση αυτή σαρώνει το hash table και χρησιμοποιώντας τη συνάρτηση update_tf_idf_word() αναβαθμίζει τις τιμές στα πεδία idf και tf_idf_mean κάθε λέξης που βρίσκεται μέσα στο table unique_words το οποίο περιέχει όλες τις μοναδικές λέξεις οι οποίες βρέθηκαν στο json αρχείο του οποίου η επεξεργασία τελείωσε.
+#### `secTable *update_tf_idf_word(secTable *st,char *value,int text_len)`
+Η συνάρτηση αυτή ψάχνει τη λέξη value μέσα σε ένα bucket του secTable και όταν τη βρει αυξάνει το πεδίο idf κατα 1, και προσθέτει στο πεδίο tf_idf_mean το tf ( text frequency ) τις λέξεις για το json για το οποίο κλήθηκε η update_tf_idf_values, ώστε να υπολογιστούν όλες οι τιμές tf της κάθε λέξης για όλα τα αρχεία. Η τιμή αυτή θα χρησιμοποιηθεί αφού τελειώσει η επεξεργασία όλων των αρχείων json για να υπολογιστεί το μέσο tf_idf κάθε λέξης. Στη συνέχεια το πεδίο tf τις λέξεις μηδενίζεται ώστε να γίνει ο υπολογισμός του για το επόμενο json.
+#### `secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts)`
+Η συνάρτηση αυτή καλείται αφού ολοκληρωθεί το parsing σε όλα τα json αρχέια. Στο όρισμα num_texts βρίσκεται ο αριθμός των json αρχείων. Η συνάρτηση αυτή λοιπόν σαρώνει το secTable και για κάθε εγγραφή του ( μόνο αν οι εγγραφές είναι indexedWords ) υπολογίζει την τελική τιμή idf παίρνοντας το λογαριθμό  με βάση δέκα τις διαίρεσεις (num_texts/τα κείμενα στα οποία έχει εφμανιστεί η λέξη) , ο οποίος αριθμός μέχρι τώρα ήταν αποθηκευμένος στο idf πεδίο κάθε λέξεις. Ο λογάριθμος αυτός αποθηκεύται τελικά στο πεδίο idf κάθε λέξεις. Στη συνέχεια υπολογίζεται το μέσο tf_idf αφού στο πεδίο tf_idf_mean κάθε λέξης βρίσκεται το άθροισμα όλων των tf τιμών των λέξεων στα json, άρα στο πεδίο tf_idf_mean αποθηκεύεται η πράξη `(idf*tf_idf_mean/num_texts)` που είναι το μέσο tf_idf score τις λέξεις. Στη συνέχεια ελέγχεται αν αυτό το score είναι μεγαλύτερο απο μια σταθερά την MIN_TF_IDF και αν είναι η λέξη αποθηκεύται σε ένα καινούριο hash table. Αυτή η διαδικασία επαναλαμβάνεται για κάθε λέξη και στο τέλος επιστρέφεται το καινούριο hash table το οποίο περιέχει τις λέξεις με τα καλύτερα μέσα tf_idf.
+#### `void writeVocab_secTable(secTable *st)`
+Η συνάρτηση αυτή γράφει στο αρχείο `vocabulary.txt` το vocabulary που χρησιμοποιήθηκε για το training. Έτσι ώστε στο στάδιο του inference, να μην γίνει inference με διαφορετικό vocabulary.
+#### `secTable *initVocab_secTable(char *filename)`
+Η συνάρτηση αυτή διαβάζει ένα αρχείο με όνομα `filename` και δημιουργεί το αντίστοιχο vocabulary, που είχε αποθηκευτεί στο αρχείο.
 # Υπόλοιπες συναρτήσεις
 ## CsvReader.h
 #### `HashTable *csvParser(char *filename, HashTable **ht)`
-Αυτή η συνάρτηση parsa - ρει τις κλίκες από το filename. Διαβάζοντας κάθε γραμμή, τη σπάει σε 3 στοιχεία από το ',' και αν το 3ο είναι 1 τότε περνάει την κλίκα στο HashTable με την συνάρτηση createCliqueHashTable() τέλος κλείνει το αρχείο που άνοιξε και αποδεσμεύει την μνήμη που δέσμευσε. Επιστρέφει το HashTable που δημιούργησε.
+Αυτή η συνάρτηση parsa - ρει τις κλίκες από το filename. Διαβάζοντας κάθε γραμμή, τη σπάει σε 3 στοιχεία από το ',' και αν το 3ο είναι 1 τότε περνάει την κλίκα στο HashTable με την συνάρτηση createCliqueHashTable(), αλλιώς χρησιμοποιεί τη `negativeRelationHashTable()` και δημιουργεί την αρνητική συσχέτιση, τέλος κλείνει το αρχείο που άνοιξε και αποδεσμεύει την μνήμη που δέσμευσε. Επιστρέφει το HashTable που δημιούργησε.
 #### `void csvWriteCliques(HashTable **ht)`
 Αυτή η συνάρτηση χρεισημοποείται για να δημιουργήσει ένα αρχείο *cliques.csv* και να εκτυπώσει όλες τις κλίκες που υπάρχουν στο HashTable προσπελαύνοντας το και εκτυπώνοντας μία φορά τα ζεύγη στη μορφή *left_spec_id,right_spec_id*
+#### `void csvWriteNegativeCliques(HashTable **ht)`
+Είναι παρόμοια με την `csvWriteCliques` απλά αυτή τη φορά δημιουργεί το αρχείο *neg_cliques.csv* και με τη βοήθεια της `bukcetListWriteNegativeCliques()` γράφονται όλα τα πιθανά ζευγάρια στο αρχείο που δημιουργήσαμε.
+#### `void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type,int ratio)`
+Ανοίγει το αρχείο filename , και δημιουργώντας ένα αντικείμενο `logisticreg *regressor`, αρχίζει να γίνεται το train. Οι μεταβλητές `secTable *vocabulary` είναι το λεξιλόγιο που έχει δημιουργηθεί για το training, `int linesRead` οι γραμμές του αρχείου που θα γίνει το training, χωρίς να μετράμε την πρώτη, `char *bow_type` είναι ο τύπος του BagOfWord ή tf-idf, `int vector_type` αν θα χρησιμοποίησουμε την απόλυτη τιμή της απόστασης των διανυσμάτων `abs` ή την ένωση των διανυσμάτων `concat` και `int ratio` είναι ο αριθμός των επαναλήψεων που θα γίνει στο 1. Λαμβάνουμε το 80% του αρχείου για να κάνουμε το training. Έπειτα προσπελαύνουμε όλο το αρχείο και δημιουργούμε ένα τελικό διάνυσμα για κάθε γραμμή του αρχείου, αποθηκεύοντας τη σχέση σε έναν άλλο πίνακα. Ανακατεύονται τα δεδομένα. Μετά σπάμε τον πίνακα των διανυσμάτων σε κομμάτια, batches, και εφαρμόζουμε το `train_logisticRegression()`. Τέλος για το υπόλοιπο 20% του πίνακα βλέπουμε τα predictions που έκανε το μοντέλο μας, και υπολογίζουμε το f1_score του. Αποθηκεύεται σε ένα αρχείο *stats.txt* το εκπαιδευμένο μοντέλο και η συνάρτηση απελευθερώνει τη μνήμη που δημιούργησε και τερματίζει.
+#### `void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticreg *model, char *bow_type, int vector_type)`
+H συνάρτηση αυτή ανοίγει το αρχείο `filename` και δημιοργεί έναν πίνακα διανυσμάτων όσο διαβάζει μία - μία τις γραμμές από το bagofWords τους. Έπειτα το μοντέλο μαντεύει κάθε τιμή y του left_spec,right_spec,y. Και τέλος τα τυπώνει σε ένα αρχείο *predictions.csv* και υπολογίζει το f1_score και το τυπώνει στην οθόνη.
+## DataPreprocess.h
+#### `secTable *init_stopwords()`
+Δημιουργεί ένα secTable το οποίο περιέχει κάθε πιθανό stopWord το οποίο δεν θα πρέπει να το λάβουμε υπ'οψιν όταν δημιουργούμε το BOW.
+#### `char *text_cleaning(char *text)`
+Η συνάρτηση αυτή αφαιρεί από τη συμβολοσειρά τα "\n", τα σημεία στίξης και μετατρέπει τα κεφαλαία γράμματα σε μικρά.
+#### `int check_utf16(char *word)`
+Ελέγχει αν η λέξη είναι utf16.
+#### `int single_character(char *word)`
+Ελέγχει αν είναι ένας μόνο χαρακτηρακτήρας και όχι αριθμός.
+#### `char *remove_stopwords(char *text,secTable *stopwords,secTable **vocabulary,secTable **unique_words,int *len)`
+Η συνάρτηση αυτή αφαιρεί από τη συμβολοσειρά `text` όλα τα πιθανά stopwords, και αν δεν υπάρχει στο vocabulary τότε προστείθεται.
+#### `char *preprocess(char *text,secTable *stopwords,secTable **vocabulary,secTable **unique_words,int *len)`
+H συνάρτηση αυτή καλεί για τη συμβολοσειρά `text` τις παραπάνω συναρτήσεις, `text_cleaning` και `remove_stopwords`.
+#### `void swap_int(int *a,int *b)`
+Αλλάζει τις τιμές δύο μεταβλητών ακεραίων μεταξύ τους.
+#### `void swap_vectors(double **a,double **b)`
+Aλλάζει τις τιμές δύο μεταβλητών πινάκων μεταξύ τους.
+#### `void swap_string(char **a,char **b)`
+Αλλάζει τις τιμές 2 μεταβλητών συμβολοσειρών μεταξύ τους.
+#### `int random_int(int n)`
+Επιστρέφει έναν τυχαίο αριθμό μεταξύ του 0 - MAXLINES του αρχείου. 
+#### `void shuffle_data(double **X,int *y,char **pairs,int n,int random_state)`
+Μπερδεύει μεταξύ τους τους πίνακες που θα γίνει το training. Έτσι ώστε να έχουμε καλύτερα αποτελέσματα στο training.
 ## JsonParser.h
 #### `char *get_datasetX_name()`
 Η συνάρτηση αυτή προσπελαύνει όλα τα αρχεία στον τοπικό φάκελο και βρίσκει αυτό που περιέχει τα datasets. Αυτό γίνεται αφού ανοίγει τους υποφακέλους μέχρι να βρει το αρχείο που θα έχει format xxxx.json και επιστρέφει το path του αρχείου αυτού. 
@@ -140,7 +255,9 @@ H συνάρτηση αυτή χρησιμοποιείται για να φτι�
 #### `void parse_json_file(char *name,char* spec_id,HashTable **ht)` 
 H συνάρτηση αναλύει το json file που άνοιξε σε keys - values. Ότι είναι αριστερά από το χαρακτήρα ':' είναι key. Και το key μπορεί να έχει κάποιους χαρακτήρες ("/ "") που δεν θέλουμε να λάβουμε υπ'όψιν. Έπειτα ελέγχουμε αν το value δεν έχει παραπάνω από ένα στοιχείο, αφαιρούμε τους περιττούς χαρακτήρες, και δημιουργούμε το dictionary που δημιουργήσαμε για το spce_id. Αλλιώς μετράμε τις γραμμές που μπορεί να έχουν τα values, μέχρι να φτάσουμε στο χαρατκήρα ']' δημιουργούμε έναν πίνακα με τα values και τα αποθηκεύουμε στο dictionary. Όλοι αυτή η διαδικασία επαναλαμβάνεται για κάθε γραμή key - value του .json αρχείου. Όταν τελειώσει η ανάγνωση του αρχείου τότε εισάγουμε το ολοκληρωμένο dictionary στο HashTable μας απελευθερώνουμε κατάλληλα τη δεσμευμένη μνήμη.
 ## main.c
-Η main βρίσκει σε ποιο σημείο βρίσκεται το αρχείο των data. Δημιουργεί το HashTable που πρέπει να αποθηκεύσει τις κλίκες. Περνάει για πρώτη φορά τις κλίκες από το dataset_X. Έπειτα διαβάζει το αρχείο του csv και δημιουργεί τις υπόλοιπες κλίκες. Τέλος γράφει τις κλίκες σε ένα άλλο αρχείο, και απελευθερώνει κατάλληλα τη μνήμη.
+Η main βρίσκει σε ποιο σημείο βρίσκεται το αρχείο των data. Δημιουργεί το HashTable που πρέπει να αποθηκεύσει τις κλίκες. Δημιουργεί το vocabulary. Περνάει για πρώτη φορά τις κλίκες από το dataset_X. Έπειτα διαβάζει το αρχείο του csv και δημιουργεί τις υπόλοιπες κλίκες. Καλεί τη συνάρτηση για να γίνει train ένα νέο μοντέλο logisticRegression και το αποθηκεύει σε κάποιο αρχείο. Τέλος γράφει τις κλίκες σε ένα άλλο αρχείο, και απελευθερώνει κατάλληλα τη μνήμη.
+## Inference.c
+Παρόμοια με τη main, δημιουργεί το HashTable, το vocabulary το διαβάζει από αρχείο όπως και το μοντέλο του Logistic Regression. Έπειτα προβλέπει τις τιμές του δεδομένου filename καλώντας τη `csvInference`. Απελευθερώνει τη μνήμη και τερματίζει.
 # ErrorHandling
 1. Αν δεν ανοίξει ο φάκελος, και έχει αποτύχει η opendir()
 2. Αν δεν βρεθεί το αρχείο dataset_X
@@ -148,9 +265,19 @@ H συνάρτηση αναλύει το json file που άνοιξε σε keys
 4. Αν αποτύχει η malloc()
 5. Αν αποτύχει να ανοίξει κάποιο αρχείο
 6. Αν αποτύχει να γράψει σε κάποιο αρχείο
+7. Aν κάποιο flag έχει δοθεί πολλές φορές
+8. Αν έχει δοθεί λάθος argument στις main
 # Χρήσιμες εντολές
-### make - Για να δημιουργηθεί η main
+### make - Για να δημιουργηθεί η main και το inference
 ### make test - Για να δημιουργηθούν τα test cases του accutest
 ### ./test - Για τα test files
-### ./main - Για να τρέξει η main
+### ./learning_test - Για τα test unit του preprocessing και του machine learning
+### ./main -f filename -b bow-type -v vector-type -n negative-mode - Για να τρέξει η main
+### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on 
+### ./inferece -f filename - Για να τρέξει το inference, ποτέ πριν τη main, δηλαδή αν δεν υπάρχει ήδη κάποιο αρχείο stats.txt
+### e.g : ./inference -f sigmod_large_labelled_dataset.csv
 ### make clean - Για να σβηστούν τα .o και εκτελέσιμα
+### Παρατηρήσεις
+1. Το αρχείο που είναι να γίνει το inference να είναι τύπου, *sigmod_large_labelled_dataset.csv*. Δλδ στη πρώτη γραμμή να περιέχεται το [left_spec,right_spec,label] και έπειτα τα δεδομένα να είναι αυτού του τύπου.
+
+
