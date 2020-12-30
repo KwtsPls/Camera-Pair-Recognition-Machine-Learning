@@ -12,7 +12,7 @@
 
 //Helper Functions
 #define DATASET_PATH "Test_Units/Helper_Files/test_labelled_dataset.csv"
-#define FILE_PATH "Test_Units/Helper_Files/4444.json"
+#define FILE_PATH "Test_Units/Helper_Files/Data_Files/4444.json"
 
 //Function to check if a string was cleaning properly
 void test_string_cleaning(char *text){
@@ -444,7 +444,7 @@ void test_create_model(){
     int N=1000;
 
     //Create a model for logistic regression for vector with absolute distance
-    logisticreg *model = create_logisticReg(N,ABSOLUTE_DISTANCE,5,4,0.01);
+    logisticreg *model = create_logisticReg(N,ABSOLUTE_DISTANCE,5,4,0.01,1);
     TEST_ASSERT(model!=NULL);
     TEST_ASSERT(model->numofN==N+1);
     TEST_ASSERT(model->steps==5);
@@ -454,7 +454,7 @@ void test_create_model(){
         TEST_ASSERT(model->vector_weights[i]==0.0);
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model_concat = create_logisticReg(N,CONCAT_VECTORS,5,4,0.01);
+    logisticreg *model_concat = create_logisticReg(N,CONCAT_VECTORS,5,4,0.01,1);
     TEST_ASSERT(model_concat!=NULL);
     TEST_ASSERT(model_concat->numofN==(N*2)+1);
     TEST_ASSERT(model_concat->steps==5);
@@ -474,7 +474,7 @@ void test_train_model(){
     int N=1000;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75,1);
 
     //Create a dummy input for the model
     double **X = malloc(sizeof(double*)*2);
@@ -506,7 +506,7 @@ void test_predict_model(){
     int N=1000;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75,1);
 
     //Create a dummy input for the model
     double **X = malloc(sizeof(double*)*2);

@@ -434,7 +434,9 @@ void test_hashtable_cliques(){
 
     //Call the csvParser function to read the csv test dataset and create the cliques from it accordingly
     int lines=0;
-    ht = csvParser(DATASET_PATH,&ht,&lines);
+    int pos=0;
+    int neg=0;
+    ht = csvParser(DATASET_PATH,&ht,&lines,&pos,&neg);
 
     //In this test there are 5 cliques created
     //For each category we'll check the number of items in each clique
@@ -552,7 +554,9 @@ void test_hashtable_write_file(){
 
     //Call the csvParser function to read the csv test dataset and create the cliques from it accordingly
     int lines=0;
-    ht = csvParser(DATASET_PATH,&ht,&lines);
+    int pos=0;
+    int neg=0;
+    ht = csvParser(DATASET_PATH,&ht,&lines,&pos,&neg);
     //Create the file containing the pairs
     csvWriteCliques(&ht);
     //Create file containing the negative relations
