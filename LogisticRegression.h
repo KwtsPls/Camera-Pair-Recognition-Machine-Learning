@@ -41,7 +41,7 @@ double norm_distance(double *x, double *y, int numofN);
 double *predict_logisticRegression(logisticreg *model,double **X,int train,int n);
 
 //Function to calculate loss
-double loss_LogisticRegression(logisticreg *model, double *xi,int yi);
+double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int high);
 
 //Function σ(t) = 1/1 + e^(-t)
 double sigmoid(double t);

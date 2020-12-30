@@ -263,7 +263,7 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
         model = fit_logisticRegression(model,X,y,low,high);
 
         if((i*(model->batches))%1024==0 && i!=0)
-            printf("%d\n",i*(model->batches));
+            printf("Iterations: %d\n",i*(model->batches));
     }
 
     if(r==0){
@@ -296,19 +296,27 @@ double *predict_logisticRegression(logisticreg *model,double **X,int train,int n
 }
 
 //Function to calculate loss
-double loss_LogisticRegression(logisticreg *model, double *xi,int yi){
-    double error=0.0;
-    double wtx=0.0;
-    for(int z=0;z<model->numofN;z++)
-        wtx += model->vector_weights[z]*xi[z];
-    wtx = sigmoid(wtx);
+double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int high){
 
-    if(yi==1)
-        error = -(((double)yi)*log10(wtx));
-    else
-        error = -(((double)(1.0-yi))*log10(1.0-wtx));
+    double total_error=0.0;
+    for(int i=low;i<high;i++) {
+        double error = 0.0;
+        double wtx = 0.0;
+        double *xi = X[i];
+        int yi = y[i];
+        for (int z = 0; z < model->numofN; z++)
+            wtx += model->vector_weights[z] * xi[z];
+        wtx = sigmoid(wtx);
 
-    return error;
+        if (yi == 1)
+            error = -(((double) yi) * log10(wtx));
+        else
+            error = -(((double) (1.0 - yi)) * log10(1.0 - wtx));
+
+        total_error += error;
+    }
+
+    return total_error;
 }
 
 //Function σ(t) = 1/1 + e^(-t)

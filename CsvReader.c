@@ -178,7 +178,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     logisticreg *regressor;
     int steps=5;
     int batches=2;
-    double learning_rate=0.02;
+    double learning_rate=0.03;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
@@ -235,8 +235,23 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Get the predictions from the model
     double *pred = predict_logisticRegression(regressor,X,train_size,linesRead);
 
-    for(int i=0;i<(linesRead-train_size);i++)
-        printf("Target %d Prediction %f\n",y[train_size+i],pred[i]);
+    //Creating file for the predictions
+    FILE *fp2;
+    fp2 = fopen("predictions.csv","w+");
+    int err = fprintf(fp2,"left_sp,right_sp,label\n");
+    if(err<0){
+        errorCode = WRITING_TO_FILE;
+        print_error();
+        return;
+    }
+    for(int i=0;i<(linesRead-train_size);i++){
+        err = fprintf(fp2,"%s,%f\n",pairs[train_size+i],pred[i]);
+        if(err<0){
+            errorCode = WRITING_TO_FILE;
+            print_error();
+            return;
+        }
+    }
 
     //Print the metrics from the predictions after training
     metrics = calculate_LearningMetrics(metrics,y,pred,train_size,linesRead);
@@ -257,6 +272,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     free(line);
     fclose(fp);
+    fclose(fp2);
     delete_logisticReg(&regressor);
     destroyLearningMetrics(&metrics);
 }
@@ -346,7 +362,7 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     //Creating file for the predictions
     FILE *fp2;
     fp2 = fopen("predictions.csv","w+");
-    int err = fprintf(fp2,"left_sp,right_sp,prediction\n");
+    int err = fprintf(fp2,"left_sp,right_sp,label\n");
     if(err<0){
         errorCode = WRITING_TO_FILE;
         print_error();
