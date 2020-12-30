@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Dictionary.h"
+#include "SecTable.h"
 
 #define BUCKET_SOFT_DELETE_MODE 1
 #define BUCKET_HARD_DELETE_MODE 2
@@ -25,6 +26,7 @@ typedef struct BucketList
 {
     int num_entries;
     char dirty_bit;
+    secTable *negatives;
     struct Bucket *head;
     struct Bucket *tail;
 
@@ -72,8 +74,23 @@ void BucketList_Print(BucketList *b);
 BucketList *BucketList_Delete_First(BucketList **b,int mode);
 
 
+//Functions take the bucket that needs updating, and where it needs to be pointing correctly at...
+BucketList *updateNegativeRelations(BucketList *to_upd, BucketList *to_replace);
+
 //Function that writes Cliques to file
 void bucketListWriteCliques(BucketList *lista, FILE *fp);
+
+//Function that writes Negative Cliques to file
+BucketList *bucketListWriteNegativeCliques(BucketList *lista,FILE *fp);
+
+//Function for merging negative relations
+BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del);
+
+//Function to find the given BucketList and update it
+BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_replace);
+
+//Function to print the right Spec negative cliques
+void rightSpecNegativeCliques(BucketList *set, char *left_sp, FILE *fp);
 
 
 

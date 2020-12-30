@@ -3,6 +3,7 @@
 
 #include "Dictionary.h"
 #include "Bucket.h"
+#include "SecTable.h"
 
 #define BUCKET_SIZE 64
 #define KEY_BUCKET_SIZE 128
@@ -63,6 +64,9 @@ int sizeHashTable(HashTable *ht);
 //Function to find a key bucket entry with the given spec_id and return its index
 int findKeyBucketEntry(HashTable *ht,char * spec_id);
 
+//Function to return the dictionary of a spec if it exists in the table
+Dictionary *findSpecHashTable(HashTable *ht,char *spec_id);
+
 //Function to delete the Hash Table
 void deleteHashTable(HashTable **destroyed,int mode);
 
@@ -87,5 +91,17 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp,char *right_sp);
 //Function to perform set union between two sets
 //Max_List : Number of entries in this bucket is greater than those in min_List
 BucketList *BucketList_Merge(BucketList **Max_List, BucketList **min_List,HashTable **ht,int h,int index);
+
+//Function to add a negative relation between two ids
+HashTable *negativeRelationHashTable(HashTable *ht, char *left_sp,char *right_sp);
+
+void testCSVHashTable(char *filename, HashTable *ht);
+
+//Function to check if two spec have a positive relation
+int checkPositiveAs(HashTable *ht, char *left, char *right);
+
+//Function to check if two specs have a negative relation
+int checkNegativeAs(HashTable *ht, char *left, char *right);
+
 
 #endif //PROJECT_HASHTABLE_H 

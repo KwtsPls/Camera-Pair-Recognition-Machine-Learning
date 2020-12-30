@@ -74,6 +74,9 @@ BucketList *BucketList_Create(Dictionary *spec_id, int BucketSize)
     //Initialize the dirty bit as zero - clique is not created
     lista->dirty_bit = 0;
 
+    //Initialize the table with the negative relations
+    lista->negatives = create_secTable(ST_INIT_SIZE,SB_SIZE,HashPointer,ComparePointer,NULL,Pointer);
+
     //Return the new BucketList
     return lista;
 }
@@ -169,6 +172,13 @@ void BucketList_Delete(BucketList **b,int mode)
     if(*b==NULL)
         return;
 
+    //ST_SOFT_DELETE_MODE is 0
+    //ST_HARD_DELETE_MODE is 1
+    //And BUCKET_SOFT_DELETE MODE is 1
+    //BUCKET_HARD_DELETE_MODE is 2
+    //So to delete is mode - 1
+    if((*b)->negatives != NULL)
+        destroy_secTable(&((*b)->negatives),ST_SOFT_DELETE_MODE);
     //Start from the head of the list iterate through it 
     // and delete each node of the Bucket List 
     while ((*b)->head!=NULL)
@@ -197,6 +207,8 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode){
     //If the list contains only one bucket
     if((*b)->head == (*b)->tail){
         //Delete the bucket list
+        if((*b)->negatives != NULL)
+            destroy_secTable(&((*b)->negatives),ST_SOFT_DELETE_MODE);
         Bucket_Delete(&((*b)->head),mode);
         (*b)->head=NULL;
         (*b)->tail=NULL;
@@ -204,6 +216,8 @@ BucketList *BucketList_Delete_First(BucketList **b,int mode){
     }
     //If the list contains multiple buckets
     else{
+        if((*b)->negatives != NULL)
+            destroy_secTable(&((*b)->negatives),ST_SOFT_DELETE_MODE);
         //Delete the first bucket and make the bucket head to the next
         Bucket *to_be_deleted=(*b)->head;
         (*b)->head = (*b)->head->next;
@@ -306,7 +320,7 @@ void bucketListWriteCliques(BucketList *lista, FILE *fp){
                     strcat(line,",");
                     strcat(line,cur->spec_ids[j]->dict_name);
                     int er = fprintf(fp,"%s\n",line);
-                    //Returned negative number, error occured
+                    //Returned negative number, error occurred
                     if(er<0)
                     {
                         errorCode = WRITING_TO_FILE;
@@ -322,6 +336,139 @@ void bucketListWriteCliques(BucketList *lista, FILE *fp){
             free(left_spec);
         }
         //Go to the next bucket node
+        bucket = bucket->next;
+    }
+}
+
+
+//Functions take the bucket that needs updating, and where it needs to be pointing correctly at...
+BucketList *updateNegativeRelations(BucketList *to_upd, BucketList *to_replace){
+    secTable *negatives_to_upd = to_upd->negatives;
+    //Iterate through all the negative relations of the to update list
+    for(int i=0;i<negatives_to_upd->numOfBuckets;i++){
+        secondaryNode *tmp = negatives_to_upd->table[i];
+        while (tmp!=NULL)
+        {
+            for(int i=0;i<tmp->num_elements;i++){
+                //Get every bucketlist* and update them to point as negative
+                //To the new bucketlist
+                tmp->values[i] =(void*) updateSec((BucketList *) tmp->values[i],to_upd,to_replace);
+            }
+            tmp = tmp->next;
+        }
+        
+    }
+    to_upd->negatives = negatives_to_upd;
+    return to_upd;
+
+}
+
+//Function to merge negative Relations
+BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del){
+    secTable *neg = (*to_del)->negatives;
+    for(int i=0;i<neg->numOfBuckets;i++)
+    {
+        while (neg->table[i]!=NULL)
+        {
+            //Get the first value of this bucket node
+            void *nvalue;
+            neg->table[i] = getFirstVal(neg->table[i],&nvalue);
+            if(nvalue != NULL){
+                //If it doesn't exist to the new table, insert it
+                if(find_secTable(to_merge->negatives,nvalue)==0)
+                    to_merge->negatives = insert_secTable(to_merge->negatives,nvalue);
+            }
+        }
+    }
+    //Now its time to delete the negative values of the list...
+    //Because i delete it in the first val, it's better to free the negative sectable here...
+    
+    return to_merge;
+}
+
+//Function to find the given BucketList and update it
+BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_replace){
+    //Check if the bucket list that is going to be replaced already exists
+    //If it exists just delete the old one, if it doesn't replace it....
+    if((find_secTable(re->negatives,to_replace) == 1)){
+        re->negatives = deletevalue_secTable(re->negatives,to_delete,ST_SOFT_DELETE_MODE);
+        return re;
+    }
+    else{
+        re->negatives = replace_secTable(re->negatives,to_delete,to_replace);
+        return re;
+    }
+}
+
+//Function that writes Negative Cliques to file it updates the dirty bit to 1.
+BucketList *bucketListWriteNegativeCliques(BucketList *lista,FILE *fp){
+    Bucket *bucket = lista->head;
+    //Write every set of bucket to the file
+    while(bucket!=NULL){
+        //Iterate through the bucket list and take an item from the dict as left_spec
+        //And get the next specs after left and write them as a set in the fp by calling the secTable_writeNegativeCliques
+        for(int i=0;i<bucket->cnt;i++){
+            //Create space for storing the left_spec_id
+            char *left_spec = malloc(strlen(bucket->spec_ids[i]->dict_name)+1);
+            if(left_spec==NULL)
+            {
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                continue;
+            }
+            //Copy its name
+            strcpy(left_spec,bucket->spec_ids[i]->dict_name);
+            secTable_writeNegativeCliques(lista->negatives,left_spec,fp);
+            free(left_spec);
+        }
+        bucket = bucket->next;
+    }
+    return lista;
+}
+
+
+void rightSpecNegativeCliques(BucketList *set, char *left_sp, FILE *fp){
+    Bucket *bucket = set->head;
+    //Write every negative Clique set of bucket to the file
+    while(bucket!=NULL){
+        //Iterate through the bucket list and take an item from the dict as right_spec
+        for(int i=0;i<bucket->cnt;i++){
+            char *line;
+            //Create space for storing the left_spec_id
+            char *right_spec = malloc(strlen(bucket->spec_ids[i]->dict_name)+1);
+            if(right_spec==NULL)
+            {
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                continue;
+            }
+            //Copy its name
+            strcpy(right_spec,bucket->spec_ids[i]->dict_name);
+            
+            //Create space for the line that is going to be written in the fp File
+            line = malloc(strlen(right_spec)+strlen(left_sp)+2);
+            if(line==NULL)
+            {
+                errorCode = MALLOC_FAILURE;
+                print_error();
+                continue;
+            }
+            //Make left_Sp, Right_Spec\n
+
+            strcpy(line,left_sp);
+            strcat(line,",");
+            strcat(line,right_spec);
+
+            int er = fprintf(fp,"%s\n",line);
+            if(er<0)
+            {
+                errorCode = WRITING_TO_FILE;
+                print_error();
+            }
+            //Free space that was allocated for the string of line
+            free(line);
+            free(right_spec);
+        }
         bucket = bucket->next;
     }
 }

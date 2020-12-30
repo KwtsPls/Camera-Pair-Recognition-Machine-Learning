@@ -5,6 +5,9 @@ harmonious,trashy,0
 irritate,trashy,1
 disastrous,trashy,1
 disastrous,lovely,0
+disastrous,two,0
+disastrous,plane,0
+disastrous,oil,0
 three,five,1
 nauseating,pathetic,1
 weak,murky,1
@@ -14,6 +17,9 @@ five,two,1
 two,milk,0
 lowly,murky,1
 murky,courageous,0
+courageous,two,0
+courageous,milk,0
+courageous,cart,0
 lowly,nauseating,1
 weak,malicious,1
 gruesome,lowly,1
@@ -35,6 +41,9 @@ arrogant,wicked,1
 hideous,wicked,1
 destruction,ill-fated,1
 nine,murky,0
+two,plane,0
+two,hideous,0
+two,lovely,0
 nine,five,1
 cowardly,disastrous,1
 berserk,malicious,1
@@ -54,6 +63,9 @@ kindhearted,reward,1
 adventurous,friendly,1
 tranquil,reward,1
 cart,reward,0
+cart,three,0
+cart,oil,0
+cart,murky,0
 courageous,plausible,1
 stimulating,youthful,1
 attractive,peace,1
@@ -95,7 +107,10 @@ lettuce,oil,1
 handsomely,oil,0
 cabbage,food,1
 fruit,meat,1
-super,famous,0
+super,beef,0
 rice,egg,1
 egg,awful,0
 egg,hideous,0
+egg,plane,0
+oil,lovely,0
+oil,two,0
