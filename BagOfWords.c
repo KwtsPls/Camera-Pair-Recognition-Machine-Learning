@@ -98,6 +98,7 @@ double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mod
         }
 
         free(temp);
+        
         return bow;
     }
 }
