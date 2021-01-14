@@ -12,6 +12,7 @@
 #define BUCKET_FIRST_AVAILABLE 4
 #define LIST_EMPTY 5
 #define LIST_NOT_EMPTY 6
+     
 
 typedef struct Bucket
 {

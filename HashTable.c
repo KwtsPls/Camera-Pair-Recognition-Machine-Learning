@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "HashTable.h"
+#include "SecTable.h"
 
 //Hash function for this hash table -> I used DJB2
 unsigned long hashCode(char *str,int buckets)
@@ -442,6 +443,7 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
 
 
             //Change the negative Relations, from the set of the left buck to point to the right bcuk
+            
             (*ht)->table[left_h]->array[left_index]->set = updateNegativeRelations(
                 (*ht)->table[left_h]->array[left_index]->set,
                 (*ht)->table[right_h]->array[right_index]->set);
@@ -461,6 +463,8 @@ HashTable *createCliqueHashTable(HashTable **ht, char *left_sp, char *right_sp){
 
             
             //Change the negative Relations, from the set of the left buck to point to the right bucket
+            // if((*ht)->table[left_h]->array[left_index]->set->negatives == NULL)
+                // printf("ERROR\n");
             (*ht)->table[right_h]->array[right_index]->set = updateNegativeRelations(
                 (*ht)->table[right_h]->array[right_index]->set,
                 (*ht)->table[left_h]->array[left_index]->set);
@@ -683,3 +687,92 @@ int checkNegativeAs(HashTable *ht, char *left, char *right){
         return 1;    
     else return -1;
 }
+
+//Function to return the relation of a pair
+int checkRelation(HashTable *ht, char *left, char *right){
+    if(checkPositiveAs(ht,left,right)==1)
+        return 1;
+    else if(checkNegativeAs(ht,left,right)==1)
+        return 0;
+    else
+        return -1;
+}
+
+
+
+
+
+//Function for correcting predicted 1's that were wrong and proved to be negative
+HashTable *correctNegativeRelation(HashTable **predit_ht,HashTable *ht,char *left_sp,char *right_sp){
+
+    int h = hashCode(left_sp, (*predit_ht)->buckets_num);
+    int index = findKeyBucketEntry(*predit_ht,left_sp);
+
+    BucketList *cur = (*predit_ht)->table[h]->array[index]->set;
+    Bucket *node = cur->head;
+
+    
+    while(node!=NULL){
+        for(int i=0;i<node->cnt;i++){
+            //Dismantle the current clique
+            int h = hashCode(node->spec_ids[i]->dict_name, (*predit_ht)->buckets_num);
+            int index = findKeyBucketEntry(*predit_ht,node->spec_ids[i]->dict_name);
+            BucketList *temp = (*predit_ht)->table[h]->array[index]->set;
+            (*predit_ht)->table[h]->array[index]->set = BucketList_Create(node->spec_ids[i],BUCKET_SIZE);
+            destroy_secTable(&((*predit_ht)->table[h]->array[index]->set->negatives),ST_SOFT_DELETE_MODE);
+            (*predit_ht)->table[h]->array[index]->set->negatives = copy_secTable(temp->negatives);
+            //Fix Negative values to point to the correct cliques
+            temp = updateNegativeRelations(temp,(*predit_ht)->table[h]->array[index]->set);
+            // (*predit_ht)->table[h]->array[index]->set = fixNegatives((*predit_ht)->table[h]->array[index]->set,temp);
+
+        }
+        node = node->next;
+    }
+
+
+
+
+    //Delete the old clique
+    
+    node = cur->head;
+    while(node!=NULL){
+        for(int i=0;i<node->cnt;i++){
+            for(int j=i+1;j<node->cnt;j++){
+                int relation = checkRelation(ht,node->spec_ids[i]->dict_name,node->spec_ids[j]->dict_name);
+                if(relation == 1) {
+                    *predit_ht = createCliqueHashTable(predit_ht, node->spec_ids[i]->dict_name, node->spec_ids[j]->dict_name);
+                }
+                else if (relation == 0) {
+                    *predit_ht = negativeRelationHashTable((*predit_ht), node->spec_ids[i]->dict_name, node->spec_ids[j]->dict_name);
+                }
+            }
+        }
+        node = node->next;
+    }
+
+    // cur = updateNegativeRelations(cur,(*predit_ht)->table[h]->array[index]->set);
+    BucketList_Delete(&cur,BUCKET_SOFT_DELETE_MODE);
+    // cur = NULL;
+
+    return *predit_ht;
+}
+
+
+//Function for correcting positive relations that were predicted as negative
+HashTable *correctPositiveRelation(HashTable **predit_ht, char *left_sp, char *right_sp){
+    int h_l = hashCode(left_sp, (*predit_ht)->buckets_num);
+    int index_l = findKeyBucketEntry(*predit_ht,left_sp);
+
+    int h_r = hashCode(right_sp, (*predit_ht)->buckets_num);
+    int index_r = findKeyBucketEntry(*predit_ht,right_sp);
+
+    (*predit_ht)->table[h_r]->array[index_r]->set->negatives = deletevalue_secTable((*predit_ht)->table[h_r]->array[index_r]->set->negatives,(*predit_ht)->table[h_l]->array[index_l]->set,ST_SOFT_DELETE_MODE);
+    (*predit_ht)->table[h_l]->array[index_l]->set->negatives = deletevalue_secTable((*predit_ht)->table[h_l]->array[index_l]->set->negatives,(*predit_ht)->table[h_r]->array[index_r]->set,ST_SOFT_DELETE_MODE);
+
+    *predit_ht = createCliqueHashTable(predit_ht,left_sp,right_sp);
+    
+
+
+    return *predit_ht;
+}
+

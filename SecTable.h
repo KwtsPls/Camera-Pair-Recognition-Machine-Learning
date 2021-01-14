@@ -140,6 +140,9 @@ int find_secTable(secTable *st,void *value);
 //Function to find if an item exists in a block chain
 int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func);
 
+//Function to copy a secondary secTable
+secTable *copy_secTable(secTable *st);
+
 //Function to find if an item exists in the hash table
 void *getIndexedWord_secTable(secTable *st,char *value);
 

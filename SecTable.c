@@ -308,12 +308,15 @@ secondaryNode *getFirstVal(secondaryNode *node, void **value){
 secTable *deletevalue_secTable(secTable *st, void *value,int mode){
     int h = st->hashFunction(value,st->numOfBuckets);
     st->table[h] = deletevalue(st->table[h],value,st->cmpFunction,st->deleteFunction,mode);
-    st->num_elements--;
+    if(st->table[h]!=NULL)
+        st->num_elements--;
     return st;
 }
 
 //Function to delete value
 secondaryNode *deletevalue(secondaryNode *node, void *value, Compare compareFunction,Delete deleteFunction,int mode){
+    if(node == NULL)
+        return NULL;
     node->num_elements--;
     void *tmp_value = node->values[node->num_elements];
     node->values[node->num_elements] = NULL;
@@ -383,6 +386,24 @@ int find_secondaryNode(secondaryNode *node,void *value,Compare compare_func){
     }
 
 }
+
+//Function to copy a secondary secTable
+secTable *copy_secTable(secTable *st){
+    secTable *copy = create_secTable(ST_INIT_SIZE,SB_SIZE,st->hashFunction,st->cmpFunction,st->deleteFunction,st->type);
+
+    for(int i=0;i<st->numOfBuckets;i++){
+        secondaryNode *cur = st->table[i];
+        while(cur!=NULL){
+            for(int j=0;j<cur->num_elements;j++){
+                copy = insert_secTable(copy,cur->values[j]);
+            }
+            cur = cur->next;
+        }
+    }
+
+    return copy;
+}
+
 
 //Function to find if an item exists in the hash table
 void *getIndexedWord_secTable(secTable *st,char *value){

@@ -103,5 +103,15 @@ int checkPositiveAs(HashTable *ht, char *left, char *right);
 //Function to check if two specs have a negative relation
 int checkNegativeAs(HashTable *ht, char *left, char *right);
 
+//Function to return the relation of a pair
+int checkRelation(HashTable *ht, char *left, char *right);
+
+//Function for correcting predicted 1's that were wrong and proved to be negative
+HashTable *correctNegativeRelation(HashTable **predit_ht,HashTable *ht,char *left_sp,char *right_sp);
+
+//Function for correcting positive relations that were predicted as negative
+HashTable *correctPositiveRelation(HashTable **predit_ht, char *left_sp, char *right_sp);
+
+
 
 #endif //PROJECT_HASHTABLE_H 

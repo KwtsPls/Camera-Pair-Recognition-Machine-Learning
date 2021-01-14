@@ -390,7 +390,14 @@ BucketList* mergeNegativeRelations(BucketList *to_merge, BucketList **to_del){
 BucketList *updateSec(BucketList *re, BucketList *to_delete, BucketList *to_replace){
     //Check if the bucket list that is going to be replaced already exists
     //If it exists just delete the old one, if it doesn't replace it....
-    if((find_secTable(re->negatives,to_replace) == 1)){
+    //May be axristero!
+    if(find_secTable(re->negatives,to_delete)==0 && find_secTable(re->negatives,to_replace)==0){
+        re->negatives = insert_secTable(re->negatives,(BucketList*) to_replace);
+        return re;
+    }
+    else if(find_secTable(re->negatives,to_delete)==0 && find_secTable(re->negatives,to_replace)==1)
+        return re;
+    else if((find_secTable(re->negatives,to_replace) == 1)){
         re->negatives = deletevalue_secTable(re->negatives,to_delete,ST_SOFT_DELETE_MODE);
         return re;
     }
@@ -472,3 +479,25 @@ void rightSpecNegativeCliques(BucketList *set, char *left_sp, FILE *fp){
         bucket = bucket->next;
     }
 }
+
+/*
+BucketList *fixNegatives(BucketList *tofix, BucketList *cur){
+    secTable *negatives_to_upd = cur->negatives;
+    //Iterate through all the negative relations of the to update list
+    for(int i=0;i<negatives_to_upd->numOfBuckets;i++){
+        secondaryNode *tmp = negatives_to_upd->table[i];
+        while (tmp!=NULL)
+        {
+            for(int i=0;i<tmp->num_elements;i++){
+                //Get every bucketlist* and update them to point as negative
+                //To the new bucketlist
+                tmp->values[i] =(void*) updateSec((BucketList *) tmp->values[i],to_upd,to_replace);
+            }
+            tmp = tmp->next;
+        }
+        
+    }
+    to_upd->negatives = negatives_to_upd;
+    return to_upd;
+}
+*/
