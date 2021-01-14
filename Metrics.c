@@ -78,10 +78,10 @@ void destroyLearningMetrics(LearningMetrics **metrics){
 }
 
 //Function to count the metric form the given predictions
-LearningMetrics *calculate_LearningMetrics(LearningMetrics *metrics,int *y,double *pred,int size,int n){
-    for(int i=0;i<(n-size);i++){
+LearningMetrics *calculate_LearningMetrics(LearningMetrics *metrics,int *y,double *pred,int n){
+    for(int i=0;i<n;i++){
         int yi_pred = round(pred[i]);
-        metrics = update_LearningMetrics(metrics,yi_pred,y[size+i]);
+        metrics = update_LearningMetrics(metrics,yi_pred,y[i]);
     }
     return metrics;
 }

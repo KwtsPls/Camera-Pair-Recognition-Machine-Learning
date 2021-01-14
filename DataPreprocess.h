@@ -21,19 +21,4 @@ char *remove_stopwords(char *text,secTable *stopwords,secTable **vocabulary,secT
 //Function to preprocess a given string
 char *preprocess(char *text,secTable *stopwords,secTable **vocabulary,secTable **unique_words,int *len);
 
-//Function to return an integer in range
-int random_int(int n);
-
-//Function to swap integers
-void swap_int(int *a,int *b);
-
-//Function to swap doubles
-void swap_vectors(double **a,double **b);
-
-//Function to swap strings
-void swap_string(char **a,char **b);
-
-//Function to shuffle the given data
-void shuffle_data(double **X,int *y,char **pairs,int n,int random_state);
-
 #endif //PROJECT_DATAPREPROCESS_H

@@ -266,11 +266,7 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
             printf("Iterations: %d\n",i*(model->batches));
     }
 
-    if(r==0){
-        return model;
-    }
-    //If a pair remains train it
-    else{
+    if(r!=0){
         low = high;
         high = high + r;
         model = fit_logisticRegression(model,X,y,low,high);
@@ -280,18 +276,17 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
 }
 
 //Function for predicting the
-double *predict_logisticRegression(logisticreg *model,double **X,int train,int n){
-    double *y_pred=malloc(sizeof(double)*(n-train));
-    for(int i=0;i<(n-train);i++){
+double *predict_logisticRegression(logisticreg *model,double **X,int n){
+    double *y_pred=malloc(sizeof(double)*n);
+    for(int i=0;i<n;i++){
         double yi_pred=0.0;
         for(int j=0; j<model->numofN; j++){
-            double *xi = X[train+i]; 
+            double *xi = X[i];
             yi_pred += model->vector_weights[j] * xi[j]; 
         }
         yi_pred = sigmoid(yi_pred);
         y_pred[i] = yi_pred;
     }
-    
     return y_pred;
 }
 

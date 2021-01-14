@@ -38,7 +38,7 @@ double *concatenate_vectors(double *x,double *y, int numofN);
 double norm_distance(double *x, double *y, int numofN);
 
 //Function to check if our model is trained
-double *predict_logisticRegression(logisticreg *model,double **X,int train,int n);
+double *predict_logisticRegression(logisticreg *model,double **X,int n);
 
 //Function to calculate loss
 double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int high);
@@ -46,7 +46,7 @@ double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int 
 //Function σ(t) = 1/1 + e^(-t)
 double sigmoid(double t);
 
-//Perfom the training based on the model
+//Perform the training based on the model
 logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size);
 
 //Function to print statistics to file

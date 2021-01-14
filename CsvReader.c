@@ -6,6 +6,7 @@
 #include "BagOfWords.h"
 #include "Metrics.h"
 #include "DataPreprocess.h"
+#include "DataLoading.h"
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename,HashTable **ht, int *linesRead,int *pos_num,int *neg_num)
@@ -177,12 +178,11 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Create the model for the training
     logisticreg *regressor;
     int steps=5;
-    int batches=2;
-    double learning_rate=0.03;
+    int batches=4;
+    double learning_rate=0.01;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
-    int train_size = linesRead-linesRead*0.2;
     double **X = malloc(sizeof(double)*linesRead);
     int *y = malloc(sizeof(int)*linesRead);
     char **pairs = malloc(sizeof(char*)*linesRead);
@@ -195,7 +195,6 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
             lines++;
             continue;
         }
-
 
         char *left_sp,*right_sp,*lbl_str;
         //Take left_spec_id
@@ -226,16 +225,23 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     printf("\nShuffling data\n\n");
     //Shuffle the loaded data
-    shuffle_data(X,y,pairs,linesRead,2);
+    int train_size=0;
+    int test_size=0;
+    datasets *data  = split_train_test(X,y,pairs,linesRead,7,0.2,&train_size,&test_size);
 
     printf("\nStart training...\n\n");
     //Perform the training
-    regressor = train_logisticRegression(regressor,X,y,train_size);
+    double **X_train = data->X_train;
+    double **X_test = data->X_test;
+    int *y_train = data->y_train;
+    int *y_test = data->y_test;
+    regressor = train_logisticRegression(regressor,X_train,y_train,train_size);
 
     //Get the predictions from the model
-    double *pred = predict_logisticRegression(regressor,X,train_size,linesRead);
+    double *pred = predict_logisticRegression(regressor,X_test,test_size);
 
     //Creating file for the predictions
+    char **pairs_test = data->pairs_test;
     FILE *fp2;
     fp2 = fopen("predictions.csv","w+");
     int err = fprintf(fp2,"left_sp,right_sp,label\n");
@@ -244,8 +250,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         print_error();
         return;
     }
-    for(int i=0;i<(linesRead-train_size);i++){
-        err = fprintf(fp2,"%s,%f\n",pairs[train_size+i],pred[i]);
+    for(int i=0;i<test_size;i++){
+        err = fprintf(fp2,"%s,%f\n",pairs_test[i],pred[i]);
         if(err<0){
             errorCode = WRITING_TO_FILE;
             print_error();
@@ -254,25 +260,27 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     }
 
     //Print the metrics from the predictions after training
-    metrics = calculate_LearningMetrics(metrics,y,pred,train_size,linesRead);
+    metrics = calculate_LearningMetrics(metrics,y_test,pred,test_size);
     metrics = evaluate_LearningMetrics(metrics);
     print_LearningMetrics(metrics);
-
-    for(int i=0;i<linesRead;i++){
-        free(pairs[i]);
-        free(X[i]);
-    }
-
-    free(X);
-    free(y);
-    free(pairs);
-    free(pred);
     //Save the statistics
     printStatistics(regressor,filename,bow_type,vector_type);
 
+
+    for(int i=0;i<linesRead;i++)
+        free(X[i]);
+    for(int i=0;i<train_size;i++)
+        free(data->pairs_train[i]);
+    for(int i=0;i<test_size;i++)
+        free(data->pairs_test[i]);
+
+    free(X);
+    free(y);
+    free(pred);
     free(line);
     fclose(fp);
     fclose(fp2);
+    destroy_dataset(&data);
     delete_logisticReg(&regressor);
     destroyLearningMetrics(&metrics);
 }
@@ -356,7 +364,7 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     }
 
     //Get the predictions from the model
-    double *pred = predict_logisticRegression(model,X,0,linesRead);
+    double *pred = predict_logisticRegression(model,X,linesRead);
 
 
     //Creating file for the predictions
@@ -385,7 +393,7 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
 
 
     //Print the metrics from the predictions after training
-    metrics = calculate_LearningMetrics(metrics,y,pred,0,linesRead);
+    metrics = calculate_LearningMetrics(metrics,y,pred,linesRead);
     metrics = evaluate_LearningMetrics(metrics);
     print_LearningMetrics(metrics);
 
