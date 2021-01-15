@@ -112,6 +112,10 @@ HashTable *correctNegativeRelation(HashTable **predit_ht,HashTable *ht,char *lef
 //Function for correcting positive relations that were predicted as negative
 HashTable *correctPositiveRelation(HashTable **predit_ht, char *left_sp, char *right_sp);
 
+//Function to return the predictions that were inserted inside a give clique
+secTable *getPredtictedPairs(HashTable *data_ht,secTable *preds,BucketList *list);
 
+//Function to resolve transitivity issues that occured from a pair that was predicted as negative
+HashTable *resolveNegativeRelation(HashTable *data_ht,HashTable **pred_ht,predictionPair *pair,secTable *preds);
 
 #endif //PROJECT_HASHTABLE_H 

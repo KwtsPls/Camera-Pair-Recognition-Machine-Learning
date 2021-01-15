@@ -7,6 +7,7 @@
 #include "Metrics.h"
 #include "DataPreprocess.h"
 #include "DataLoading.h"
+#include <math.h>
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename,HashTable **ht, int *linesRead,int *pos_num,int *neg_num)
@@ -284,6 +285,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     delete_logisticReg(&regressor);
     destroyLearningMetrics(&metrics);
 }
+
 
 //Function for inference
 void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticreg *model, char *bow_type, int vector_type){

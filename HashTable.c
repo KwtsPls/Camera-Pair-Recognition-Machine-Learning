@@ -3,6 +3,7 @@
 #include <string.h>
 #include "HashTable.h"
 #include "SecTable.h"
+#include "Transitivity.h"
 
 //Hash function for this hash table -> I used DJB2
 unsigned long hashCode(char *str,int buckets)
@@ -776,3 +777,57 @@ HashTable *correctPositiveRelation(HashTable **predit_ht, char *left_sp, char *r
     return *predit_ht;
 }
 
+
+//Function to return the predictions that were inserted inside a give clique
+secTable *getPredtictedPairs(HashTable *data_ht,secTable *preds,BucketList *list){
+    secTable *table = create_secTable(ST_INIT_SIZE,SB_SIZE,HashPredPair,ComparePredictedPair,DeletePredictedPair,predPair);
+    
+    Bucket *node = list->head;
+    while(node!=NULL){
+        for(int i=0;i<node->cnt;i++){
+            Dictionary *a = node->spec_ids[i];
+            Bucket *temp = node;
+            while(temp!=NULL){
+                for(int j=0;j<temp->cnt;j++){
+                    Dictionary *b = node->spec_ids[j];
+                    if(a!=b){
+                        int relation = checkRelation(data_ht,a->dict_name,b->dict_name);
+                        if(relation==-1){
+                            predictionPair *pair = initPredictionPair(a->dict_name,b->dict_name,0.0);
+                            if(find_secTable(preds,pair)==1)
+                                insert_secTable(table,pair);
+                            else
+                                deletePredictionPair(pair);
+                        }
+                    }
+                }
+                temp = temp->next;
+            }
+        }
+        node = node->next;
+    }
+    
+    return table;
+}
+
+
+//Function to resolve transitivity issues that occured from a pair that was predicted as negative
+HashTable *resolveNegativeRelation(HashTable *data_ht,HashTable **pred_ht,predictionPair *pair,secTable *preds){
+
+    int h_l = hashCode(pair->left_sp,data_ht->buckets_num);
+    int h_r = hashCode(pair->right_sp,data_ht->buckets_num);
+    
+    int l_index = findKeyBucketEntry(data_ht,pair->left_sp);
+    int r_index = findKeyBucketEntry(data_ht,pair->right_sp);
+
+    //get the clique that created the issue
+    int pred_h = hashCode(pair->left_sp,(*pred_ht)->buckets_num);
+    int pred_index = findKeyBucketEntry(*pred_ht,pair->left_sp);
+
+    
+    BucketList *list = (*pred_ht)->table[pred_h]->array[pred_index]->set;
+    //Get a hash table containing all predictions in the current clique
+    secTable *clique_predictions = getPredtictedPairs(data_ht,preds,list);
+    
+    
+}

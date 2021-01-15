@@ -4,7 +4,7 @@
 #include <math.h>
 #include "SecTable.h"
 #include "BagOfWords.h"
-
+#include "Transitivity.h"
 
 /*######################### Hash Functions ###############*/
 
@@ -44,6 +44,24 @@ unsigned int HashIndexedWord(void* Ptr,int buckets){
     return hash%buckets;
 }
 
+// Used sdbm hash function to hash strings
+unsigned int HashPredPair(void* Ptr,int buckets){
+    unsigned int hash_a = 0;
+    unsigned int hash_b = 0; 
+    unsigned int hash = 0;        
+    predictionPair *pair = (predictionPair*)Ptr;
+    char *a = pair->left_sp;
+    char *b = pair->right_sp;
+    int c;
+    while ((c = *a++))
+        hash_a = c + (hash_a << 6) + (hash_a << 16) - hash_a;
+    while ((c = *b++))
+        hash_b = c + (hash_b << 6) + (hash_b << 16) - hash_b;    
+
+    hash = hash_a + hash_b;    
+    return hash%buckets;
+}
+
 /*############################################################*/
 
 /*################ Compare Functions #########################*/
@@ -68,6 +86,18 @@ int CompareIndexedWord(void * a, void *b)
     return (strcmp(a_w->word,b_w->word) == 0);
 }
 
+//Return 1 if pairs match
+int ComparePredictedPair(void *a,void *b){
+    predictionPair *a_pair = (predictionPair*)a;
+    predictionPair *b_pair = (predictionPair*)b;
+    if(strcmp(a_pair->left_sp,b_pair->left_sp)==0 && strcmp(a_pair->right_sp,b_pair->right_sp)==0)
+        return 1;
+    else if(strcmp(a_pair->left_sp,b_pair->right_sp)==0 && strcmp(a_pair->right_sp,b_pair->left_sp)==0)
+        return 1;
+    else
+        return 0;
+}
+
 /*############################################################*/
 
 /*############# Delete Functions #############################*/
@@ -80,6 +110,11 @@ void DeleteString(void *Ptr){
 //Function to delete indexed words;
 void DeleteIndexedWord(void *Ptr){
     deleteIndexedWord((indexedWord*)Ptr);
+}
+
+//Function to delete a prediction pair
+void DeletePredictedPair(void *Ptr){
+    deletePredictionPair((predictionPair*)Ptr);
 }
 
 /*#############################################################*/

@@ -16,7 +16,7 @@ typedef int (*Compare)(void *, void *);
 //Functions to destroy values in secondary nodes
 typedef void (*Delete)(void *);
 // Data types for the hash table
-typedef enum data_types {Pointer,String,indxWrd} Data;
+typedef enum data_types {Pointer,String,indxWrd,predPair} Data;
 
 typedef struct secondaryNode{
 
@@ -64,6 +64,9 @@ unsigned int HashString(void* Ptr,int buckets);
 //Used sdbm hash function to hash strings
 unsigned int HashIndexedWord(void* Ptr,int buckets);
 
+// Used sdbm hash function to hash strings
+unsigned int HashPredPair(void* Ptr,int buckets);
+
 /*#####################################################*/
 
 /*######## Compare Functions ############################*/
@@ -77,6 +80,9 @@ int CompareString(void * a, void *b);
 //Returns 1 if strings if two indexed words are the same
 int CompareIndexedWord(void * a, void *b);
 
+//Return 1 if pairs match
+int ComparePredictedPair(void *a,void *b);
+
 /*#####################################################*/
 
 /*######## Delete Functions ############################*/
@@ -86,6 +92,9 @@ void DeleteString(void *Ptr);
 
 //Function to delete indexed words;
 void DeleteIndexedWord(void *Ptr);
+
+//Function to delete a prediction pair
+void DeletePredictedPair(void *Ptr);
 
 /*######################################################*/
 
