@@ -196,7 +196,7 @@ double norm_distance(double *x, double *y, int numofN){
 }
 
 //Function to calculate logistic regressions
-logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high){
+logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int size){
 
     
     //Initialize previous weights
@@ -208,7 +208,7 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
         for(int j=0;j<model->numofN;j++){
             double gradient=0.0;
             double h=0.0;
-            for(int i=low;i<high;i++){
+            for(int i=0;i<size;i++){
                 if(y[i]==1){
                     for(int k=0;k<model->ratio;k++){
                         double *xi = X[i];
@@ -253,23 +253,20 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low
 logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size){
     int n = size/(model->batches);
     int r = size%(model->batches);
-
     //Perform a mini-batch training
-    int low;
-    int high;
     for(int i=0;i<(n-1);i++){
-        low = i*(model->batches);
-        high = (i+1)*(model->batches);
-        model = fit_logisticRegression(model,X,y,low,high);
+        double **X_batch = X+i*model->batches;
+        int *y_batch = y+i*model->batches;
+        model = fit_logisticRegression(model,X_batch,y_batch,model->batches);
 
         if((i*(model->batches))%1024==0 && i!=0)
             printf("Iterations: %d\n",i*(model->batches));
     }
 
     if(r!=0){
-        low = high;
-        high = high + r;
-        model = fit_logisticRegression(model,X,y,low,high);
+        double **X_batch = X+(n-1)*model->batches;
+        int *y_batch = y+(n-1)*model->batches;        
+        model = fit_logisticRegression(model,X_batch,y_batch,r);
     }
 
     return model;

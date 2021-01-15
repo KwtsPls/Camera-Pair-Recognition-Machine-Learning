@@ -17,7 +17,7 @@ typedef struct logisticreg{
 }logisticreg;
 
 //Function to calculate logistic regressions
-logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int low,int high);
+logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int size);
 
 //Function to create a Logistic Regression model
 logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate,int ratio);
