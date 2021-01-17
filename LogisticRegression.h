@@ -55,4 +55,7 @@ void printStatistics(logisticreg *model,char *filename,char *bow_type, int vecto
 //Function to free memory for the logistic regression struct
 void delete_logisticReg(logisticreg **del);
 
+//Function to get the result of a prediction for a given input
+double hypothesis(logisticreg *model,double *x);
+
 #endif // !LOGISTICREGRESSION_H

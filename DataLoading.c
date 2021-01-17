@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "DataLoading.h"
+#include "BagOfWords.h"
 
 //Function to swap integers
 void swap_int(int *a,int *b){
@@ -114,3 +115,55 @@ datasets *split_train_test(double **X,int *y,char **pairs,int n,int random_state
     return data;
 }
 
+
+//Function to load the dataset from a given csv file
+void load_data(char *filename,int linesRead,HashTable *ht,secTable *vocabulary,logisticreg *regressor,char *bow_type,int vector_type,double ***X,int **y,char ***pairs){
+
+    FILE *fp;
+    fp = fopen(filename,"r");
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+    int lines=0;
+
+    *X = malloc(sizeof(double)*linesRead);
+    *y = malloc(sizeof(int)*linesRead);
+    *pairs = malloc(sizeof(char*)*linesRead);
+
+    while((read = getline(&line, &len,fp))!=-1){
+
+        if(lines==0){ //Skip First Line cause its Left_spec, Right_Spec, label
+            lines++;
+            continue;
+        }
+
+        char *left_sp,*right_sp,*lbl_str;
+        //Take left_spec_id
+        left_sp = strtok(line,",");
+        //Take right_spec_id
+        right_sp = strtok(NULL,",");
+        //Take label
+        lbl_str = strtok(NULL,",");
+        //Label to integer
+        int label = atoi(lbl_str);
+
+        double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
+        double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
+        double *xi=vectorize(l_x,r_x,regressor->numofN,vector_type);
+
+        (*X)[lines-1]=xi;
+        (*y)[lines-1]=label;
+        char *new_pair = malloc(strlen(left_sp)+1+strlen(right_sp)+1);
+        strcpy(new_pair,left_sp);
+        strcat(new_pair,",");
+        strcat(new_pair,right_sp);
+        (*pairs)[lines-1]=new_pair;
+
+        lines++;
+        free(l_x);
+        free(r_x);
+    }
+
+    fclose(fp);
+    free(line);
+}

@@ -7,6 +7,7 @@
 #include "Metrics.h"
 #include "DataPreprocess.h"
 #include "DataLoading.h"
+#include "BinaryHeap.h"
 #include <math.h>
 
 //Parser for finding pairs of spec_ids in the csv file
@@ -169,60 +170,16 @@ void csvWriteNegativeCliques(HashTable **ht){
 
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type,int ratio){
 
-    FILE *fp;
-    fp = fopen(filename,"r");
-    char *line = NULL;
-    size_t len = 0;
-    size_t read;
-    int lines=0;
-
     //Create the model for the training
     logisticreg *regressor;
     int steps=5;
     int batches=4;
     double learning_rate=0.01;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
-    //Initialize the metrics for the training
-    LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
-    double **X = malloc(sizeof(double)*linesRead);
-    int *y = malloc(sizeof(int)*linesRead);
-    char **pairs = malloc(sizeof(char*)*linesRead);
+    double **X=NULL;int *y=NULL;char **pairs=NULL;
 
-
-
-    while((read = getline(&line, &len,fp))!=-1){
-
-        if(lines==0){ //Skip First Line cause its Left_spec, Right_Spec, label
-            lines++;
-            continue;
-        }
-
-        char *left_sp,*right_sp,*lbl_str;
-        //Take left_spec_id
-        left_sp = strtok(line,",");
-        //Take right_spec_id
-        right_sp = strtok(NULL,",");
-        //Take label
-        lbl_str = strtok(NULL,",");
-        //Label to integer
-        int label = atoi(lbl_str);
-
-        double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
-        double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
-        double *xi=vectorize(l_x,r_x,regressor->numofN,vector_type);
-
-        X[lines-1]=xi;
-        y[lines-1]=label;
-        char *new_pair = malloc(strlen(left_sp)+1+strlen(right_sp)+1);
-        strcpy(new_pair,left_sp);
-        strcat(new_pair,",");
-        strcat(new_pair,right_sp);
-        pairs[lines-1]=new_pair;
-
-        lines++;
-        free(l_x);
-        free(r_x);
-    }
+    //Load data from the given file
+    load_data(filename,linesRead,ht,vocabulary,regressor,bow_type,vector_type,&X,&y,&pairs);
 
     printf("\nShuffling data\n\n");
     //Shuffle the loaded data
@@ -234,38 +191,42 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Perform the training
     double **X_train = data->X_train;
     double **X_test = data->X_test;
+    char **pairs_train = data->pairs_train;
     int *y_train = data->y_train;
     int *y_test = data->y_test;
-    regressor = train_logisticRegression(regressor,X_train,y_train,train_size);
+
+
+    //Get all the pairs
+    csvWriteCliques(&ht);
+    csvWriteNegativeCliques(&ht);
+
+    float threshold=0.1;
+    float step_value=0.1;
+    while(threshold<0.5){
+        //Train the model based on the current train set
+        regressor = train_logisticRegression(regressor,X_train,y_train,train_size);
+
+        //Print the metrics from the predictions after training
+        LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
+        double *pred = predict_logisticRegression(regressor,X_test,test_size);
+        metrics = calculate_LearningMetrics(metrics,y_test,pred,test_size);
+        metrics = evaluate_LearningMetrics(metrics);
+        print_LearningMetrics(metrics);
+        free(pred);
+        destroyLearningMetrics(&metrics);
+
+        //Create a binary heap to save the pairs that are above the current threshold
+        BHTree *bht = predict_all_pairs(regressor,threshold,ht,vocabulary,bow_type,vector_type);
+        train_size = resolve_transitivity_issues(pairs_train,X_train,y_train,train_size,bht,
+                                            ht,vocabulary,bow_type,vector_type,regressor);
+        threshold += step_value;
+    }
 
     //Get the predictions from the model
     double *pred = predict_logisticRegression(regressor,X_test,test_size);
 
     //Creating file for the predictions
-    char **pairs_test = data->pairs_test;
-    FILE *fp2;
-    fp2 = fopen("predictions.csv","w+");
-    int err = fprintf(fp2,"left_sp,right_sp,label\n");
-    if(err<0){
-        errorCode = WRITING_TO_FILE;
-        print_error();
-        return;
-    }
-    for(int i=0;i<test_size;i++){
-        err = fprintf(fp2,"%s,%f\n",pairs_test[i],pred[i]);
-        if(err<0){
-            errorCode = WRITING_TO_FILE;
-            print_error();
-            return;
-        }
-    }
-
-    //Print the metrics from the predictions after training
-    metrics = calculate_LearningMetrics(metrics,y_test,pred,test_size);
-    metrics = evaluate_LearningMetrics(metrics);
-    print_LearningMetrics(metrics);
-    //Save the statistics
-    printStatistics(regressor,filename,bow_type,vector_type);
+    csvWritePredictions(data,pred,test_size);
 
 
     for(int i=0;i<linesRead;i++)
@@ -278,12 +239,114 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     free(X);
     free(y);
     free(pred);
-    free(line);
-    fclose(fp);
-    fclose(fp2);
     destroy_dataset(&data);
     delete_logisticReg(&regressor);
-    destroyLearningMetrics(&metrics);
+}
+
+
+//Function to get the predictions from all pairs from the data
+BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type){
+    FILE *fp_neg;
+    //Open file to read...
+    fp_neg = fopen("neg_cliques.csv","r");
+    //Check if file Opened
+    if(fp_neg==NULL){
+        errorCode = OPENING_FILE;
+        fclose(fp_neg);
+        print_error();
+        return NULL;
+    }
+
+    FILE *fp_pos;
+    //Open file to read...
+    fp_pos = fopen("cliques.csv","r");
+    //Check if file Opened
+    if(fp_pos==NULL){
+        errorCode = OPENING_FILE;
+        fclose(fp_pos);
+        print_error();
+        return NULL;
+    }
+
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+
+    BHTree *bht = initBH();
+
+    int i=0;
+    while((read = getline(&line, &len,fp_pos))!=-1)
+    {
+        if(i==0) //Skip First Line cause its Left_spec, Right_Spec, label
+        {
+            i++;
+            continue;
+        }
+        
+        char *left_sp,*right_sp;
+        //Take left_spec_id
+        left_sp = strtok(line,",");
+        //Take right_spec_id
+        right_sp = strtok(NULL,",\n");
+
+        double *x_l = getBagOfWords(ht,vocabulary,left_sp,bow_type);
+        double *x_r = getBagOfWords(ht,vocabulary,right_sp,bow_type);
+        double *x = vectorize(x_l,x_r,regressor->numofN,vector_type);
+
+        //Get the predicted value
+        double pred = hypothesis(regressor,x);
+
+        //Keep only the predictions that are above the threshold
+        if(pred > 1.0-threshold){
+            predictionPair *pair = initPredictionPair(left_sp,right_sp,pred);
+            insertBHNode(&bht,bht->root,NULL,NULL,pair);
+        }
+
+        i++;    //New line Read
+        free(x_l);
+        free(x_r);
+        free(x);
+    }
+
+    free(line);
+    line=NULL;
+
+    i=0;
+    while((read = getline(&line, &len,fp_neg))!=-1)
+    {
+        if(i==0) //Skip First Line cause its Left_spec, Right_Spec, label
+        {
+            i++;
+            continue;
+        }
+        
+        char *left_sp,*right_sp;
+        //Take left_spec_id
+        left_sp = strtok(line,",");
+        //Take right_spec_id
+        right_sp = strtok(NULL,",\n");
+
+        double *x_l = getBagOfWords(ht,vocabulary,left_sp,bow_type);
+        double *x_r = getBagOfWords(ht,vocabulary,right_sp,bow_type);
+        double *x = vectorize(x_l,x_r,regressor->numofN,vector_type);
+
+        //Get the predicted value
+        double pred = hypothesis(regressor,x);
+
+        //Keep only the predictions that are above the threshold
+        if(pred < threshold){
+            predictionPair *pair = initPredictionPair(left_sp,right_sp,pred);
+            insertBHNode(&bht,bht->root,NULL,NULL,pair);
+        }
+
+        i++;    //New line Read
+    }
+
+    fclose(fp_neg);
+    fclose(fp_pos);
+    free(line);
+
+    return bht;
 }
 
 
@@ -411,4 +474,26 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     free(line);
     fclose(fp);
 
+}
+
+//Function for writing predictions to file
+void csvWritePredictions(datasets *data, double *pred, int test_size){
+    char **pairs_test = data->pairs_test;
+    FILE *fp2;
+    fp2 = fopen("predictions.csv","w+");
+    int err = fprintf(fp2,"left_sp,right_sp,label\n");
+    if(err<0){
+        errorCode = WRITING_TO_FILE;
+        print_error();
+        return;
+    }
+    for(int i=0;i<test_size;i++){
+        err = fprintf(fp2,"%s,%f\n",pairs_test[i],pred[i]);
+        if(err<0){
+            errorCode = WRITING_TO_FILE;
+            print_error();
+            return;
+        }
+    }
+    fclose(fp2);
 }

@@ -106,16 +106,4 @@ int checkNegativeAs(HashTable *ht, char *left, char *right);
 //Function to return the relation of a pair
 int checkRelation(HashTable *ht, char *left, char *right);
 
-//Function for correcting predicted 1's that were wrong and proved to be negative
-HashTable *correctNegativeRelation(HashTable **predit_ht,HashTable *ht,char *left_sp,char *right_sp);
-
-//Function for correcting positive relations that were predicted as negative
-HashTable *correctPositiveRelation(HashTable **predit_ht, char *left_sp, char *right_sp);
-
-//Function to return the predictions that were inserted inside a give clique
-secTable *getPredtictedPairs(HashTable *data_ht,secTable *preds,BucketList *list);
-
-//Function to resolve transitivity issues that occured from a pair that was predicted as negative
-HashTable *resolveNegativeRelation(HashTable *data_ht,HashTable **pred_ht,predictionPair *pair,secTable *preds);
-
 #endif //PROJECT_HASHTABLE_H 

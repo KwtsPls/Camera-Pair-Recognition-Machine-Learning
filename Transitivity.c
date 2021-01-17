@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "Transitivity.h"
+#include "JsonParser.h"
 #include "Dictionary.h"
 #include "ErrorHandler.h"
 #include "Bucket.h"
@@ -11,6 +12,8 @@
 #include "SecTable.h"
 #include "DataPreprocess.h"
 #include "LogisticRegression.h"
+#include "BinaryHeap.h"
+#include "BagOfWords.h"
 
 //Function to initialize a predictionPair
 predictionPair *initPredictionPair(char *left_sp,char *right_sp,double pred){
@@ -145,84 +148,6 @@ int Initialize_dummy_dataset(char *name,HashTable **ht){
     return 1;
 }
 
-//Parser for finding pairs of spec_ids in the csv file
-HashTable *predictionsParser(char *filename,HashTable **predit_ht,HashTable *ht)
-{
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0;
-    size_t read;
-
-    //Open file
-    fp = fopen(filename,"r");
-    //Check if file Opened
-    if(fp==NULL)
-    {
-        errorCode = OPENING_FILE;
-        fclose(fp);
-        print_error();
-        return NULL;
-    }
-
-    int i=0;    //Number Of Lines Counter
-    //Read each line
-    while((read = getline(&line, &len,fp))!=-1)
-    {
-        if(i==0) //Skip First Line cause its Left_spec, Right_Spec, label
-        {
-            i++;
-            continue;
-        }
-        
-        char *left_sp,*right_sp,*lbl_str;
-        //Take left_spec_id
-        left_sp = strtok(line,",");
-        //Take right_spec_id
-        right_sp = strtok(NULL,",");
-        //Take label
-        lbl_str = strtok(NULL,",");
-        //Label to integer
-        double pred = atof(lbl_str);
-        int label = round(pred);
-
-        //check the relation the current pair has in the struct
-        int relation = checkRelation(*predit_ht,left_sp,right_sp);
-
-        if(relation==-1){
-            //They're the same
-            if(label == 1) {
-                *predit_ht = createCliqueHashTable(predit_ht, left_sp, right_sp);
-            }
-            //Negative relation
-            else if (label == 0) {
-                *predit_ht = negativeRelationHashTable((*predit_ht), left_sp, right_sp);
-            }
-        }
-        else if(label!=relation){
-            
-            //A transitivity issue appeared - check the data to resolve it
-            int correct_relation = checkRelation(ht,left_sp,right_sp);
-            if(label==1 && correct_relation==1){
-                *predit_ht = correctPositiveRelation(predit_ht,left_sp,right_sp);
-            }
-            else if(label==0 && correct_relation==0){               
-                *predit_ht = correctNegativeRelation(predit_ht,ht,left_sp,right_sp);
-            }
-
-        }
-
-
-        i++;    //New line Read
-    }
-
-    //Free space and close file
-    free(line);
-    //Close the file
-    fclose(fp);
-
-    //Return num of files read
-    return *predit_ht;
-}
 
 //Function to create cliques and negative relations in the new dummy hash tables
 void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_train,int *y_train,int size){
@@ -251,64 +176,59 @@ void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_tra
 }
 
 //Function for resolving transitivity issues with the predicted pairs
-void resolve(HashTable **data_ht, HashTable **pred_ht,secTable *preds,double **X_corrected, int *y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
+void resolve(HashTable **data_ht, HashTable **pred_ht,BHTree *preds,char **pairs_corrected,double **X_corrected, int *y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
 
-    int index=0;
-    for(int i=0;i<preds->numOfBuckets;i++){
-        secondaryNode *node = preds->table[i];
-        while(node!=NULL){
-            for(int j=0;j<node->num_elements;j++){
-                predictionPair *pair = node->values[j];
-                char *left_sp = pair->left_sp;
-                char *right_sp = pair->right_sp;
-                double prediction = pair->pred;
+    int i=0;
+    while(preds->num_elements!=0){
+        predictionPair *cur;
+        deleteMaxBH(preds,&cur);
 
-                double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
-                double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
-                X_corrected[index] = vectorize(l_x,r_x,regressor->numofN,vector_type);
-                index++;
+        //Save the current line
+        char *line = malloc(strlen(cur->left_sp)+1+strlen(cur->right_sp)+1);
+        strcpy(line,cur->left_sp);
+        strcat(line,",");
+        strcat(line,cur->right_sp);
+        pairs_corrected[i]=line;
 
-                int relation = checkRelation(*data_ht,left_sp,right_sp);
-                //If the current pair exists in the training set resolve the issue based on the known data
-                if(relation != -1) {
-                    ((predictionPair *)node->values[j])->corrected = relation;
-                }
-                //The current pair does not exist in the training set
-                //if a transitivity issue occurs resolve it based on the predictions 
-                else{
-                    int pred_relation = checkRelation(*pred_ht,left_sp,right_sp);
-                    if(pred_relation==-1){
-                        //They're the same
-                        if(round(prediction) == 1){
-                            *pred_ht = createCliqueHashTable(pred_ht, left_sp, right_sp);
-                        }
-                        //Negative relation
-                        else{
-                            *pred_ht = negativeRelationHashTable((*pred_ht), left_sp, right_sp);
-                        }
-                    }
-                    else if(round(prediction)!=pred_relation){
-                        
-                        if(round(prediction)==0){
-                            *pred_ht = resolveNegativeRelation(data_ht,&pred_ht,pair,preds);
-                        }
 
-                    }
-
-                }
-
-                free(l_x);
-                free(r_x);
-            }
-
-            node = node->next;
+        //Save the vector of the current pair
+        int relation = checkRelation(*data_ht,cur->left_sp,cur->right_sp);
+        double *x_l = getBagOfWords(ht,vocabulary,cur->left_sp,bow_type);
+        double *x_r = getBagOfWords(ht,vocabulary,cur->right_sp,bow_type);
+        X_corrected[i] = vectorize(x_l,x_r,regressor->numofN,vector_type);
+        
+        
+        //Resolve any issues that occur
+        if(relation!=-1){
+            y_corrected[i]=relation;
         }
+        else{
+            int pred_relation = checkRelation(*pred_ht,cur->left_sp,cur->right_sp);
+            if(pred_relation==-1){
+                y_corrected[i] = round(cur->pred);
+                if(round(cur->pred)==1)
+                    *pred_ht = createCliqueHashTable(pred_ht,cur->left_sp,cur->right_sp);
+                else
+                    *pred_ht = negativeRelationHashTable(*pred_ht,cur->left_sp,cur->right_sp);
+            }
+            else{
+                //Because predictions are sorted, we have taken the best predictions already in the hash table
+                //So we assume that the relations causing the conflicts are weaker predictions and shouldn't be taken into consideration
+                y_corrected[i]=pred_relation;
+            }
+        
+        }
+
+        i++;
+        free(x_l);
+        free(x_r);
+        deletePredictionPair(cur);
     }
 
 }
 
 //Function to resolve transitivity issues on the predictions from our model
-void resolve_transitivity_issues(char **pairs_train,double **X_train,int *y_train,int train,secTable *preds,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type, logisticreg *reg){
+int resolve_transitivity_issues(char **pairs_train,double **X_train,int *y_train,int train,BHTree *preds,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type, logisticreg *reg){
     char *dirname = get_datasetX_name();
     //Create a hash table corresponding to the training set data
     HashTable *data_ht=initHashTable(TABLE_INIT_SIZE);
@@ -320,8 +240,30 @@ void resolve_transitivity_issues(char **pairs_train,double **X_train,int *y_trai
     init_train_cliques(&data_ht,&pred_ht,pairs_train,y_train,train);
     
     //Resolve any transitivity issues that occured
-    double **X_corrected=malloc(sizeof(double*)*preds->num_elements);
-    int *y_corrected = malloc(sizeof(int)*preds->num_elements);
-    resolve(&data_ht,&pred_ht,preds,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,reg);
+    int size = preds->num_elements;
+    char **pairs_corrected=malloc(sizeof(char*)*size);
+    double **X_corrected=malloc(sizeof(double*)*size);
+    int *y_corrected = malloc(sizeof(int)*size);
+    resolve(&data_ht,&pred_ht,preds,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,reg);
     
+    //Concatanate the old training set with the new pairs
+    int new_size = train + size;
+    pairs_train = realloc(pairs_train,new_size*sizeof(char*));
+    X_train = realloc(X_train,new_size*sizeof(double*));
+    y_train = realloc(y_train,new_size*sizeof(int));
+
+    memcpy(X_train+train,X_corrected,sizeof(double*)*size);
+    memcpy(y_train+train,y_corrected,sizeof(int)*size);
+    for(int i=0;i<size;i++){
+        pairs_train[i+train] = pairs_corrected[i];
+    }
+
+    free(pairs_corrected);
+    free(X_corrected);
+    free(y_corrected);
+    cliqueDeleteHashTable(&data_ht,BUCKET_HARD_DELETE_MODE);
+    cliqueDeleteHashTable(&pred_ht,BUCKET_HARD_DELETE_MODE);
+    deleteBHT(preds);
+
+    return new_size;
 }
