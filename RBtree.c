@@ -17,8 +17,9 @@ RBtree *initRB(){
 RBnode *createTreeNode(predictionPair *entry,RBnode *p,RBnode *l,RBnode *r){
     RBnode *node = (RBnode*)malloc(sizeof(RBnode));
 
-    //initialize the list of patients and insert its first entry
-    node->entry = entry;
+    //initialize the list of pairs and insert its first entry
+    node->l = init_LinkedList();
+    node->l = insert_LinkedList(node->l,entry);
 
     //Set the nodes key
     node->key = fabs(0.5-entry->pred);
@@ -34,7 +35,7 @@ RBnode *createTreeNode(predictionPair *entry,RBnode *p,RBnode *l,RBnode *r){
 RBnode *findRBNode(RBnode *node,predictionPair *pair){
     if (node == NULL) return NULL;
 
-    if (fabs(0.5-pair->pred == node->key)) return node;
+    if (fabs(0.5-pair->pred) == node->key) return node;
     else if (fabs(0.5-pair->pred) < node->key ) return findRBNode(node->left,pair);
     else return findRBNode(node->right,pair);
 }
@@ -52,7 +53,13 @@ RBnode *insertBST(RBnode *node,RBnode *parent,predictionPair *entry){
     if(node==NULL) return createTreeNode(entry,parent,NULL,NULL);
 
     /* Function is called recursively with the parent node being the current one*/
-    if(fabs(0.5- entry->pred) < node->key) node->left = insertBST(node->left,node,entry);
+
+    //Key already exists in this tree add the entry
+    //in this node's list
+    if(fabs(0.5- entry->pred) == node->key){
+        node->l = insert_LinkedList(node->l,entry);
+    }
+    else if(fabs(0.5- entry->pred) < node->key) node->left = insertBST(node->left,node,entry);
     else node->right = insertBST(node->right,node,entry);
 
     return node;
@@ -68,6 +75,11 @@ RBtree *insertRB(RBtree *rbt,predictionPair *pair)
 
     //with searchRB get a pointer to the newly added node
     cur = searchRB(rbt,pair);
+
+    //Entry was inserted in a node with the same key
+    //the tree's balanced is not changed
+    if(cur->l->num_elements>1)
+        return rbt;
 
     //paint the new node red
     cur->colour=RED;
@@ -139,7 +151,7 @@ void inorderRBNode(RBnode *node)
         return;
 
     inorderRBNode(node->left);
-    printf("%s,%s,%f",node->entry->left_sp,node->entry->right_sp,node->entry->pred);
+    print_LinkedList(node->l);
     inorderRBNode(node->right);
 }
 
@@ -197,6 +209,6 @@ void destroyRBNode(RBnode *node)
     /* first delete both subtrees */
     destroyRBNode(node->left);
     destroyRBNode(node->right);
-    deletePredictionPair(node->entry);
+    destroy_LinkedList(node->l);
     free(node);
 }

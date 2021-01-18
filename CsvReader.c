@@ -201,9 +201,9 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     csvWriteCliques(&ht);
     csvWriteNegativeCliques(&ht);
 
-    float threshold=0.1;
+    float threshold=0.0;
     float step_value=0.1;
-    while(threshold<0.5){
+    while(1){
         //Train the model based on the current train set
         regressor = train_logisticRegression(regressor,X_train,y_train,train_size);
 
@@ -216,11 +216,15 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         free(pred);
         destroyLearningMetrics(&metrics);
 
+        threshold += step_value;
+        if(threshold>=0.5)
+            break;
+
         //Create a binary heap to save the pairs that are above the current threshold
         RBtree *rbt = predict_all_pairs(regressor,threshold,ht,vocabulary,bow_type,vector_type);
         train_size = resolve_transitivity_issues(&pairs_train,&X_train,&y_train,train_size,rbt,
                                             ht,vocabulary,bow_type,vector_type,regressor);
-        threshold += step_value;
+
         printf("%d\n",train_size);
     }
 

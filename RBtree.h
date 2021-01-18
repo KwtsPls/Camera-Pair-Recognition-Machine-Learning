@@ -2,18 +2,19 @@
 #define HW2_RBTREE_H
 
 #include <stdio.h>
+#include "List.h"
 #include "Transitivity.h"
+
+typedef struct linked_list LinkedList;
 
 //Enumeration representing red and black nodes for Red Black trees
 typedef enum {RED,BLACK} NodeColour;
 
-typedef struct pred_pair predictionPair;
-
 //Struct that represents a node of an Red/Black tree
 typedef struct rb_node{
 
-    float key;
-    predictionPair *entry;
+    double key;
+    LinkedList *l;
     NodeColour colour;
     struct  rb_node *parent;
     struct  rb_node *left;

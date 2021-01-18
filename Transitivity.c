@@ -190,47 +190,52 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs
 
     resolve(data_ht,pred_ht,node->right,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,index);
 
-    predictionPair *cur = node->entry;
+    LinkedList *l = node->l;
+    ListNode *listnode = l->head;
 
-    //Save the current line
-    char *line = malloc(strlen(cur->left_sp)+1+strlen(cur->right_sp)+1);
-    strcpy(line,cur->left_sp);
-    strcat(line,",");
-    strcat(line,cur->right_sp);
-    (*pairs_corrected)[*index]=line;
+    while(listnode!=NULL) {
+
+        predictionPair *cur = listnode->entry;
+
+        //Save the current line
+        char *line = malloc(strlen(cur->left_sp) + 1 + strlen(cur->right_sp) + 1);
+        strcpy(line, cur->left_sp);
+        strcat(line, ",");
+        strcat(line, cur->right_sp);
+        (*pairs_corrected)[*index] = line;
 
 
-    //Save the vector of the current pair
-    int relation = checkRelation(*data_ht,cur->left_sp,cur->right_sp);
-    double *x_l = getBagOfWords(ht,vocabulary,cur->left_sp,bow_type);
-    double *x_r = getBagOfWords(ht,vocabulary,cur->right_sp,bow_type);
-    (*X_corrected)[*index] = vectorize(x_l,x_r,regressor->numofN,vector_type);
-        
-        
-    //Resolve any issues that occur
-    if(relation!=-1){
-        (*y_corrected)[*index]=relation;
-    }
-    else{
-        int pred_relation = checkRelation(*pred_ht,cur->left_sp,cur->right_sp);
-        if(pred_relation==-1){
-            (*y_corrected)[*index] = round(cur->pred);
-            if(round(cur->pred)==1)
-                *pred_ht = createCliqueHashTable(pred_ht,cur->left_sp,cur->right_sp);
-            else
-                *pred_ht = negativeRelationHashTable(*pred_ht,cur->left_sp,cur->right_sp);
+        //Save the vector of the current pair
+        int relation = checkRelation(*data_ht, cur->left_sp, cur->right_sp);
+        double *x_l = getBagOfWords(ht, vocabulary, cur->left_sp, bow_type);
+        double *x_r = getBagOfWords(ht, vocabulary, cur->right_sp, bow_type);
+        (*X_corrected)[*index] = vectorize(x_l, x_r, regressor->numofN, vector_type);
+
+
+        //Resolve any issues that occur
+        if (relation != -1) {
+            (*y_corrected)[*index] = relation;
+        } else {
+            int pred_relation = checkRelation(*pred_ht, cur->left_sp, cur->right_sp);
+            if (pred_relation == -1) {
+                (*y_corrected)[*index] = round(cur->pred);
+                if (round(cur->pred) == 1)
+                    *pred_ht = createCliqueHashTable(pred_ht, cur->left_sp, cur->right_sp);
+                else
+                    *pred_ht = negativeRelationHashTable(*pred_ht, cur->left_sp, cur->right_sp);
+            } else {
+                //Because predictions are sorted, we have taken the best predictions already in the hash table
+                //So we assume that the relations causing the conflicts are weaker predictions and shouldn't be taken into consideration
+                (*y_corrected)[*index] = pred_relation;
+            }
+
         }
-        else{
-            //Because predictions are sorted, we have taken the best predictions already in the hash table
-            //So we assume that the relations causing the conflicts are weaker predictions and shouldn't be taken into consideration
-            (*y_corrected)[*index]=pred_relation;
-        }
 
+        (*index)++;
+        free(x_l);
+        free(x_r);
+        listnode = listnode->next;
     }
-
-    (*index)++;
-    free(x_l);
-    free(x_r);
 
     resolve(data_ht,pred_ht,node->left,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,index);
 
