@@ -176,7 +176,7 @@ void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_tra
 }
 
 //Function for resolving transitivity issues with the predicted pairs
-void resolve(HashTable **data_ht, HashTable **pred_ht,BHTree *preds,char **pairs_corrected,double **X_corrected, int *y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
+void resolve(HashTable **data_ht, HashTable **pred_ht,BHTree *preds,char ***pairs_corrected,double ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
 
     int i=0;
     while(preds->num_elements!=0){
@@ -188,24 +188,24 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,BHTree *preds,char **pairs
         strcpy(line,cur->left_sp);
         strcat(line,",");
         strcat(line,cur->right_sp);
-        pairs_corrected[i]=line;
+        (*pairs_corrected)[i]=line;
 
 
         //Save the vector of the current pair
         int relation = checkRelation(*data_ht,cur->left_sp,cur->right_sp);
         double *x_l = getBagOfWords(ht,vocabulary,cur->left_sp,bow_type);
         double *x_r = getBagOfWords(ht,vocabulary,cur->right_sp,bow_type);
-        X_corrected[i] = vectorize(x_l,x_r,regressor->numofN,vector_type);
+        (*X_corrected)[i] = vectorize(x_l,x_r,regressor->numofN,vector_type);
         
         
         //Resolve any issues that occur
         if(relation!=-1){
-            y_corrected[i]=relation;
+            (*y_corrected)[i]=relation;
         }
         else{
             int pred_relation = checkRelation(*pred_ht,cur->left_sp,cur->right_sp);
             if(pred_relation==-1){
-                y_corrected[i] = round(cur->pred);
+                (*y_corrected)[i] = round(cur->pred);
                 if(round(cur->pred)==1)
                     *pred_ht = createCliqueHashTable(pred_ht,cur->left_sp,cur->right_sp);
                 else
@@ -214,7 +214,7 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,BHTree *preds,char **pairs
             else{
                 //Because predictions are sorted, we have taken the best predictions already in the hash table
                 //So we assume that the relations causing the conflicts are weaker predictions and shouldn't be taken into consideration
-                y_corrected[i]=pred_relation;
+                (*y_corrected)[i]=pred_relation;
             }
         
         }
@@ -228,7 +228,7 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,BHTree *preds,char **pairs
 }
 
 //Function to resolve transitivity issues on the predictions from our model
-int resolve_transitivity_issues(char **pairs_train,double **X_train,int *y_train,int train,BHTree *preds,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type, logisticreg *reg){
+int resolve_transitivity_issues(char ***pairs_train,double ***X_train,int **y_train,int train,BHTree *preds,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type, logisticreg *reg){
     char *dirname = get_datasetX_name();
     //Create a hash table corresponding to the training set data
     HashTable *data_ht=initHashTable(TABLE_INIT_SIZE);
@@ -237,27 +237,39 @@ int resolve_transitivity_issues(char **pairs_train,double **X_train,int *y_train
     HashTable *pred_ht=initHashTable(TABLE_INIT_SIZE);
     Initialize_dummy_dataset(dirname,&pred_ht);
     //Create the cliques from the training set
-    init_train_cliques(&data_ht,&pred_ht,pairs_train,y_train,train);
+    init_train_cliques(&data_ht,&pred_ht,*pairs_train,*y_train,train);
     
     //Resolve any transitivity issues that occured
     int size = preds->num_elements;
     char **pairs_corrected=malloc(sizeof(char*)*size);
     double **X_corrected=malloc(sizeof(double*)*size);
     int *y_corrected = malloc(sizeof(int)*size);
-    resolve(&data_ht,&pred_ht,preds,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,reg);
+    resolve(&data_ht,&pred_ht,preds,&pairs_corrected,&X_corrected,&y_corrected,ht,vocabulary,bow_type,vector_type,reg);
     
     //Concatanate the old training set with the new pairs
     int new_size = train + size;
-    pairs_train = realloc(pairs_train,new_size*sizeof(char*));
-    X_train = realloc(X_train,new_size*sizeof(double*));
-    y_train = realloc(y_train,new_size*sizeof(int));
+    double **new_X_train = malloc(sizeof(double*)*new_size);
+    int *new_y_train = malloc(sizeof(int)*new_size);
+    char **new_pairs_train = malloc(sizeof(char*)*new_size);
 
-    memcpy(X_train+train,X_corrected,sizeof(double*)*size);
-    memcpy(y_train+train,y_corrected,sizeof(int)*size);
-    for(int i=0;i<size;i++){
-        pairs_train[i+train] = pairs_corrected[i];
+    for(int i=0;i<train;i++){
+        new_X_train[i] = (*X_train)[i];
+        new_y_train[i] = (*y_train)[i];
+        new_pairs_train[i] = (*pairs_train)[i]; 
     }
 
+    for(int i=0;i<size;i++){
+        new_X_train[i+train] = X_corrected[i];
+        new_y_train[i+train] = y_corrected[i];
+        new_pairs_train[i+train] = pairs_corrected[i];
+    }
+
+    free(*X_train);
+    *X_train = new_X_train;
+    free(*y_train);
+    *y_train = new_y_train;
+    free(*pairs_train);
+    *pairs_train = new_pairs_train;
     free(pairs_corrected);
     free(X_corrected);
     free(y_corrected);

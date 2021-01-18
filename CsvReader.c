@@ -217,14 +217,14 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
         //Create a binary heap to save the pairs that are above the current threshold
         BHTree *bht = predict_all_pairs(regressor,threshold,ht,vocabulary,bow_type,vector_type);
-        train_size = resolve_transitivity_issues(pairs_train,X_train,y_train,train_size,bht,
+        train_size = resolve_transitivity_issues(&pairs_train,&X_train,&y_train,train_size,bht,
                                             ht,vocabulary,bow_type,vector_type,regressor);
         threshold += step_value;
+        printf("%d\n",train_size);
     }
 
     //Get the predictions from the model
     double *pred = predict_logisticRegression(regressor,X_test,test_size);
-
     //Creating file for the predictions
     csvWritePredictions(data,pred,test_size);
 
@@ -283,11 +283,13 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
             continue;
         }
         
+        char *str = strdup(line);
+        str = strtok(str,"\n");
         char *left_sp,*right_sp;
         //Take left_spec_id
-        left_sp = strtok(line,",");
+        left_sp = strtok(str,",");
         //Take right_spec_id
-        right_sp = strtok(NULL,",\n");
+        right_sp = strtok(NULL,",");
 
         double *x_l = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *x_r = getBagOfWords(ht,vocabulary,right_sp,bow_type);
@@ -297,7 +299,7 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         double pred = hypothesis(regressor,x);
 
         //Keep only the predictions that are above the threshold
-        if(pred > 1.0-threshold){
+        if(pred < threshold || (pred > 1.0-threshold)){
             predictionPair *pair = initPredictionPair(left_sp,right_sp,pred);
             insertBHNode(&bht,bht->root,NULL,NULL,pair);
         }
@@ -306,6 +308,7 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         free(x_l);
         free(x_r);
         free(x);
+        free(str);
     }
 
     free(line);
@@ -319,12 +322,13 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
             i++;
             continue;
         }
-        
+        char *str = strdup(line);
+        str = strtok(str,"\n");
         char *left_sp,*right_sp;
         //Take left_spec_id
-        left_sp = strtok(line,",");
+        left_sp = strtok(str,",");
         //Take right_spec_id
-        right_sp = strtok(NULL,",\n");
+        right_sp = strtok(NULL,",");
 
         double *x_l = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *x_r = getBagOfWords(ht,vocabulary,right_sp,bow_type);
@@ -334,12 +338,17 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         double pred = hypothesis(regressor,x);
 
         //Keep only the predictions that are above the threshold
-        if(pred < threshold){
+        if(pred < threshold || (pred > 1.0-threshold)){
             predictionPair *pair = initPredictionPair(left_sp,right_sp,pred);
             insertBHNode(&bht,bht->root,NULL,NULL,pair);
         }
 
         i++;    //New line Read
+        free(x_l);
+        free(x_r);
+        free(x);
+        free(str);
+
     }
 
     fclose(fp_neg);

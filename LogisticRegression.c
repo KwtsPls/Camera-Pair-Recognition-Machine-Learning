@@ -313,7 +313,7 @@ double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int 
 
 //Function to get the result of a prediction for a given input
 double hypothesis(logisticreg *model,double *x){
-    double wtx;
+    double wtx=0.0;
     for (int z = 0; z < model->numofN; z++)
         wtx += model->vector_weights[z] * x[z];
 
