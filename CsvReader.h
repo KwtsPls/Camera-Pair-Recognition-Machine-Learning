@@ -5,6 +5,7 @@
 #include "DataLoading.h"
 #include "ErrorHandler.h"
 #include "BinaryHeap.h"
+#include "RBtree.h"
 #include "LogisticRegression.h"
 #include <errno.h>
 
@@ -15,7 +16,7 @@ HashTable *csvParser(char *filename, HashTable **ht, int *linesRead,int *pos_num
 void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesRead,char *bow_type,int vector_type,int ratio);
 
 //Function to get the predictions from all pairs from the data
-BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type);
+RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type);
 
 //Function for writing negative cliques
 void csvWriteNegativeCliques(HashTable **ht);

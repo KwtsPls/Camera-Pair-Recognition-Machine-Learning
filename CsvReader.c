@@ -8,6 +8,7 @@
 #include "DataPreprocess.h"
 #include "DataLoading.h"
 #include "BinaryHeap.h"
+#include "RBtree.h"
 #include <math.h>
 
 //Parser for finding pairs of spec_ids in the csv file
@@ -216,8 +217,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         destroyLearningMetrics(&metrics);
 
         //Create a binary heap to save the pairs that are above the current threshold
-        BHTree *bht = predict_all_pairs(regressor,threshold,ht,vocabulary,bow_type,vector_type);
-        train_size = resolve_transitivity_issues(&pairs_train,&X_train,&y_train,train_size,bht,
+        RBtree *rbt = predict_all_pairs(regressor,threshold,ht,vocabulary,bow_type,vector_type);
+        train_size = resolve_transitivity_issues(&pairs_train,&X_train,&y_train,train_size,rbt,
                                             ht,vocabulary,bow_type,vector_type,regressor);
         threshold += step_value;
         printf("%d\n",train_size);
@@ -245,7 +246,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
 
 //Function to get the predictions from all pairs from the data
-BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type){
+RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type){
     FILE *fp_neg;
     //Open file to read...
     fp_neg = fopen("neg_cliques.csv","r");
@@ -272,7 +273,8 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
     size_t len = 0;
     size_t read;
 
-    BHTree *bht = initBH();
+    //Create the tree structure to save the incoming pairs
+    RBtree *rbt = initRB();
 
     int i=0;
     while((read = getline(&line, &len,fp_pos))!=-1)
@@ -301,10 +303,10 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         //Keep only the predictions that are above the threshold
         if(pred < threshold || (pred > 1.0-threshold)){
             predictionPair *pair = initPredictionPair(left_sp,right_sp,pred);
-            insertBHNode(&bht,bht->root,NULL,NULL,pair);
+            rbt = insertRB(rbt,pair);
         }
 
-        i++;    //New line Read
+        i++;
         free(x_l);
         free(x_r);
         free(x);
@@ -340,7 +342,7 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         //Keep only the predictions that are above the threshold
         if(pred < threshold || (pred > 1.0-threshold)){
             predictionPair *pair = initPredictionPair(left_sp,right_sp,pred);
-            insertBHNode(&bht,bht->root,NULL,NULL,pair);
+            rbt = insertRB(rbt,pair);
         }
 
         i++;    //New line Read
@@ -355,7 +357,7 @@ BHTree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
     fclose(fp_pos);
     free(line);
 
-    return bht;
+    return rbt;
 }
 
 
