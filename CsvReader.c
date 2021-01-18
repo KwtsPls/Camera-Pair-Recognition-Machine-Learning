@@ -234,16 +234,24 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     csvWritePredictions(data,pred,test_size);
 
 
-    for(int i=0;i<linesRead;i++)
-        free(X[i]);
-    for(int i=0;i<train_size;i++)
-        free(data->pairs_train[i]);
-    for(int i=0;i<test_size;i++)
+    for(int i=0;i<train_size;i++) {
+        free(X_train[i]);
+        free(pairs_train[i]);
+    }
+    for(int i=0;i<test_size;i++) {
+        free(data->X_test[i]);
         free(data->pairs_test[i]);
+    }
 
     free(X);
     free(y);
     free(pred);
+    free(y_train);
+    free(X_train);
+    free(pairs_train);
+    data->X_train=NULL;
+    data->y_train=NULL;
+    data->pairs_train=NULL;
     destroy_dataset(&data);
     delete_logisticReg(&regressor);
 }

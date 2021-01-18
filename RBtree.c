@@ -72,6 +72,7 @@ RBtree *insertRB(RBtree *rbt,predictionPair *pair)
     RBnode *cur,*uncle;
 
     rbt->root = insertBST(rbt->root,rbt->root,pair);
+    rbt->num_elements++;
 
     //with searchRB get a pointer to the newly added node
     cur = searchRB(rbt,pair);

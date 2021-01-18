@@ -205,13 +205,13 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs
         (*pairs_corrected)[*index] = line;
 
 
-        //Save the vector of the current pair
-        int relation = checkRelation(*data_ht, cur->left_sp, cur->right_sp);
         double *x_l = getBagOfWords(ht, vocabulary, cur->left_sp, bow_type);
         double *x_r = getBagOfWords(ht, vocabulary, cur->right_sp, bow_type);
         (*X_corrected)[*index] = vectorize(x_l, x_r, regressor->numofN, vector_type);
 
 
+        //Save the vector of the current pair
+        int relation = checkRelation(*data_ht, cur->left_sp, cur->right_sp);
         //Resolve any issues that occur
         if (relation != -1) {
             (*y_corrected)[*index] = relation;
@@ -290,6 +290,7 @@ int resolve_transitivity_issues(char ***pairs_train,double ***X_train,int **y_tr
     cliqueDeleteHashTable(&data_ht,BUCKET_HARD_DELETE_MODE);
     cliqueDeleteHashTable(&pred_ht,BUCKET_HARD_DELETE_MODE);
     destroyRB(preds);
+    free(dirname);
 
     return new_size;
 }

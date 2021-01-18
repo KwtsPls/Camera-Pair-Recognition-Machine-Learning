@@ -66,12 +66,18 @@ datasets *init_dataset(){
 
 //Function to delete a dataset
 void destroy_dataset(datasets **data){
-    free((*data)->X_train);
-    free((*data)->X_test);
-    free((*data)->y_train);
-    free((*data)->y_test);
-    free((*data)->pairs_train);
-    free((*data)->pairs_test);
+    if((*data)->X_train!=NULL)
+        free((*data)->X_train);
+    if((*data)->X_test!=NULL)
+        free((*data)->X_test);
+    if((*data)->y_train!=NULL)
+        free((*data)->y_train);
+    if((*data)->y_test!=NULL)
+        free((*data)->y_test);
+    if((*data)->pairs_train!=NULL)
+        free((*data)->pairs_train);
+    if((*data)->pairs_test!=NULL)
+        free((*data)->pairs_test);
     free(*data);
 }
 
