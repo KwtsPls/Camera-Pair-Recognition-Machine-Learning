@@ -15,6 +15,7 @@
 #include "BinaryHeap.h"
 #include "RBtree.h"
 #include "BagOfWords.h"
+#include "sparseVector.h"
 
 //Function to initialize a predictionPair
 predictionPair *initPredictionPair(char *left_sp,char *right_sp,double pred){
@@ -177,13 +178,13 @@ void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_tra
 }
 
 //Function to perform a recursive search in the tree struct that contains the predicted pairs
-void resolveRB(HashTable **data_ht, HashTable **pred_ht,RBtree *preds,char ***pairs_corrected,double ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
+void resolveRB(HashTable **data_ht, HashTable **pred_ht,RBtree *preds,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
     int i=0;
     resolve(data_ht,pred_ht,preds->root,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,&i);
 }
 
 //Function for resolving transitivity issues with the predicted pairs
-void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs_corrected,double ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor,int *index){
+void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor,int *index){
 
     if(node==NULL)
         return;
@@ -207,7 +208,9 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs
 
         double *x_l = getBagOfWords(ht, vocabulary, cur->left_sp, bow_type);
         double *x_r = getBagOfWords(ht, vocabulary, cur->right_sp, bow_type);
-        (*X_corrected)[*index] = vectorize(x_l, x_r, regressor->numofN, vector_type);
+        int sparse_size=0;
+        double *x = vectorize(x_l, x_r, regressor->numofN, vector_type,&sparse_size);
+        (*X_corrected)[*index] = init_sparseVector(x,regressor->numofN,sparse_size);
 
 
         //Save the vector of the current pair
@@ -242,7 +245,7 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs
 }
 
 //Function to resolve transitivity issues on the predictions from our model
-int resolve_transitivity_issues(char ***pairs_train,double ***X_train,int **y_train,int train,RBtree *preds,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type, logisticreg *reg){
+int resolve_transitivity_issues(char ***pairs_train,sparseVector ***X_train,int **y_train,int train,RBtree *preds,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type, logisticreg *reg){
     char *dirname = get_datasetX_name();
     //Create a hash table corresponding to the training set data
     HashTable *data_ht=initHashTable(TABLE_INIT_SIZE);
@@ -256,13 +259,13 @@ int resolve_transitivity_issues(char ***pairs_train,double ***X_train,int **y_tr
     //Resolve any transitivity issues that occurred
     int size = preds->num_elements;
     char **pairs_corrected=malloc(sizeof(char*)*size);
-    double **X_corrected=malloc(sizeof(double*)*size);
+    sparseVector **X_corrected=malloc(sizeof(sparseVector*)*size);
     int *y_corrected = malloc(sizeof(int)*size);
     resolveRB(&data_ht,&pred_ht,preds,&pairs_corrected,&X_corrected,&y_corrected,ht,vocabulary,bow_type,vector_type,reg);
     
     //Concatenate the old training set with the new pairs
     int new_size = train + size;
-    double **new_X_train = malloc(sizeof(double*)*new_size);
+    sparseVector **new_X_train = malloc(sizeof(sparseVector*)*new_size);
     int *new_y_train = malloc(sizeof(int)*new_size);
     char **new_pairs_train = malloc(sizeof(char*)*new_size);
 

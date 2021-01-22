@@ -552,7 +552,7 @@ secTable *update_tf_idf_word(secTable *st,char *value,int text_len){
 
 
 //Function to evaluate the tf-idf mean of every word in the vocabulary
-secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
+secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts,int max_features){
 
     //Helping variable probably will be removed
     int valid_counter=0;
@@ -598,7 +598,40 @@ secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts){
     //Destroy previous vocabulary
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
 
-    return new_vocab;
+    //Keep the given number of words and index them in alphabetical order
+    indexedWord **iw_array = malloc(sizeof(indexedWord*)*new_vocab->num_elements);
+    int k=0;
+    for(int i=0;i<new_vocab->numOfBuckets;i++){
+        secondaryNode *node = new_vocab->table[i];
+        while(node!=NULL){
+            for(int j=0;j<node->num_elements;j++){
+                iw_array[k]=(indexedWord*)node->values[j];
+                k++;
+            }
+            node = node->next;
+        }
+    }
+
+    //Sort the words based on their tf-idf mean value
+    int final_size = new_vocab->num_elements;
+    if(new_vocab->num_elements >= max_features ){
+        quicksortIndexedWord(iw_array,0,new_vocab->num_elements-1,compare_with_tf_idf);
+        final_size = max_features;
+    }
+    quicksortIndexedWord(iw_array,0,final_size-1,compare_word);
+
+    secTable *final_vocab = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
+    for(int i=0;i<final_size;i++) {
+        indexedWord *iw = createIndexedWord(iw_array[i]->word,i);
+        iw->tf_idf_mean = iw_array[i]->tf_idf_mean;
+        iw->tf = iw_array[i]->tf;
+        iw->idf = iw_array[i]->idf;
+        final_vocab = insert_secTable(final_vocab,iw);
+    }
+
+    destroy_secTable(&new_vocab,ST_HARD_DELETE_MODE);
+    free(iw_array);
+    return final_vocab;
 }
 
 //Function to write the vocabulary into a file

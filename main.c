@@ -61,13 +61,11 @@ int main(int argc, char *argv[]){
     printf("\nFound %d unique words...\n\n",vocabulary->num_elements);
 
     //Get the updated vocabulary
-    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht));
+    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht),1000);
 
     printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
 
     /*###################################################*/
-
-
 
     /* Create cliques and negative relations from the given file */
 

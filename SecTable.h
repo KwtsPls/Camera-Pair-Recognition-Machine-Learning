@@ -6,8 +6,8 @@
 #define MAX_LOAD_FACTOR 0.9
 #define ST_SOFT_DELETE_MODE 0
 #define ST_HARD_DELETE_MODE 1
-#define MAX_PRIME 100000
-#define MIN_TF_IDF 0.001200
+#define MAX_PRIME 200000
+#define MIN_TF_IDF 0.000100
 
 // Hash functions for the different data types in the hash table
 typedef unsigned int (*Hash)(void *, int size);
@@ -168,7 +168,7 @@ secTable *update_tf_idf_values(secTable *st,secTable *unique_words,int text_len)
 secTable *update_tf_idf_word(secTable *st,char *value,int text_len);
 
 //Function to evaluate the tf-idf mean of every word in the vocabulary
-secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts);
+secTable *evaluate_tfidf_secTable(secTable *vocabulary,int num_texts,int max_features);
 
 //Function to write the vocabulary into a file
 void writeVocab_secTable(secTable *st);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "HashTable.h"
 #include "CsvReader.h"
 #include "BagOfWords.h"
@@ -9,7 +10,7 @@
 #include "DataLoading.h"
 #include "BinaryHeap.h"
 #include "RBtree.h"
-#include <math.h>
+#include "sparseVector.h"
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename,HashTable **ht, int *linesRead,int *pos_num,int *neg_num)
@@ -177,7 +178,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     int batches=4;
     double learning_rate=0.01;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
-    double **X=NULL;int *y=NULL;char **pairs=NULL;
+    sparseVector **X=NULL;int *y=NULL;char **pairs=NULL;
 
     //Load data from the given file
     load_data(filename,linesRead,ht,vocabulary,regressor,bow_type,vector_type,&X,&y,&pairs);
@@ -190,8 +191,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
     printf("\nStart training...\n\n");
     //Perform the training
-    double **X_train = data->X_train;
-    double **X_test = data->X_test;
+    sparseVector **X_train = data->X_train;
+    sparseVector **X_test = data->X_test;
     char **pairs_train = data->pairs_train;
     int *y_train = data->y_train;
     int *y_test = data->y_test;
@@ -202,7 +203,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     csvWriteNegativeCliques(&ht);
 
     float threshold=0.0;
-    float step_value=0.1;
+    float step_value=0.2;
     while(1){
         //Train the model based on the current train set
         regressor = train_logisticRegression(regressor,X_train,y_train,train_size);
@@ -225,6 +226,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         train_size = resolve_transitivity_issues(&pairs_train,&X_train,&y_train,train_size,rbt,
                                             ht,vocabulary,bow_type,vector_type,regressor);
 
+        shuffle_data(X_train,y_train,pairs_train,train_size,7);
         printf("%d\n",train_size);
     }
 
@@ -235,11 +237,11 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
 
     for(int i=0;i<train_size;i++) {
-        free(X_train[i]);
+        destroy_sparseVector(X_train[i]);
         free(pairs_train[i]);
     }
     for(int i=0;i<test_size;i++) {
-        free(data->X_test[i]);
+        destroy_sparseVector(data->X_test[i]);
         free(data->pairs_test[i]);
     }
 
@@ -307,10 +309,12 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
 
         double *x_l = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *x_r = getBagOfWords(ht,vocabulary,right_sp,bow_type);
-        double *x = vectorize(x_l,x_r,regressor->numofN,vector_type);
+        int sparse_size=0;
+        double *x = vectorize(x_l,x_r,regressor->numofN,vector_type,&sparse_size);
+        sparseVector *vx = init_sparseVector(x,regressor->numofN,sparse_size);
 
         //Get the predicted value
-        double pred = hypothesis(regressor,x);
+        double pred = hypothesis(regressor,vx);
 
         //Keep only the predictions that are above the threshold
         if(pred < threshold || (pred > 1.0-threshold)){
@@ -321,7 +325,7 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         i++;
         free(x_l);
         free(x_r);
-        free(x);
+        destroy_sparseVector(vx);
         free(str);
     }
 
@@ -346,10 +350,12 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
 
         double *x_l = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *x_r = getBagOfWords(ht,vocabulary,right_sp,bow_type);
-        double *x = vectorize(x_l,x_r,regressor->numofN,vector_type);
+        int sparse_size=0;
+        double *x = vectorize(x_l,x_r,regressor->numofN,vector_type,&sparse_size);
+        sparseVector *vx = init_sparseVector(x,regressor->numofN,sparse_size);
 
         //Get the predicted value
-        double pred = hypothesis(regressor,x);
+        double pred = hypothesis(regressor,vx);
 
         //Keep only the predictions that are above the threshold
         if(pred < threshold || (pred > 1.0-threshold)){
@@ -360,7 +366,7 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
         i++;    //New line Read
         free(x_l);
         free(x_r);
-        free(x);
+        destroy_sparseVector(vx);
         free(str);
 
     }
@@ -398,7 +404,7 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
 
     //Initialize the metrics for the training
     LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
-    double **X = malloc(sizeof(double)*linesRead);
+    sparseVector **X = malloc(sizeof(sparseVector)*linesRead);
     int *y = malloc(sizeof(int)*linesRead);
     char **pairs = malloc(sizeof(char*)*linesRead);
 
@@ -436,9 +442,11 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
-        double *xi=vectorize(l_x,r_x,model->numofN,vector_type);
+        int sparse_size=0;
+        double *xi=vectorize(l_x,r_x,model->numofN,vector_type,&sparse_size);
+        sparseVector *v_xi = init_sparseVector(xi,model->numofN,sparse_size);
 
-        X[lines-1]=xi;
+        X[lines-1]=v_xi;
         y[lines-1]=label;
         char *new_pair = malloc(strlen(left_sp)+1+strlen(right_sp)+1);
         strcpy(new_pair,left_sp);
@@ -486,7 +494,7 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     print_LearningMetrics(metrics);
 
     for(int i=0;i<linesRead;i++){
-        free(X[i]);
+        destroy_sparseVector(X[i]);
         free(pairs[i]);
     }
     free(pred);

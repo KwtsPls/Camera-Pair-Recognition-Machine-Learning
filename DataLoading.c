@@ -13,8 +13,8 @@ void swap_int(int *a,int *b){
 }
 
 //Function to swap doubles
-void swap_vectors(double **a,double **b){
-    double *temp = *a;
+void swap_vectors(sparseVector **a,sparseVector **b){
+    sparseVector *temp = *a;
     *a = *b;
     *b = temp;
 }
@@ -35,7 +35,7 @@ int random_int(int n){
 }
 
 //Function to shuffle the given data
-void shuffle_data(double **X,int *y,char **pairs,int n,int random_state){
+void shuffle_data(sparseVector **X,int *y,char **pairs,int n,int random_state){
 
     //For the given number of random_state shuffle the array
     for(int k=0;k<random_state;k++){
@@ -82,7 +82,7 @@ void destroy_dataset(datasets **data){
 }
 
 //Function to split the data set into a train and test sets
-datasets *split_train_test(double **X,int *y,char **pairs,int n,int random_state,float split,int *n_train,int *n_test){
+datasets *split_train_test(sparseVector **X,int *y,char **pairs,int n,int random_state,float split,int *n_train,int *n_test){
 
     datasets *data = init_dataset();
 
@@ -95,10 +95,8 @@ datasets *split_train_test(double **X,int *y,char **pairs,int n,int random_state
     *n_test = n - *n_train;
 
     //Split the input set into train and test
-    data->X_train = malloc((*n_train)*sizeof(double*));
-    data->X_test = malloc((*n_test)*sizeof(double*));
-    memcpy(data->X_train,X,(*n_train)*sizeof(double*));
-    memcpy(data->X_test,X+(*n_train),(*n_test)*sizeof(double*));
+    data->X_train = malloc((*n_train)*sizeof(sparseVector*));
+    data->X_test = malloc((*n_test)*sizeof(sparseVector*));
 
     //Split the target set into train and test
     data->y_train = malloc((*n_train)*sizeof(int));
@@ -109,10 +107,14 @@ datasets *split_train_test(double **X,int *y,char **pairs,int n,int random_state
     //Split the array with the pairs into train and test
     data->pairs_train = malloc((*n_train)* sizeof(char*));
     data->pairs_test = malloc((*n_test)* sizeof(char*));
-    for(int i=0;i<*n_train;i++)
+    for(int i=0;i<*n_train;i++) {
         data->pairs_train[i] = strdup(pairs[i]);
-    for(int i=0;i<*n_test;i++)
-        data->pairs_test[i] = strdup(pairs[(*n_train)+i]);
+        data->X_train[i] = X[i];
+    }
+    for(int i=0;i<*n_test;i++) {
+        data->pairs_test[i] = strdup(pairs[(*n_train) + i]);
+        data->X_test[i] = X[(*n_train)+i];
+    }
 
     for(int i=0;i<n;i++)
         free(pairs[i]);
@@ -123,7 +125,7 @@ datasets *split_train_test(double **X,int *y,char **pairs,int n,int random_state
 
 
 //Function to load the dataset from a given csv file
-void load_data(char *filename,int linesRead,HashTable *ht,secTable *vocabulary,logisticreg *regressor,char *bow_type,int vector_type,double ***X,int **y,char ***pairs){
+void load_data(char *filename,int linesRead,HashTable *ht,secTable *vocabulary,logisticreg *regressor,char *bow_type,int vector_type,sparseVector ***X,int **y,char ***pairs){
 
     FILE *fp;
     fp = fopen(filename,"r");
@@ -132,7 +134,7 @@ void load_data(char *filename,int linesRead,HashTable *ht,secTable *vocabulary,l
     size_t read;
     int lines=0;
 
-    *X = malloc(sizeof(double)*linesRead);
+    *X = malloc(sizeof(sparseVector)*linesRead);
     *y = malloc(sizeof(int)*linesRead);
     *pairs = malloc(sizeof(char*)*linesRead);
 
@@ -155,9 +157,11 @@ void load_data(char *filename,int linesRead,HashTable *ht,secTable *vocabulary,l
 
         double *l_x = getBagOfWords(ht,vocabulary,left_sp,bow_type);
         double *r_x = getBagOfWords(ht,vocabulary,right_sp,bow_type);
-        double *xi=vectorize(l_x,r_x,regressor->numofN,vector_type);
+        int sparse_size=0;
+        double *xi=vectorize(l_x,r_x,regressor->numofN,vector_type,&sparse_size);
+        sparseVector *v_xi = init_sparseVector(xi,regressor->numofN,sparse_size);
 
-        (*X)[lines-1]=xi;
+        (*X)[lines-1]=v_xi;
         (*y)[lines-1]=label;
         char *new_pair = malloc(strlen(left_sp)+1+strlen(right_sp)+1);
         strcpy(new_pair,left_sp);

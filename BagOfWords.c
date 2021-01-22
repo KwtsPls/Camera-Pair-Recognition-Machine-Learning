@@ -22,6 +22,56 @@ void deleteIndexedWord(indexedWord *iw){
     free(iw);
 }
 
+//Function to sort an array of indexed words
+void quicksortIndexedWord(indexedWord **arr,int low,int high,SortComparison fun){
+    if (low < high)
+    {
+        /* pi is partitioning index, arr[pi] is now
+           at right place */
+        int pi = partitionIndexedWord(arr, low, high,fun);
+
+        quicksortIndexedWord(arr, low, pi - 1,fun);  // Before pi
+        quicksortIndexedWord(arr, pi + 1, high,fun); // After pi
+    }
+}
+
+//Function to perform partition to a given part of the array
+int partitionIndexedWord(indexedWord **arr,int low,int high,SortComparison fun){
+    indexedWord *pivot = arr[high]; // pivot
+    int i = (low - 1); // Index of smaller element
+
+    for (int j = low; j <= high - 1; j++)
+    {
+        // If current element is smaller than the pivot
+        if (fun(arr[j],pivot)>=0)
+        {
+            i++; // increment index of smaller element
+            swapIndexedWords(&arr[i], &arr[j]);
+        }
+    }
+    swapIndexedWords(&arr[i + 1], &arr[high]);
+    return (i + 1);
+}
+
+//Function to swap to given indexed words
+void swapIndexedWords(indexedWord **a,indexedWord **b){
+    indexedWord *t = *a;
+    *a = *b;
+    *b = t;
+}
+
+//Function to compare words based on their tf_idf_mean
+int compare_with_tf_idf(indexedWord *a,indexedWord *b){
+    if(a->tf_idf_mean > b->tf_idf_mean) return 1;
+    else if(a->tf_idf_mean < b->tf_idf_mean) return -1;
+    else return 0;
+}
+
+//Function to compare words based on their tf_idf_mean
+int compare_word(indexedWord *a,indexedWord *b){
+    return strcmp(a->word,b->word);
+}
+
 //Function to return an array representing a bow with tf-idf values for a given spec id
 double *getBagOfWords(HashTable *ht,secTable *vocabulary,char *spec_id,char *mode){
 

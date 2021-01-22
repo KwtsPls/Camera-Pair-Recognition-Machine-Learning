@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "LogisticRegression.h"
 #include <errno.h>
-#include "ErrorHandler.h"
 #include <string.h>
+#include "ErrorHandler.h"
+#include "LogisticRegression.h"
+#include "sparseVector.h"
 
 //Function to create Logistic Regressions
 logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate,int ratio){
@@ -146,39 +147,44 @@ logisticreg *create_logisticReg_fromFile(char *filename, char **sigmod_filename,
 
 
 //Function to create the vector for training
-double *vectorize(double *x, double *y, int numofN,int type){
+double *vectorize(double *x, double *y, int numofN,int type,int *sparse_size){
     if(type==ABSOLUTE_DISTANCE)
-        return absolute_distance(x,y,numofN);
+        return absolute_distance(x,y,numofN,sparse_size);
     else   
-        return concatenate_vectors(x,y,numofN);
+        return concatenate_vectors(x,y,numofN,sparse_size);
 }
 
 //Function to calculate euclidean distance
-double *absolute_distance(double *x, double *y, int numofN){
+double *absolute_distance(double *x, double *y, int numofN,int *sparse_size){
     double *z;
     z = malloc(sizeof(double) * numofN);
     //Calculate the absolute distance between every value in the pair (x,y)
     // zi = | xi - yi |
     for(int i=1; i<numofN;i++){
         z[i] = fabs(x[i-1]-y[i-1]);
+        if(z[i]!=0.0) (*sparse_size)++;
     }
     //Add an additional column for bias w0
+    (*sparse_size)++;
     z[0]=1.0;
 
     return z;
 }
 
 //Function to concatenate two given arrays into one
-double *concatenate_vectors(double *x,double *y, int numofN){
+double *concatenate_vectors(double *x,double *y, int numofN,int *sparse_size){
     double *z;
     z = malloc(sizeof(double) * numofN);
     //Concatenate the vectors x and y
     for(int i=0; i<(numofN-1)/2;i++) {
         z[i+1] = x[i];
+        if(z[i+1]!=0.0) (*sparse_size)++;
         z[i+1+(numofN-1)/2] = y[i];
+        if(z[i+1+(numofN-1)/2]!=0.0) (*sparse_size)++;
     }
 
     //Add an additional column for bias w0
+    (*sparse_size)++;
     z[0]=1.0;
 
     return z;
@@ -196,9 +202,9 @@ double norm_distance(double *x, double *y, int numofN){
 }
 
 //Function to calculate logistic regressions
-logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int size){
+logisticreg *fit_logisticRegression(logisticreg *model,sparseVector **X,int *y,int size){
 
-    
+
     //Initialize previous weights
     double *new_weight = malloc(sizeof(double)*model->numofN);
     int cnt = 0;
@@ -209,13 +215,19 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int siz
             double gradient=0.0;
             double h=0.0;
             for(int i=0;i<size;i++){
+                sparseVector *v_xi = X[i];
+                //Find if xij is zero or not
+                int index = find_index_sparseVector(v_xi,j);
+                if(index==-1) continue;
+                double *xi = v_xi->concentrated_matrix;
+                double xij = v_xi->concentrated_matrix[index];
                 if(y[i]==1){
                     for(int k=0;k<model->ratio;k++){
-                        double *xi = X[i];
-                        double xij = xi[j];
                         //Calculate w_T * x
-                        for(int z=0;z<model->numofN;z++)
-                            h += model->vector_weights[z]*xi[z];
+                        for(int z=0;z<v_xi->num_elements;z++) {
+                            int index = v_xi->index_array[z];
+                            h += model->vector_weights[index] * xi[z];
+                        }
                         h = sigmoid(h);
                         //(σ(w_T*xi) - yi)
                         h = (h - ((double) y[i]))*xij;
@@ -223,11 +235,11 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int siz
                     }
                 }
                 else{
-                    double *xi = X[i];
-                    double xij = xi[j];
                     //Calculate w_T * x
-                    for(int z=0;z<model->numofN;z++)
-                        h += model->vector_weights[z]*xi[z];
+                    for(int z=0;z<v_xi->num_elements;z++) {
+                        int index = v_xi->index_array[z];
+                        h += model->vector_weights[index] * xi[z];
+                    }
                     h = sigmoid(h);
                     //(σ(w_T*xi) - yi)
                     h = (h - ((double) y[i]))*xij;
@@ -250,12 +262,12 @@ logisticreg *fit_logisticRegression(logisticreg *model,double **X,int *y,int siz
 }
 
 //Perform the training based on the model
-logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int size){
+logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y,int size){
     int n = size/(model->batches);
     int r = size%(model->batches);
     //Perform a mini-batch training
     for(int i=0;i<(n-1);i++){
-        double **X_batch = X+i*model->batches;
+        sparseVector **X_batch = X+i*model->batches;
         int *y_batch = y+i*model->batches;
         model = fit_logisticRegression(model,X_batch,y_batch,model->batches);
 
@@ -264,7 +276,7 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
     }
 
     if(r!=0){
-        double **X_batch = X+(n-1)*model->batches;
+        sparseVector **X_batch = X+(n-1)*model->batches;
         int *y_batch = y+(n-1)*model->batches;        
         model = fit_logisticRegression(model,X_batch,y_batch,r);
     }
@@ -273,13 +285,15 @@ logisticreg *train_logisticRegression(logisticreg *model,double **X,int *y,int s
 }
 
 //Function for predicting the
-double *predict_logisticRegression(logisticreg *model,double **X,int n){
+double *predict_logisticRegression(logisticreg *model,sparseVector **X,int n){
     double *y_pred=malloc(sizeof(double)*n);
     for(int i=0;i<n;i++){
         double yi_pred=0.0;
-        for(int j=0; j<model->numofN; j++){
-            double *xi = X[i];
-            yi_pred += model->vector_weights[j] * xi[j]; 
+        sparseVector *v_xi = X[i];
+        double *xi = v_xi->concentrated_matrix;
+        for(int j=0;j<v_xi->num_elements;j++) {
+            int index = v_xi->index_array[j];
+            yi_pred += model->vector_weights[index] * xi[j];
         }
         yi_pred = sigmoid(yi_pred);
         y_pred[i] = yi_pred;
@@ -288,16 +302,19 @@ double *predict_logisticRegression(logisticreg *model,double **X,int n){
 }
 
 //Function to calculate loss
-double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int high){
+double loss_LogisticRegression(logisticreg *model,sparseVector **X,int *y,int low,int high){
 
     double total_error=0.0;
     for(int i=low;i<high;i++) {
         double error = 0.0;
         double wtx = 0.0;
-        double *xi = X[i];
+        sparseVector *v_xi = X[i];
+        double *xi = v_xi->concentrated_matrix;
         int yi = y[i];
-        for (int z = 0; z < model->numofN; z++)
-            wtx += model->vector_weights[z] * xi[z];
+        for(int z=0;z<v_xi->num_elements;z++) {
+            int index = v_xi->index_array[z];
+            wtx += model->vector_weights[index] * xi[z];
+        }
         wtx = sigmoid(wtx);
 
         if (yi == 1)
@@ -312,10 +329,13 @@ double loss_LogisticRegression(logisticreg *model,double **X,int *y,int low,int 
 }
 
 //Function to get the result of a prediction for a given input
-double hypothesis(logisticreg *model,double *x){
+double hypothesis(logisticreg *model,sparseVector *x){
     double wtx=0.0;
-    for (int z = 0; z < model->numofN; z++)
-        wtx += model->vector_weights[z] * x[z];
+    double *xi = x->concentrated_matrix;
+    for(int z=0;z<x->num_elements;z++) {
+        int index = x->index_array[z];
+        wtx += model->vector_weights[index] * xi[z];
+    }
 
     return sigmoid(wtx);  
 }
