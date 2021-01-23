@@ -5,7 +5,7 @@
 #include "LogisticRegression.h"
 #include "Queue.h"
 #include "sparseVector.h"
-#define MAX_THREADS 6
+#define MAX_THREADS 4
 #define TRAINING_JOB 1
 #define TESTING_JOB 2
 

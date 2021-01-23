@@ -175,8 +175,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Create the model for the training
     logisticreg *regressor;
     int steps=5;
-    int batches=16;
-    double learning_rate=0.01;
+    int batches=32;
+    double learning_rate=0.08;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
     sparseVector **X=NULL;int *y=NULL;char **pairs=NULL;
 
@@ -187,7 +187,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Shuffle the loaded data
     int train_size=0;
     int test_size=0;
-    datasets *data  = split_train_test(X,y,pairs,linesRead,7,0.2,&train_size,&test_size);
+    datasets *data  = split_train_test(X,y,pairs,linesRead,7,0.4,&train_size,&test_size);
 
     printf("\nStart training...\n\n");
     //Perform the training
@@ -205,7 +205,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Initialize the scheduler
     JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
     float threshold=0.0;
-    float step_value=0.1;
+    float step_value=0.15;
     while(1){
         //Train the model based on the current train set
         regressor = train_logisticRegression(regressor,X_train,y_train,train_size,scheduler);
@@ -240,7 +240,8 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     double *pred = predict_logisticRegression(regressor,X_test,test_size);
     //Creating file for the predictions
     csvWritePredictions(data,pred,test_size);
-
+    //Print the statistics of the training
+    printStatistics(regressor,filename,bow_type,vector_type);
 
     for(int i=0;i<train_size;i++) {
         destroy_sparseVector(X_train[i]);

@@ -151,7 +151,7 @@ int Initialize_dummy_dataset(char *name,HashTable **ht){
 
 
 //Function to create cliques and negative relations in the new dummy hash tables
-void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_train,int *y_train,int size){
+void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_train,int *y_train,int size,int *pos,int *neg){
 
     //For every pair in the training set
     for(int i=0;i<size;i++){
@@ -165,10 +165,12 @@ void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_tra
         if(y_train[i]==1){
             *data_ht = createCliqueHashTable(data_ht,left_sp,right_sp);
             *pred_ht = createCliqueHashTable(pred_ht,left_sp,right_sp);
+            (*pos)++;
         }
         else{
             *data_ht = negativeRelationHashTable(*data_ht,left_sp,right_sp);
             *pred_ht = negativeRelationHashTable(*pred_ht,left_sp,right_sp);
+            (*neg)++;
         }
 
         free(line);
@@ -177,18 +179,18 @@ void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_tra
 }
 
 //Function to perform a recursive search in the tree struct that contains the predicted pairs
-void resolveRB(HashTable **data_ht, HashTable **pred_ht,RBtree *preds,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor){
+void resolveRB(HashTable **data_ht, HashTable **pred_ht,RBtree *preds,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor,int *pos,int *neg){
     int i=0;
-    resolve(data_ht,pred_ht,preds->root,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,&i);
+    resolve(data_ht,pred_ht,preds->root,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,&i,pos,neg);
 }
 
 //Function for resolving transitivity issues with the predicted pairs
-void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor,int *index){
+void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor,int *index,int *pos,int *neg){
 
     if(node==NULL)
         return;
 
-    resolve(data_ht,pred_ht,node->right,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,index);
+    resolve(data_ht,pred_ht,node->right,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,index,pos,neg);
 
     LinkedList *l = node->l;
     ListNode *listnode = l->head;
@@ -217,18 +219,25 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs
         //Resolve any issues that occur
         if (relation != -1) {
             (*y_corrected)[*index] = relation;
+            if(relation==1) (*pos)++; else (*neg)++;
+
         } else {
             int pred_relation = checkRelation(*pred_ht, cur->left_sp, cur->right_sp);
             if (pred_relation == -1) {
                 (*y_corrected)[*index] = round(cur->pred);
-                if (round(cur->pred) == 1)
+                if (round(cur->pred) == 1) {
                     *pred_ht = createCliqueHashTable(pred_ht, cur->left_sp, cur->right_sp);
-                else
+                    (*pos)++;
+                }
+                else {
                     *pred_ht = negativeRelationHashTable(*pred_ht, cur->left_sp, cur->right_sp);
+                    (*neg)++;
+                }
             } else {
                 //Because predictions are sorted, we have taken the best predictions already in the hash table
                 //So we assume that the relations causing the conflicts are weaker predictions and shouldn't be taken into consideration
                 (*y_corrected)[*index] = pred_relation;
+                if(pred_relation==1) (*pos)++; else (*neg)++;
             }
 
         }
@@ -239,7 +248,7 @@ void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs
         listnode = listnode->next;
     }
 
-    resolve(data_ht,pred_ht,node->left,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,index);
+    resolve(data_ht,pred_ht,node->left,pairs_corrected,X_corrected,y_corrected,ht,vocabulary,bow_type,vector_type,regressor,index,pos,neg);
 
 }
 
@@ -253,15 +262,21 @@ int resolve_transitivity_issues(char ***pairs_train,sparseVector ***X_train,int 
     HashTable *pred_ht=initHashTable(TABLE_INIT_SIZE);
     Initialize_dummy_dataset(dirname,&pred_ht);
     //Create the cliques from the training set
-    init_train_cliques(&data_ht,&pred_ht,*pairs_train,*y_train,train);
+    int pos=0;
+    int neg=0;
+    init_train_cliques(&data_ht,&pred_ht,*pairs_train,*y_train,train,&pos,&neg);
     
     //Resolve any transitivity issues that occurred
     int size = preds->num_elements;
     char **pairs_corrected=malloc(sizeof(char*)*size);
     sparseVector **X_corrected=malloc(sizeof(sparseVector*)*size);
     int *y_corrected = malloc(sizeof(int)*size);
-    resolveRB(&data_ht,&pred_ht,preds,&pairs_corrected,&X_corrected,&y_corrected,ht,vocabulary,bow_type,vector_type,reg);
-    
+    resolveRB(&data_ht,&pred_ht,preds,&pairs_corrected,&X_corrected,&y_corrected,ht,vocabulary,bow_type,vector_type,reg,&pos,&neg);
+
+    //Update the 1 to zero 0 ratio
+    reg->ratio=neg/pos;
+    if(reg->ratio==0) reg->ratio=1;
+
     //Concatenate the old training set with the new pairs
     int new_size = train + size;
     sparseVector **new_X_train = malloc(sizeof(sparseVector*)*new_size);

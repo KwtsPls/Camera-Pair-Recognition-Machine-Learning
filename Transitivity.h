@@ -29,12 +29,12 @@ int resolve_transitivity_issues(char ***pairs_train,sparseVector ***X_train,int 
 int Initialize_dummy_dataset(char *name,HashTable **ht);
 
 //Function to create cliques and negative relations in the new dummy hash tables
-void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_train,int *y_train,int size);
+void init_train_cliques(HashTable **data_ht,HashTable **pred_ht,char **pairs_train,int *y_train,int size,int *pos,int *neg);
 
 //Function to perform a recursive search in the tree struct that contains the predicted pairs
-void resolveRB(HashTable **data_ht, HashTable **pred_ht,RBtree *preds,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor);
+void resolveRB(HashTable **data_ht, HashTable **pred_ht,RBtree *preds,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *regressor,int *pos,int *neg);
 
 //Function for resolving transitivity issues with the predicted pairs
-void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *reg,int *index);
+void resolve(HashTable **data_ht, HashTable **pred_ht,RBnode *node,char ***pairs_corrected,sparseVector ***X_corrected, int **y_corrected,HashTable *ht,secTable *vocabulary,char *bow_type,int vector_type,logisticreg *reg,int *index,int *pos,int *neg);
 
 #endif // TRANSITIVITY_H
