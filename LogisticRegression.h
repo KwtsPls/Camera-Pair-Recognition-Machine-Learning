@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include "JobScheduler.h"
 
 #define ABSOLUTE_DISTANCE 0
 #define CONCAT_VECTORS 1
 
 typedef struct sparse_vector sparseVector;
+typedef struct job_scheduler JobScheduler;
 
 typedef struct logisticreg{
     int numofN;
@@ -19,7 +21,7 @@ typedef struct logisticreg{
 }logisticreg;
 
 //Function to calculate logistic regressions
-logisticreg *fit_logisticRegression(logisticreg *model,sparseVector **X,int *y,int size);
+void fit_logisticRegression(void *arguments);
 
 //Function to create a Logistic Regression model
 logisticreg *create_logisticReg(int numofN,int mode,int steps,int batches,double learning_rate,int ratio);
@@ -49,7 +51,7 @@ double loss_LogisticRegression(logisticreg *model,sparseVector **X,int *y,int lo
 double sigmoid(double t);
 
 //Perform the training based on the model
-logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y,int size);
+logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y,int size,JobScheduler *scheduler);
 
 //Function to print statistics to file
 void printStatistics(logisticreg *model,char *filename,char *bow_type, int vector_type);

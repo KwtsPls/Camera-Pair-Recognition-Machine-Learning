@@ -6,6 +6,7 @@
 #include "Transitivity.h"
 
 typedef struct linked_list LinkedList;
+typedef struct pred_pair predictionPair;
 
 //Enumeration representing red and black nodes for Red Black trees
 typedef enum {RED,BLACK} NodeColour;

@@ -12,7 +12,7 @@ Queue *initQueue()
 
 //Function to insert a new node at the end of the list
 //The insertion is like a linked list's
-void pushQueue(Queue *q,BHNode *node)
+void pushQueue(Queue *q,Job *node)
 {
     //if the list is empty
     if(q->head==NULL)
@@ -20,6 +20,7 @@ void pushQueue(Queue *q,BHNode *node)
         q->head = (QueueNode*)malloc(sizeof(QueueNode));
         q->head->node = node;
         q->head->next = NULL;
+        return;
     }
 
     QueueNode *cur = q->head;
@@ -36,9 +37,9 @@ void pushQueue(Queue *q,BHNode *node)
 }
 
 //Function to pop the first node from the queue
-BHNode *popQueue(QueueNode **head)
+Job *popQueue(QueueNode **head)
 {
-    BHNode *node = NULL;
+    Job *node = NULL;
     QueueNode *cur = NULL;
 
     //list is empty - no item to pop
@@ -67,6 +68,16 @@ void destroyQueue(Queue *q)
         deleteLastQueueNode(q);
 
     free(q);
+}
+
+//Function to print the given queue
+void printQueue(Queue *q){
+    QueueNode *node = q->head;
+    while(node!=NULL){
+        printf("Job %p\n",node->node);
+        node = node->next;
+    }
+    printf("==========\n");
 }
 
 //Function to delete the last node of the list

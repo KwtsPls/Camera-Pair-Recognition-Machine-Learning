@@ -2,7 +2,6 @@
 #define TRANSITIVITY_H
 
 #include "HashTable.h"
-#include "BinaryHeap.h"
 #include "RBtree.h"
 #include "LogisticRegression.h"
 

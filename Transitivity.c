@@ -12,7 +12,6 @@
 #include "SecTable.h"
 #include "DataPreprocess.h"
 #include "LogisticRegression.h"
-#include "BinaryHeap.h"
 #include "RBtree.h"
 #include "BagOfWords.h"
 #include "sparseVector.h"

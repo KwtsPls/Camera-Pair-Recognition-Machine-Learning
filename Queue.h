@@ -2,13 +2,14 @@
 #define QUEUE_H
 
 #include <stdio.h>
-#include "BinaryHeap.h"
+#include "JobScheduler.h"
+typedef struct job Job;
 
 //A struct that represents a queue node used to simulate a BFS
 //needed to create the Binary Heap ( used for level order traversal)
 typedef struct qnode{
 
-    BHNode *node;
+    Job *node;
     struct qnode *next;
 
 }QueueNode;
@@ -24,13 +25,16 @@ typedef struct queue{
 Queue *initQueue();
 
 //Function to insert a new node at the end of the list
-void pushQueue(Queue *,BHNode *);
+void pushQueue(Queue *,Job *);
 
 //Function to pop the first node from the queue
-BHNode *popQueue(QueueNode **);
+Job *popQueue(QueueNode **);
 
 //Function that returns if the list is empty or not
 int emptyQueue(Queue*);
+
+//Function to print the given queue
+void printQueue(Queue *q);
 
 //Function to delete a queue
 void destroyQueue(Queue*);

@@ -8,9 +8,9 @@
 #include "Metrics.h"
 #include "DataPreprocess.h"
 #include "DataLoading.h"
-#include "BinaryHeap.h"
 #include "RBtree.h"
 #include "sparseVector.h"
+#include "JobScheduler.h"
 
 //Parser for finding pairs of spec_ids in the csv file
 HashTable *csvParser(char *filename,HashTable **ht, int *linesRead,int *pos_num,int *neg_num)
@@ -175,7 +175,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Create the model for the training
     logisticreg *regressor;
     int steps=5;
-    int batches=4;
+    int batches=16;
     double learning_rate=0.01;
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
     sparseVector **X=NULL;int *y=NULL;char **pairs=NULL;
@@ -202,11 +202,13 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     csvWriteCliques(&ht);
     csvWriteNegativeCliques(&ht);
 
+    //Initialize the scheduler
+    JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
     float threshold=0.0;
-    float step_value=0.2;
+    float step_value=0.1;
     while(1){
         //Train the model based on the current train set
-        regressor = train_logisticRegression(regressor,X_train,y_train,train_size);
+        regressor = train_logisticRegression(regressor,X_train,y_train,train_size,scheduler);
 
         //Print the metrics from the predictions after training
         LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
@@ -229,6 +231,10 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         shuffle_data(X_train,y_train,pairs_train,train_size,7);
         printf("%d\n",train_size);
     }
+
+    waitUntilJobsHaveFinished(scheduler);
+    threads_must_exit(scheduler);
+    destroy_JobScheduler(&scheduler);
 
     //Get the predictions from the model
     double *pred = predict_logisticRegression(regressor,X_test,test_size);

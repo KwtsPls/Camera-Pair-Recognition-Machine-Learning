@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "DataLoading.h"
 #include "ErrorHandler.h"
-#include "BinaryHeap.h"
 #include "RBtree.h"
 #include "LogisticRegression.h"
 #include <errno.h>
