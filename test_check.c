@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "HashTable.h"
 #include "CsvReader.h"
+#include "RBtree.h"
 #include "acutest.h"
 #include "test_names.h"
 
@@ -170,7 +171,7 @@ void test_dictionary_find(){
     char name[5]="Dict";
     Dictionary *dict = initDictionary(name);
 
-    int N=10000;
+    int N=3000;
 
     char **key = malloc(sizeof(char*)*N);
     char ***values = malloc(sizeof(char**)*N);
@@ -804,6 +805,15 @@ void test_sectable_delete(){
     destroy_secTable(&st,BUCKET_HARD_DELETE_MODE);
 }
 
+void test_list_create(){
+    LinkedList *list = init_LinkedList();
+    TEST_ASSERT(list!=NULL);
+    TEST_ASSERT(list->head==NULL);
+    TEST_ASSERT(list->tail==NULL);
+    TEST_ASSERT(list->num_elements==0);
+
+    destroy_LinkedList(list);
+}
 
 TEST_LIST = {
         { "dictionary_create", 	    test_dictionary_create       },
@@ -821,5 +831,6 @@ TEST_LIST = {
         { "sectable_find",          test_sectable_find           },
         { "sectable_reshape",       test_sectable_reshape        },
         { "sectable_delete",        test_sectable_delete         },
+        { "list_create",            test_list_create             },
         { NULL, NULL }
 };

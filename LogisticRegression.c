@@ -208,20 +208,15 @@ void fit_logisticRegression(void *arguments){
     //Get the arguments to begin the training procedure
     train_job_args *args = (train_job_args *) arguments;
     pthread_mutex_t *locking = args->locking_queue;
-    pthread_mutex_t *new_locker = args->thread_locking;
     pthread_cond_t *condition = args->threads_finished_cond;
-
     logisticreg *model = args->model;
     double *new_weight = args->new_weight;
     double *grad_array = args->gradient;
     int *finished = args->finished;
-    int *curr_running_threads = args->curr_exec_threads;
-
     sparseVector **X = args->X;
     int *y = args->y;
     int size = args->size;
     int *flag_forNextStep = args->flag_condition_forNextStep;
-
     int weight_length = model->numofN;
 
 
@@ -358,7 +353,7 @@ logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y
         Job *job = create_job(TRAINING_JOB,fit_logisticRegression,(void *) args);
         schedule(scheduler,job);
     }
-    //Create dummy jobs to syncronise with the execution of the last threads    
+    //Create dummy jobs to synchronise with the execution of the last threads
     r = idle_threads%MAX_THREADS;
     if(r!=0){
         r = MAX_THREADS - idle_threads%MAX_THREADS;

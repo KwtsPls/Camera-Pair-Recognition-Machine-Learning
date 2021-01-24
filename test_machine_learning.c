@@ -481,10 +481,10 @@ void test_create_model(){
 void test_train_model(){
 
     int N=1000;
-    int M=500;
+    int M=8;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,5,4,0.75,1);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,5,1,0.75,1);
 
     //Create a dummy input for the model
     sparseVector **X = malloc(sizeof(sparseVector*)*M);
@@ -522,10 +522,10 @@ void test_train_model(){
 //Function to test the predictions of the model
 void test_predict_model(){
     int N=1000;
-    int M=500;
+    int M=8;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,4,0.75,1);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75,1);
 
     //Create a dummy input for the model
     sparseVector **X = malloc(sizeof(double*)*M);

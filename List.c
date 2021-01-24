@@ -64,8 +64,10 @@ void print_LinkedList(LinkedList *l){
 //Function to destroy a list
 void destroy_LinkedList(LinkedList *l){
 
-    if(l->head==NULL)
+    if(l->head==NULL) {
+        free(l);
         return;
+    }
 
     //iteratively delete the first node of the list
     while(l->head!=NULL)

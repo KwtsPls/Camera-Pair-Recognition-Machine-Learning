@@ -22,8 +22,9 @@ int main(int argc, char *argv[]){
     char *f=NULL;
     int n;
     int v;
+    int max_features;
     char *b=NULL;
-    if(initArgs(argc,argv,&f,&n,&v,&b)==0){
+    if(initArgs(argc,argv,&f,&n,&v,&max_features,&b)==0){
         cleanArgs(f,b);
         return 1;
     }
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]){
     //Hashtable for the vocabulary
     secTable *vocabulary = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
 
+    printf("#############################\n\n");
     printf("Loading data...\n\n");
 
     int check = Initialize_dataset_X(X_name,&ht,&vocabulary);
@@ -57,19 +59,28 @@ int main(int argc, char *argv[]){
         return 1;
     }
     printf("\nData loading was successful!\n\n");
+    printf("#############################\n\n");
 
-    printf("\nFound %d unique words...\n\n",vocabulary->num_elements);
+    printf("#############################\n");
+    printf("Vector statistics:\n\n");
+    printf("-Found %d unique words\n",vocabulary->num_elements);
 
     //Get the updated vocabulary
-    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht),1000);
+    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht),max_features);
 
-    printf("\nWords we will keep %d...\n\n",vocabulary->num_elements);
+    printf("-Final vector size %d\n",vocabulary->num_elements);
+    if(v==CONCAT_VECTORS) printf("-Vector implementation : Concatenated matrices\n");
+    else printf("-Vector implementation : Absolute distance between matrices\n");
 
+    if(strcmp(b,"tf-idf")==0) printf("-Vector components: tf-idf values\n");
+    else printf("-Vector components: bag of words\n\n");
+    printf("#############################\n\n");
     /*###################################################*/
 
     /* Create cliques and negative relations from the given file */
+    printf("#############################\n");
 
-    printf("\nCreating cliques...\n\n");
+    printf("Creating cliques...\n\n");
 
     int linesRead = 0;
     int pos_num=0;
@@ -77,39 +88,36 @@ int main(int argc, char *argv[]){
     ht = csvParser(f,&ht, &linesRead,&pos_num,&neg_num);
 
     int ratio = neg_num/pos_num;
-    printf("\n0 to 1 ratio is %d\n\n",ratio);
+    printf("0 to 1 ratio is %d\n\n",ratio);
 
 
-    printf("\nFinished creating cliques!\n\n");
-
+    printf("Finished creating cliques!\n\n");
+    printf("#############################\n\n");
     /*#####################################################*/
 
 
     /* Start the training of the model */
 
-    printf("\nBegin Training...\n\n");
-
-    printf("%s\n",b);
-
     csvLearning(f,ht,vocabulary,linesRead,b,v,ratio);
 
-    printf("\nCreating file cliques.csv...\n");
-
     /*#####################################*/
-
+    printf("#############################\n");
+    printf("Writing data to disk...\n\n");
 
     /* Write the statistics of the program and free all allocated memory */
-
-    //Save the create cliques into a file
-    csvWriteCliques(&ht);
     //If the flag for negative cliques is on write the negative cliques as well in a different file
-    if(n == 1) csvWriteNegativeCliques(&ht);
+    if(n == 0) remove("neg_cliques.csv");
 
     //Save the vocabulary
     writeVocab_secTable(vocabulary);
 
     printf("\nFiles created successfully!\n\n");
-
+    printf("predictions.csv: file containing the predictions of the model on the test set\n");
+    printf("cliques.csv : file containing all pairs\n");
+    if(n==1) printf("neg_cliques.csv : file containing all negative relations between cliques\n");
+    printf("stats.txt : file containing the statistics of the training procedure\n");
+    printf("vocabulary.txt : file containing the vocabulary of the training\n\n");
+    printf("#############################\n\n");
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
     free(X_name);

@@ -24,7 +24,7 @@ void print_error(){
 int argsCheck(int argNum)
 {
     //Wrong number of arguments
-    if(argNum!=9) {
+    if(argNum!=11) {
         errorCode=ARGS_ERROR;
         print_error();
         return 0;
@@ -34,9 +34,9 @@ int argsCheck(int argNum)
 }
 
 //Function to use the values of the arguments given by the command line
-int initArgs(int argc,char *argv[],char **f,int *n,int *v,char **b)
+int initArgs(int argc,char *argv[],char **f,int *n,int *v,int *max_features,char **b)
 {
-    int ff=0,fn=0,fv=0,fb=0;
+    int ff=0,fn=0,fv=0,fb=0,fm=0;
     for(int i=1;i<argc;i++)
     {
         if(i%2==1)
@@ -76,6 +76,21 @@ int initArgs(int argc,char *argv[],char **f,int *n,int *v,char **b)
                         print_error();
                         return 0;
                     }
+                }
+                else
+                {
+                    errorCode=FLAG_REPEATED_ERROR;
+                    print_error();
+                    return 0;
+                }
+            }
+            else if (strcmp(argv[i], "-m") == 0)
+            {
+                //check if the argument was already given
+                if(fm==0)
+                {
+                    fm = 1;
+                    *max_features = atoi(argv[i+1]);
                 }
                 else
                 {

@@ -119,7 +119,7 @@ void *thread_fun(void *args) {
         }
         pthread_mutex_unlock(queue_lock);
     }
-    pthread_exit((void *)0);
+    return NULL;
 }
 
 Job *create_job(int jobTag,job_fun fun,void *args){

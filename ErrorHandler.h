@@ -26,7 +26,7 @@ void print_error();
 int argsCheck(int argNum);
 
 //Function to use the values of the arguments given by the command line
-int initArgs(int argc,char *argv[],char **f,int *n,int *v,char **b);
+int initArgs(int argc,char *argv[],char **f,int *n,int *v,int *max_features,char **b);
 
 //Function to delete the given arguments for the command line
 void cleanArgs(char *f,char *b);

@@ -177,6 +177,14 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     int steps=5;
     int batches=32;
     double learning_rate=0.08;
+    printf("#########################\n");
+    printf("Training procedure is now starting...\n\n");
+    printf("Model statistics:\n\n");
+    printf("-Steps = %d\n",steps);
+    printf("-Batch size = %d\n",batches);
+    printf("-Learning Rate = %f\n",learning_rate);
+    printf("#########################\n\n");
+
     regressor = create_logisticReg(vocabulary->num_elements,vector_type,steps,batches,learning_rate,ratio);
     sparseVector **X=NULL;int *y=NULL;char **pairs=NULL;
 
@@ -187,15 +195,24 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Shuffle the loaded data
     int train_size=0;
     int test_size=0;
+    int valid_size=0;
     datasets *data  = split_train_test(X,y,pairs,linesRead,7,0.4,&train_size,&test_size);
+    //Split the test set into half to get a validation
+    // and a test set
+    int old_test_size=test_size;
+    valid_size = test_size/2;
+    test_size = valid_size;
+
 
     printf("\nStart training...\n\n");
     //Perform the training
     sparseVector **X_train = data->X_train;
     sparseVector **X_test = data->X_test;
+    sparseVector **X_valid = data->X_test+valid_size;
     char **pairs_train = data->pairs_train;
     int *y_train = data->y_train;
     int *y_test = data->y_test;
+    int *y_valid = data->y_test+valid_size;
 
 
     //Get all the pairs
@@ -205,7 +222,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     //Initialize the scheduler
     JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
     float threshold=0.0;
-    float step_value=0.15;
+    float step_value=0.1;
     while(1){
         //Train the model based on the current train set
         regressor = train_logisticRegression(regressor,X_train,y_train,train_size,scheduler);
@@ -215,10 +232,10 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         waitUntilJobsHaveFinished(scheduler);
         pthread_mutex_unlock(&(scheduler->locking_queue));
         
-        double *pred = predict_logisticRegression(regressor,X_test,test_size,scheduler);
+        double *pred = predict_logisticRegression(regressor,X_valid,valid_size,scheduler);
         pthread_mutex_unlock(&(scheduler->locking_queue));
         
-        metrics = calculate_LearningMetrics(metrics,y_test,pred,test_size);
+        metrics = calculate_LearningMetrics(metrics,y_valid,pred,test_size);
         metrics = evaluate_LearningMetrics(metrics);
         print_LearningMetrics(metrics);
         free(pred);
@@ -229,12 +246,12 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
             break;
 
         //Create a binary heap to save the pairs that are above the current threshold
+        printf("Resolving transitivity issues\n");
         RBtree *rbt = predict_all_pairs(regressor,threshold,ht,vocabulary,bow_type,vector_type);
         train_size = resolve_transitivity_issues(&pairs_train,&X_train,&y_train,train_size,rbt,
                                             ht,vocabulary,bow_type,vector_type,regressor);
 
         shuffle_data(X_train,y_train,pairs_train,train_size,7);
-        printf("%d\n",train_size);
     }
 
     waitUntilJobsHaveFinished(scheduler);
@@ -242,8 +259,15 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
 
     //Get the predictions from the model
+    printf("\n\nFinal Evaluation on test set:\n\n");
     double *pred = predict_logisticRegression(regressor,X_test,test_size,scheduler);
-    
+    //Print the metrics from the predictions after training
+    LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
+    metrics = calculate_LearningMetrics(metrics,y_test,pred,test_size);
+    metrics = evaluate_LearningMetrics(metrics);
+    print_LearningMetrics(metrics);
+    destroyLearningMetrics(&metrics);
+
     threads_must_exit(scheduler);
     destroy_JobScheduler(&scheduler);
     //Creating file for the predictions
@@ -255,7 +279,7 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
         destroy_sparseVector(X_train[i]);
         free(pairs_train[i]);
     }
-    for(int i=0;i<test_size;i++) {
+    for(int i=0;i<old_test_size;i++) {
         destroy_sparseVector(data->X_test[i]);
         free(data->pairs_test[i]);
     }
@@ -282,7 +306,6 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
     //Check if file Opened
     if(fp_neg==NULL){
         errorCode = OPENING_FILE;
-        // fclose(fp_neg);
         print_error();
         return NULL;
     }
@@ -293,7 +316,6 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
     //Check if file Opened
     if(fp_pos==NULL){
         errorCode = OPENING_FILE;
-        fclose(fp_pos);
         print_error();
         return NULL;
     }
