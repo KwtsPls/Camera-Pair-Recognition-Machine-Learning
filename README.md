@@ -272,10 +272,10 @@ H συνάρτηση αναλύει το json file που άνοιξε σε keys
 ### make test - Για να δημιουργηθούν τα test cases του accutest
 ### ./test - Για τα test files
 ### ./learning_test - Για τα test unit του preprocessing και του machine learning
-### ./main -f filename -b bow-type -v vector-type -n negative-mode - Για να τρέξει η main
-### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on 
-### ./inferece -f filename - Για να τρέξει το inference, ποτέ πριν τη main, δηλαδή αν δεν υπάρχει ήδη κάποιο αρχείο stats.txt
-### e.g : ./inference -f sigmod_large_labelled_dataset.csv
+### ./main -f filename -b bow-type -v vector-type -n negative-mode -m NumOfWords - Για να τρέξει η main
+### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on -m 1000 
+### ./inferece -c filename - Για να τρέξει το inference, ποτέ πριν τη main, δηλαδή αν δεν υπάρχει ήδη κάποιο αρχείο stats.txt
+### e.g : ./inference -c sigmod_large_labelled_dataset.csv
 ### make clean - Για να σβηστούν τα .o και εκτελέσιμα
 ### Παρατηρήσεις
 1. Το αρχείο που είναι να γίνει το inference να είναι τύπου, *sigmod_large_labelled_dataset.csv*. Δλδ στη πρώτη γραμμή να περιέχεται το [left_spec,right_spec,label] και έπειτα τα δεδομένα να είναι αυτού του τύπου.
