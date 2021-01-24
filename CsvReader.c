@@ -212,7 +212,12 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
 
         //Print the metrics from the predictions after training
         LearningMetrics *metrics = init_LearningMetrics("Positive relations","Negative relations");
-        double *pred = predict_logisticRegression(regressor,X_test,test_size);
+        waitUntilJobsHaveFinished(scheduler);
+        pthread_mutex_unlock(&(scheduler->locking_queue));
+        
+        double *pred = predict_logisticRegression(regressor,X_test,test_size,scheduler);
+        pthread_mutex_unlock(&(scheduler->locking_queue));
+        
         metrics = calculate_LearningMetrics(metrics,y_test,pred,test_size);
         metrics = evaluate_LearningMetrics(metrics);
         print_LearningMetrics(metrics);
@@ -233,11 +238,14 @@ void csvLearning(char *filename, HashTable *ht, secTable *vocabulary, int linesR
     }
 
     waitUntilJobsHaveFinished(scheduler);
-    threads_must_exit(scheduler);
-    destroy_JobScheduler(&scheduler);
+    pthread_mutex_unlock(&(scheduler->locking_queue));
+
 
     //Get the predictions from the model
-    double *pred = predict_logisticRegression(regressor,X_test,test_size);
+    double *pred = predict_logisticRegression(regressor,X_test,test_size,scheduler);
+    
+    threads_must_exit(scheduler);
+    destroy_JobScheduler(&scheduler);
     //Creating file for the predictions
     csvWritePredictions(data,pred,test_size);
     //Print the statistics of the training
@@ -467,9 +475,17 @@ void csvInference(char *filename, HashTable *ht, secTable *vocabulary, logisticr
     }
 
     //Get the predictions from the model
-    double *pred = predict_logisticRegression(model,X,linesRead);
+    // double *pred = malloc(sizeof(double)*linesRead);
 
+    JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
+    model->batches = 512;
+    double *pred = predict_logisticRegression(model,X,linesRead,scheduler);
 
+    threads_must_exit(scheduler);
+
+    destroy_JobScheduler(&scheduler);
+    
+    
     //Creating file for the predictions
     FILE *fp2;
     fp2 = fopen("predictions.csv","w+");

@@ -222,10 +222,39 @@ void fit_logisticRegression(void *arguments){
     int size = args->size;
     int *flag_forNextStep = args->flag_condition_forNextStep;
 
+    int weight_length = model->numofN;
+
+
+    if(X==NULL)
+        weight_length=0;
+
+    pthread_mutex_lock(new_locker);
+    if((*flag_forNextStep)+1<MAX_THREADS){
+        (*flag_forNextStep)++;
+        pthread_cond_wait(condition,new_locker);
+    }
+    else{
+        (*flag_forNextStep) = 0;
+        pthread_cond_broadcast(condition);
+    }
+   
+
+    pthread_mutex_unlock(new_locker);
+
     //Changing weights 1 to 1, until the error is reached...
     for(int s=0;s<model->steps;s++){
 
-        for(int j=0;j<model->numofN;j++){
+        pthread_mutex_lock(new_locker);
+
+        if(X==NULL){
+            for(int i=0;i<model->numofN;i++)
+                finished[i]++;
+        }
+
+        pthread_mutex_unlock(new_locker);
+
+
+        for(int j=0;j<weight_length;j++){
             double gradient=0.0;
             double h=0.0;
             for(int i=0;i<size;i++){
@@ -263,7 +292,7 @@ void fit_logisticRegression(void *arguments){
             pthread_mutex_lock(locking);
             finished[j]++;
             grad_array[j] += gradient;
-            if(finished[j] == (*curr_running_threads)){
+            if(finished[j] == MAX_THREADS){
                 // w(t+1) = w(t) - η*gradient_sum_from_threads
                 new_weight[j] = model->vector_weights[j] - model->learning_rate*(grad_array[j]);
                 finished[j] = 0;
@@ -272,7 +301,7 @@ void fit_logisticRegression(void *arguments){
         }
 
         pthread_mutex_lock(new_locker);
-        if((*flag_forNextStep)+1<(*curr_running_threads)){
+        if((*flag_forNextStep)+1<MAX_THREADS){
             (*flag_forNextStep)++;
             pthread_cond_wait(condition,new_locker);
 
@@ -298,7 +327,6 @@ void fit_logisticRegression(void *arguments){
 logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y,int size,JobScheduler *scheduler){
     int n = size/(model->batches);
     int r = size%(model->batches);
-    //Perform a mini-batch training
 
     //Prepare the arguments for the thread training
     double *gradient = malloc(sizeof(double) * model->numofN);
@@ -312,6 +340,7 @@ logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y
         finished[i] = 0;
     }
 
+    //Perform a mini-batch training
     for(int i=0;i<(n-1);i++){
         sparseVector **X_batch = X+i*model->batches;
         int *y_batch = y+i*model->batches;
@@ -323,14 +352,27 @@ logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y
 
     }
 
+    int idle_threads=n-1;
+
     if(r!=0){
+        idle_threads++;
         sparseVector **X_batch = X+(n-1)*model->batches;
         int *y_batch = y+(n-1)*model->batches;
         train_job_args *args = create_job_args(model,new_weights,gradient,finished,&(scheduler->jobs_running),X_batch,y_batch,model->batches,&(scheduler->locking_queue),&flag_condition_forNextStep,&(scheduler->session_finsihed_cond),&(scheduler->thread_locking),scheduler->execution_threads,&(scheduler->flag_exit_threads_all),&counter);
         Job *job = create_job(TRAINING_JOB,fit_logisticRegression,(void *) args);
         schedule(scheduler,job);
     }
-
+    //Create dummy jobs to syncronise with the execution of the last threads    
+    r = idle_threads%MAX_THREADS;
+    if(r!=0){
+        r = MAX_THREADS - idle_threads%MAX_THREADS;
+        for(int i=0;i<r;i++){
+            //Add a dummy job to the scheduler
+            train_job_args *args = create_job_args(model,new_weights,gradient,finished,&(scheduler->jobs_running),NULL,NULL,model->batches,&(scheduler->locking_queue),&flag_condition_forNextStep,&(scheduler->session_finsihed_cond),&(scheduler->thread_locking),scheduler->execution_threads,&(scheduler->flag_exit_threads_all),&counter);
+            Job *job = create_job(TRAINING_JOB,fit_logisticRegression,(void *) args);
+            schedule(scheduler,job);
+        }
+    }    
     printf("Main thread finished distributing batches\nWaiting for threads to finish their execution...\n");
     waitUntilJobsHaveFinished(scheduler);
     free(gradient);
@@ -340,9 +382,15 @@ logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y
     return model;
 }
 
-//Function for predicting the
-double *predict_logisticRegression(logisticreg *model,sparseVector **X,int n){
-    double *y_pred=malloc(sizeof(double)*n);
+void testing_job(void *args){ 
+        
+    inference_job_args *aarg = (inference_job_args *) args;
+    int n = aarg->size;
+    sparseVector **X  = aarg->X_batch;
+    logisticreg *model = aarg->model;
+    double *y_pred = aarg->y_batch;
+    
+        
     for(int i=0;i<n;i++){
         double yi_pred=0.0;
         sparseVector *v_xi = X[i];
@@ -354,6 +402,43 @@ double *predict_logisticRegression(logisticreg *model,sparseVector **X,int n){
         yi_pred = sigmoid(yi_pred);
         y_pred[i] = yi_pred;
     }
+    
+}
+
+
+//Function for predicting the
+double *predict_logisticRegression(logisticreg *model,sparseVector **X,int size, JobScheduler *scheduler){
+    double *y_pred=malloc(sizeof(double)*size);
+    for(int i=0;i<size;i++)
+        y_pred[i] = 0.0;
+    
+    int n = size/(model->batches);
+    int remaining_x = size%(model->batches);
+
+
+    for(int i=0;i<(n-1);i++){
+        sparseVector **X_batch = X + i*model->batches;
+        double *y_batch = y_pred + i*model->batches;
+
+        inference_job_args *args = create_job_args_inf(model,y_batch,X_batch,model->batches);
+        Job *job = create_job(TESTING_JOB, testing_job,(void *)args);
+        schedule(scheduler,job);
+    }
+
+    if(remaining_x!=0){
+         sparseVector **X_batch = X + (n-1)*model->batches;
+        double *y_batch = y_pred + (n-1)*model->batches;
+
+        inference_job_args *args = create_job_args_inf(model,y_batch,X_batch,remaining_x);
+        Job *job = create_job(TESTING_JOB, testing_job,(void *)args);
+        schedule(scheduler,job);
+    }
+
+    waitUntilJobsHaveFinished(scheduler);
+    // pthread_mutex_unlock(&(scheduler->locking_queue));
+
+
+   
     return y_pred;
 }
 

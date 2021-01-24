@@ -117,7 +117,7 @@ void *thread_fun(void *args) {
         }
         pthread_mutex_unlock(queue_lock);
     }
-    pthread_exit(NULL);
+    pthread_exit((void *)0);
 }
 
 Job *create_job(int jobTag,job_fun fun,void *args){
@@ -145,6 +145,7 @@ train_job_args *create_job_args(logisticreg *model, double *new_weight, double *
     arg->max_exec_threads = max_exec_threads;
     arg->flag_condition_exit_all = flag_exit_all;
     arg->cnt = counter;
+    
     return arg;
 
 }
@@ -152,6 +153,11 @@ train_job_args *create_job_args(logisticreg *model, double *new_weight, double *
 void Job_args_deleter(int job_tag,void **args){
     if(job_tag == TRAINING_JOB){
         train_job_args *arg = (train_job_args *)(*args);
+        free(arg);
+        *args = NULL;
+    }
+    else{
+        inference_job_args *arg = (inference_job_args *) (*args);
         free(arg);
         *args = NULL;
     }
@@ -183,9 +189,9 @@ void threads_must_exit(JobScheduler *scheduler){
     pthread_cond_broadcast(&(scheduler->queue_condition));
     pthread_mutex_unlock(&(scheduler->locking_queue));
 
-    int *ret_val;
+    
     for(int i=0;i<scheduler->execution_threads;i++){
-        pthread_join(scheduler->threads[i],(void **) &(ret_val));
+        pthread_join(scheduler->threads[i],NULL);
     }
 }
 
@@ -202,4 +208,13 @@ void destroy_JobScheduler(JobScheduler **scheduler){
     destroyQueue((*scheduler)->Job);
     free(*scheduler);
 
+}
+
+inference_job_args *create_job_args_inf(logisticreg *model,double *y_pred, sparseVector **X_batch, int batch_size){
+    inference_job_args *args = malloc(sizeof(inference_job_args));
+    args->model = model;
+    args->y_batch = y_pred;
+    args->X_batch = X_batch;
+    args->size = batch_size;
+    return args;
 }

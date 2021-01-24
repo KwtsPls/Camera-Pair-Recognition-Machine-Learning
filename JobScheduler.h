@@ -62,6 +62,13 @@ typedef struct train_job_args{
 }train_job_args;
 
 
+typedef struct inference_job_args{
+    logisticreg *model;
+    int size;
+    double *y_batch;
+    sparseVector **X_batch;
+}inference_job_args;
+
 
 typedef struct job_scheduler
 {   
@@ -101,7 +108,7 @@ void threads_must_exit(JobScheduler *scheduler);
 void destroy_JobScheduler(JobScheduler **scheduler);
 
 
-
+inference_job_args *create_job_args_inf(logisticreg *model,double *y_pred, sparseVector **X_batch,int batch_size);
 train_job_args *create_job_args(logisticreg *model, double *new_weight, double *gradient,int *finished,int *curr_running_threads,sparseVector **X,int *y,int size,pthread_mutex_t *locking_que,int *flag_forNextStep, pthread_cond_t *condition, pthread_mutex_t *thread_locking,int max_ex_threads, int *flag_exit_all, int *cnt);
 Job *create_job(int jobTag,job_fun fun,void *args);
 void Job_deleter(Job **jobb);

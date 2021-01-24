@@ -42,7 +42,7 @@ double *concatenate_vectors(double *x,double *y, int numofN,int *sparse_size);
 double norm_distance(double *x, double *y, int numofN);
 
 //Function to check if our model is trained
-double *predict_logisticRegression(logisticreg *model,sparseVector **X,int n);
+double *predict_logisticRegression(logisticreg *model,sparseVector **X,int n,JobScheduler *scheduler);
 
 //Function to calculate loss
 double loss_LogisticRegression(logisticreg *model,sparseVector **X,int *y,int low,int high);
@@ -61,5 +61,7 @@ void delete_logisticReg(logisticreg **del);
 
 //Function to get the result of a prediction for a given input
 double hypothesis(logisticreg *model,sparseVector *x);
+
+void testing_job(void *args);
 
 #endif // !LOGISTICREGRESSION_H
