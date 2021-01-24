@@ -3,6 +3,7 @@
 #include "HashTable.h"
 #include "CsvReader.h"
 #include "RBtree.h"
+#include "JobScheduler.h"
 #include "acutest.h"
 #include "test_names.h"
 
@@ -55,6 +56,16 @@ char **create_value(int value_num){
     strcat(value_array[0],value_to_str);
     return value_array;
 
+}
+
+//Helper function to create a dummy prediction pair
+predictionPair *create_pair(int N){
+    char value_to_str_left[16];
+    sprintf(value_to_str_left,"left%d",N);
+    char value_to_str_right[17];
+    sprintf(value_to_str_right,"right%d",N);
+    predictionPair *pair = initPredictionPair(value_to_str_left,value_to_str_right,0.0);
+    return pair;
 }
 
 //Create an array of strings with one value with the format value.xxxx where xxxx is the value of value_num
@@ -110,6 +121,58 @@ void insert_and_test_secTable(secTable **st,void *entry,int total){
     TEST_ASSERT(find_secTable(*st,entry)==1);
 }
 
+//Insert check for secTable
+void insert_and_test_list(LinkedList *l,predictionPair *pair,int total){
+
+    l = insert_LinkedList(l,pair);
+    TEST_ASSERT(l->num_elements==total);
+
+    //Search for the inserted value
+    TEST_ASSERT(search_LinkedList(l,pair)==1);
+}
+
+//Function to return max of two values
+int max(int a,int b){
+    if(a>=b) return a;
+    else return b;
+}
+
+//Function to return min of two values
+int min(int a,int b){
+    if(a<b) return a;
+    else return b;
+}
+
+//Helper function to check the balance of a given red black tree
+int isBalancedRBT(RBnode *node,int *maxh,int *minh){
+    // Base case
+    if (node == NULL)
+    {
+        maxh = minh = 0;
+        return 1;
+    }
+
+    int lmxh=0, lmnh=0; // To store max and min heights of left subtree
+    int rmxh=0, rmnh=0; // To store max and min heights of right subtree
+
+    // Check if left subtree is balanced, also set lmxh and lmnh
+    if (isBalancedRBT(node->left, &lmxh, &lmnh) == 0)
+        return 0;
+
+    // Check if right subtree is balanced, also set rmxh and rmnh
+    if (isBalancedRBT(node->right, &rmxh, &rmnh) == 0)
+        return 0;
+
+    // Set the max and min heights of this node for the parent call
+    *maxh = max(lmxh, rmxh) + 1;
+    *minh = min(lmnh, rmnh) + 1;
+
+    // See if this node is balanced
+    if(*maxh <= 2*(*minh))
+        return 1;
+
+    return 0;
+}
 /*################ DICTIONARY TEST UNITS ################*/
 
 
@@ -777,7 +840,6 @@ void test_sectable_reshape(){
     destroy_secTable(&st,BUCKET_HARD_DELETE_MODE);
 }
 
-
 //Function to test the delete function of secTable
 void test_sectable_delete(){
 
@@ -805,6 +867,34 @@ void test_sectable_delete(){
     destroy_secTable(&st,BUCKET_HARD_DELETE_MODE);
 }
 
+/*########### MISC STRUCTS TEST UNITS ################*/
+
+//Function to test the creation of a prediction pair
+void test_prediction_pair_create(){
+    double M=0.7;
+    predictionPair *pair = initPredictionPair("left","right",M);
+    TEST_ASSERT(pair!=NULL);
+    TEST_ASSERT(strcmp(pair->left_sp,"left")==0);
+    TEST_ASSERT(strcmp(pair->right_sp,"right")==0);
+    TEST_ASSERT(pair->pred==M);
+    TEST_ASSERT(pair->corrected==-1);
+
+    deletePredictionPair(pair);
+}
+
+//Function to test the creation of a job
+void test_job_create(){
+    Job *job = create_job(1,NULL,NULL);
+    TEST_ASSERT(job!=NULL);
+    TEST_ASSERT(job->function==NULL);
+    TEST_ASSERT(job->args==NULL);
+
+    free(job);
+}
+
+/*################ LINKEDLIST TEST UNITS ################*/
+
+//Function to test the creation of an empty list
 void test_list_create(){
     LinkedList *list = init_LinkedList();
     TEST_ASSERT(list!=NULL);
@@ -815,22 +905,252 @@ void test_list_create(){
     destroy_LinkedList(list);
 }
 
+//Function to test the insertion of an entry in the list
+void test_list_insert(){
+    LinkedList *list = init_LinkedList();
+
+    int N=1000;
+
+    for(int i=0;i<N;i++){
+        predictionPair *pair = create_pair(i);
+        insert_and_test_list(list,pair,i+1);
+    }
+
+    destroy_LinkedList(list);
+}
+
+//Function to test the search function of a list
+void test_list_search(){
+    LinkedList *list = init_LinkedList();
+
+    int N=1000;
+
+    //Search for items that exist in the list
+    for(int i=0;i<N;i++){
+        predictionPair *pair = create_pair(i);
+        list = insert_LinkedList(list,pair);
+        TEST_ASSERT(search_LinkedList(list,pair)==1);
+    }
+
+    int M=1000;
+
+    //Search for items that don't exist on the list
+    for(int i=N;i<N+M;i++){
+        predictionPair *pair = create_pair(i);
+        TEST_ASSERT(search_LinkedList(list,pair)!=1);
+        deletePredictionPair(pair);
+    }
+
+    destroy_LinkedList(list);
+}
+
+/*############### QUEUE TEST UNITS ############*/
+
+
+//Function to test the creation of a queue
+void test_queue_create(){
+    Queue *q = initQueue();
+    TEST_ASSERT(q!=NULL);
+    TEST_ASSERT(q->head==NULL);
+
+    destroyQueue(q);
+}
+
+//Function to test the push function of a queue
+void test_queue_insert(){
+
+    int N=1000;
+
+    Queue *q = initQueue();
+    Job **job_array = malloc(sizeof(Job*)*N);
+
+
+    //Check if the insertion is performed correctly
+    for(int i=0;i<N;i++){
+        job_array[i] = create_job(i,NULL,NULL);
+        pushQueue(q,job_array[i]);
+
+        int found=0;
+        QueueNode *node = q->head;
+        while(node!=NULL){
+            if(node->node==job_array[i]){
+                found=1;
+                break;
+            }
+            node=node->next;
+        }
+        TEST_ASSERT(found==1);
+    }
+
+    for(int i=0;i<N;i++)
+        free(job_array[i]);
+    free(job_array);
+    destroyQueue(q);
+}
+
+//Function to check the pop function and the fifo property of the queue
+void test_queue_pop(){
+    int N=1000;
+
+    Queue *q = initQueue();
+    Job **job_array = malloc(sizeof(Job*)*N);
+
+
+    //Check if the insertion is performed correctly
+    for(int i=0;i<N;i++){
+        job_array[i] = create_job(i,NULL,NULL);
+        pushQueue(q,job_array[i]);
+    }
+
+    //check the deletion from the queue
+    //since the struct is queue fifo must be true
+    //so the elements must exit the queue in the same order they were inserted
+    for(int i=0;i<N;i++){
+        Job *job = popQueue(&q->head);
+        TEST_ASSERT(job==job_array[i]);
+    }
+
+    //Queue must be empty
+    TEST_ASSERT(emptyQueue(q)==1);
+
+    for(int i=0;i<N;i++)
+        free(job_array[i]);
+    free(job_array);
+    destroyQueue(q);
+}
+
+/*############## RED BLACK TREE TEST UNITS ##########*/
+
+
+//Function to test the creation of a red black tree
+void test_red_black_tree_create(){
+    RBtree *rbt = initRB();
+    TEST_ASSERT(rbt!=NULL);
+    TEST_ASSERT(rbt->root==NULL);
+    TEST_ASSERT(rbt->num_elements==0);
+
+    destroyRB(rbt);
+}
+
+
+//Function to test the insertion of the tree
+void test_red_black_tree_insert(){
+    int N=5000;
+
+    RBtree *rbt = initRB();
+
+
+    //Test the insertion of a new entry on the red black tree
+    for(int i=0;i<N;i++){
+        predictionPair *pair = create_pair(i);
+        pair->pred = (double) rand()/RAND_MAX;
+        rbt = insertRB(rbt,pair);
+        TEST_ASSERT(search_LinkedList(searchRB(rbt,pair)->l,pair)==1);
+        TEST_ASSERT(rbt->num_elements==i+1);
+    }
+
+    destroyRB(rbt);
+}
+
+//Function to test the red black property of the tree
+void test_red_black_tree_property(){
+    int N=1000;
+
+    RBtree *rbt = initRB();
+    //Test the insertion of a new entry on the red black tree
+    for(int i=0;i<N;i++){
+        predictionPair *pair = create_pair(i);
+        pair->pred = (double) rand()/RAND_MAX;
+        rbt = insertRB(rbt,pair);
+    }
+
+    //Function to check if the tree is balanced like a red-black tree
+    int maxh=0;
+    int minh=0;
+    TEST_ASSERT(isBalancedRBT(rbt->root,&maxh,&minh)==1);
+
+    destroyRB(rbt);
+}
+
+//Function to check the rotations of a red black tree
+void test_red_black_tree_rotations(){
+
+    RBtree *rbt = initRB();
+
+    /*Create a tree of the form
+            Q
+           /  \
+          P    C
+         / \
+        A   B
+     To test the rotations*/
+    predictionPair *pair =create_pair(0);
+    pair->pred=0.2;
+    rbt = insertRB(rbt,pair);
+    pair =create_pair(0);
+    pair->pred=0.1;
+    rbt = insertRB(rbt,pair);
+    pair =create_pair(0);
+    pair->pred=0.3;
+    rbt = insertRB(rbt,pair);
+    pair =create_pair(0);
+    pair->pred=0.25;
+    rbt = insertRB(rbt,pair);
+    pair =create_pair(0);
+    pair->pred=0.35;
+    rbt = insertRB(rbt,pair);
+
+    //check the first head of the tree
+    TEST_ASSERT(rbt->root->l->head->entry->pred==0.2);
+    TEST_ASSERT(rbt->root->left->l->head->entry->pred==0.3);
+    TEST_ASSERT(rbt->root->right->l->head->entry->pred==0.1);
+
+
+    //Perform a right rotation
+    right_rotation(rbt,rbt->root);
+
+    //The head of the the tree must now be P(0.3)
+    TEST_ASSERT(rbt->root->l->head->entry->pred==0.3);
+    TEST_ASSERT(rbt->root->left->l->head->entry->pred==0.35);
+    TEST_ASSERT(rbt->root->right->l->head->entry->pred==0.2);
+
+    //Perform a left rotation to get the tree to its starting state
+    //Perform a right rotation
+    left_rotation(rbt,rbt->root);
+    TEST_ASSERT(rbt->root->l->head->entry->pred==0.2);
+    TEST_ASSERT(rbt->root->left->l->head->entry->pred==0.3);
+    TEST_ASSERT(rbt->root->right->l->head->entry->pred==0.1);
+
+    destroyRB(rbt);
+}
+
 TEST_LIST = {
-        { "dictionary_create", 	    test_dictionary_create       },
-        { "dictionary_insert", 	    test_dictionary_insert       },
-        { "dictionary_find",        test_dictionary_find         },
-        { "dictionary_update",      test_dictionary_update       },
-        { "dictionary_concatenate", test_dictionary_concatenate  },
-        { "hashtable_create",       test_hashtable_create        },
-        { "hashtable_insert",       test_hashtable_insert        },
-        { "hashtable_reshape",      test_hashtable_reshape       },
-        { "hashtable_cliques",      test_hashtable_cliques       },
-        { "hashtable_write_file",   test_hashtable_write_file    },
-        { "sectable_create",        test_sectable_create         },
-        { "sectable_insert",        test_sectable_insert         },
-        { "sectable_find",          test_sectable_find           },
-        { "sectable_reshape",       test_sectable_reshape        },
-        { "sectable_delete",        test_sectable_delete         },
-        { "list_create",            test_list_create             },
+        { "dictionary_create", 	      test_dictionary_create       },
+        { "dictionary_insert", 	      test_dictionary_insert       },
+        { "dictionary_find",          test_dictionary_find         },
+        { "dictionary_update",        test_dictionary_update       },
+        { "dictionary_concatenate",   test_dictionary_concatenate  },
+        { "hashtable_create",         test_hashtable_create        },
+        { "hashtable_insert",         test_hashtable_insert        },
+        { "hashtable_reshape",        test_hashtable_reshape       },
+        { "hashtable_cliques",        test_hashtable_cliques       },
+        { "hashtable_write_file",     test_hashtable_write_file    },
+        { "sectable_create",          test_sectable_create         },
+        { "sectable_insert",          test_sectable_insert         },
+        { "sectable_find",            test_sectable_find           },
+        { "sectable_reshape",         test_sectable_reshape        },
+        { "sectable_delete",          test_sectable_delete         },
+        { "prediction_pair_create",   test_prediction_pair_create  },
+        { "job_create",               test_job_create              },
+        { "list_create",              test_list_create             },
+        { "list_insert",              test_list_insert             },
+        { "list_search",              test_list_search             },
+        { "queue_create",             test_queue_create            },
+        { "queue_insert",             test_queue_insert            },
+        { "queue_pop",                test_queue_pop               },
+        { "red_black_tree_create",    test_red_black_tree_create   },
+        { "red_black_tree_insert",    test_red_black_tree_insert   },
+        { "red_black_tree_property",  test_red_black_tree_property },
+        { "red_black_tree_rotations", test_red_black_tree_rotations},
         { NULL, NULL }
 };
