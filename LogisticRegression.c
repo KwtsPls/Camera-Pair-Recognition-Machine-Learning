@@ -373,7 +373,7 @@ logisticreg *train_logisticRegression(logisticreg *model,sparseVector **X,int *y
             schedule(scheduler,job);
         }
     }    
-    printf("Main thread finished distributing batches\nWaiting for threads to finish their execution...\n");
+    printf("\nMain thread finished distributing batches\nWaiting for threads to finish their execution...\n");
     waitUntilJobsHaveFinished(scheduler);
     free(gradient);
     free(new_weights);

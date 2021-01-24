@@ -146,19 +146,26 @@ void test_bow_vector(HashTable *ht,secTable *vocab,char *key){
     free(temp);
 }
 
-double *create_dummy_input(logisticreg *model,int N){
-    double *xi = malloc(sizeof(double)*(2*N+1));
-    xi[0]=1.0;
+sparseVector *create_dummy_input(logisticreg *model,int N){
+    double *xi = malloc(sizeof(double)*model->numofN);
+    int len=0;
     for(int i=1;i<model->numofN;i++){
         int r = rand()%100;
         xi[i] = (double)r;
     }
     //Set some of the input's components as zero
     for(int i=0;i<N/2;i++){
-        int r = rand()%((2*N)+1);
+        int r = rand()%(model->numofN);
         xi[r]=0.0;
     }
-    return xi;
+    xi[0]=1.0;
+
+    for(int i=0;i<model->numofN;i++){
+        if(xi[i]!=0) len++;
+    }
+
+    sparseVector *x = init_sparseVector(xi,model->numofN,len);
+    return x;
 }
 
 /*###### PRE-PROCESSING TEST UNITS ########################*/
@@ -270,7 +277,7 @@ void test_word_cutting(){
 
     //Run the function
     int old_size = vocab->num_elements;
-    vocab = evaluate_tfidf_secTable(vocab,5);
+    vocab = evaluate_tfidf_secTable(vocab,5,100);
 
     //Test the new size of the table
     TEST_ASSERT(vocab->num_elements < old_size);
@@ -315,7 +322,7 @@ void test_tf_idf(){
     add_word_to_vocab(text3,"c",&ht,&vocabulary,stopwords);
 
     //Get the updated vocabulary
-    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht));
+    vocabulary = evaluate_tfidf_secTable(vocabulary,sizeHashTable(ht),100);
 
     //Check the idf for every word
     //After the data cleaning the words remaining should be
@@ -384,7 +391,8 @@ void test_concat(){
     }
 
     //Create the vector
-    double *x = concatenate_vectors(x1,x2,(N*2)+1);
+    int sparse_size=0;
+    double *x = concatenate_vectors(x1,x2,(N*2)+1,&sparse_size);
 
     //First entry must be 1.0 for the bias (weight w0)
     TEST_ASSERT(x[0]==1.0);
@@ -419,7 +427,8 @@ void test_absolute(){
     }
 
     //Create the vector
-    double *x = absolute_distance(x1,x2,N+1);
+    int sparse_size=0;
+    double *x = absolute_distance(x1,x2,N+1,&sparse_size);
 
     //First entry must be 1.0 for the bias (weight w0)
     TEST_ASSERT(x[0]==1.0);
@@ -474,28 +483,37 @@ void test_train_model(){
     int N=1000;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75,1);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,5,25,0.75,1);
 
     //Create a dummy input for the model
-    double **X = malloc(sizeof(double*)*2);
-    int *y = malloc(sizeof(int)*2);
-    double *xi = create_dummy_input(model,N);
-    X[0]=X[1]=xi;
-    y[0]=y[1]=0;
+    sparseVector **X = malloc(sizeof(double*)*100);
+    int *y = malloc(sizeof(int)*100);
+    sparseVector *xi = create_dummy_input(model,N);
+    for(int i=0;i<100;i++){
+        X[i]=xi;
+        y[i]=0;
+    }
 
 
     //Perform a very basic training
-    model = train_logisticRegression(model,X,y,2);
+    JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
+    model = train_logisticRegression(model,X,y,100,scheduler);
+    waitUntilJobsHaveFinished(scheduler);
+    threads_must_exit(scheduler);
+    destroy_JobScheduler(&scheduler);
 
     //Check if the correct weights were updated
+    int sparse_counter=0;
     for(int i=0;i<model->numofN;i++){
-        if(xi[i]==0.0)
-            TEST_ASSERT(model->vector_weights[i]==0.0);
+        if(xi->index_array[sparse_counter]==i) {
+            TEST_ASSERT(model->vector_weights[i] != 0.0);
+            sparse_counter++;
+        }
         else
-            TEST_ASSERT(model->vector_weights[i]!=0.0);
+            TEST_ASSERT(model->vector_weights[i]==0.0);
     }
 
-    free(xi);
+    destroy_sparseVector(xi);
     free(X);
     free(y);
     delete_logisticReg(&model);
@@ -506,27 +524,34 @@ void test_predict_model(){
     int N=1000;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,1,0.75,1);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,2,0.75,1);
 
     //Create a dummy input for the model
-    double **X = malloc(sizeof(double*)*2);
-    int *y = malloc(sizeof(int)*2);
-    double *xi = create_dummy_input(model,N);
-    X[0]=X[1]=xi;
-    y[0]=y[1]=0;
+    sparseVector **X = malloc(sizeof(double*)*100);
+    int *y = malloc(sizeof(int)*100);
+    sparseVector *xi = create_dummy_input(model,N);
+    for(int i=0;i<100;i++){
+        X[i]=xi;
+        y[i]=0;
+    }
 
 
     //Perform a very basic training
-    model = train_logisticRegression(model,X,y,2);
+    JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
+    model = train_logisticRegression(model,X,y,100,scheduler);
+    waitUntilJobsHaveFinished(scheduler);
 
-    double **X_test = malloc(sizeof(double*)*2);
-    double *xi_test = create_dummy_input(model,N);
-    X_test[0]=X_test[1]=xi_test;
-    y[0]=y[1]=0;
+    sparseVector **X_test = malloc(sizeof(double*)*20);
+    sparseVector *xi_test = create_dummy_input(model,N);
+    for(int i=0;i<20;i++){
+        X_test[i]=xi_test;
+    }
     //Predict some results after the training
-    double *y_pred = predict_logisticRegression(model,X_test,0,2);
+    double *y_pred = predict_logisticRegression(model,X_test,20,scheduler);
+    waitUntilJobsHaveFinished(scheduler);
+    threads_must_exit(scheduler);
     //check that the predictions are between 0 and 1
-    for(int i=0;i<2;i++)
+    for(int i=0;i<20;i++)
         TEST_ASSERT(y_pred[i]>=0.0 && y_pred[i]<=1.0);
 
     free(xi);
@@ -535,6 +560,7 @@ void test_predict_model(){
     free(X);
     free(y);
     free(y_pred);
+    destroy_JobScheduler(&scheduler);
     delete_logisticReg(&model);
 }
 
