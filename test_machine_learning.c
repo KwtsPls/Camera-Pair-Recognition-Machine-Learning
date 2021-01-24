@@ -564,16 +564,21 @@ void test_predict_model(){
     delete_logisticReg(&model);
 }
 
+void test_sparse_vector_create(){
+
+}
+
 TEST_LIST = {
-        { "preprocess",    test_preprocess    },
-        { "json_parser",   test_json_parser   },
-        { "word_cutting",  test_word_cutting  },
-        { "tf_idf_test",   test_tf_idf        },
-        { "bow_test",      test_bow           },
-        { "concat_test",   test_concat        },
-        { "absolute_test", test_absolute      },
-        { "create_model",  test_create_model  },
-        { "train_model",   test_train_model   },
-        { "predict_model", test_predict_model },
+        { "preprocess",           test_preprocess               },
+        { "json_parser",          test_json_parser              },
+        { "word_cutting",         test_word_cutting             },
+        { "tf_idf_test",          test_tf_idf                   },
+        { "bow_test",             test_bow                      },
+        { "concat_test",          test_concat                   },
+        { "absolute_test",        test_absolute                 },
+        { "create_model",         test_create_model             },
+        { "train_model",          test_train_model              },
+        { "predict_model",        test_predict_model            },
+        { "sparse_vector_create", test_sparse_vector_create     },
         { NULL, NULL }
 };

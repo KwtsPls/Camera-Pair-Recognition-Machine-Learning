@@ -4,6 +4,7 @@
 #include "CsvReader.h"
 #include "RBtree.h"
 #include "JobScheduler.h"
+#include "BagOfWords.h"
 #include "acutest.h"
 #include "test_names.h"
 
@@ -173,6 +174,31 @@ int isBalancedRBT(RBnode *node,int *maxh,int *minh){
 
     return 0;
 }
+
+//Function to create a dummy vocabulary to test the resolution of transitivity issues
+secTable *create_dummy_vocab(){
+    secTable *vocab = create_secTable(ST_INIT_SIZE,SB_SIZE,HashIndexedWord,CompareIndexedWord,DeleteIndexedWord,indxWrd);
+
+    for(int i=0;i<1000;i++){
+        indexedWord *id = createIndexedWord(dict_names[i],i);
+        id->tf_idf_mean=(double) rand()/RAND_MAX;
+        id->tf=(double) rand()/RAND_MAX;
+        id->idf=(double) rand()/RAND_MAX;
+        vocab = insert_secTable(vocab,id);
+    }
+
+    return  vocab;
+}
+
+logisticreg *create_dummy_model(){
+    logisticreg *model = create_logisticReg(1000,CONCAT_VECTORS,4,2,0.6,2);
+    for(int i=0;i<1000;i++){
+        model->vector_weights[i] =(double) rand()/RAND_MAX;
+    }
+
+    return model;
+}
+
 /*################ DICTIONARY TEST UNITS ################*/
 
 
@@ -1124,6 +1150,172 @@ void test_red_black_tree_rotations(){
     destroyRB(rbt);
 }
 
+/*############# TEST UNIT FOR TRANSITIVITY ISSUES #######*/
+
+void test_resolve_transitivity(){
+    HashTable *ht = initHashTable(TABLE_INIT_SIZE);
+
+    int N=1000;
+
+    for(int i=0;i<N;i++){
+        //Create a dictionary to insert into the hashtable
+        Dictionary *dict = initDictionary(dict_names[i]);
+        char *key = create_key(i);
+        char **value = create_value(i);
+        dict = insertDictionary(dict,key,value,1);
+        ht = insertHashTable(&ht,dict);
+
+        free(key);
+    }
+
+    //Create dummy arguments for the function
+    int vector_type = CONCAT_VECTORS;
+    char bow_type[4] = "bow";
+    //Get a dummy vocabulary
+    secTable *vocabulary = create_dummy_vocab();
+    //Get a dummy model
+    logisticreg *regressor = create_dummy_model();
+
+    //Call the csvParser function to read the csv test dataset and create the cliques from it accordingly
+    int lines=0;
+    int pos=0;
+    int neg=0;
+    ht = csvParser(DATASET_PATH,&ht,&lines,&pos,&neg);
+
+    //Load data from the given file to create a dummy file
+    sparseVector **X=NULL;int *y=NULL;char **pairs=NULL;
+    load_data(DATASET_PATH,lines,ht,vocabulary,regressor,bow_type,vector_type,&X,&y,&pairs);
+
+    int M=100;
+    RBtree *rbt = initRB();
+    for(int i=0;i<M;i++){
+        predictionPair *pair = initPredictionPair(dict_names[rand()%1000],dict_names[rand()%1000],(double) rand()/RAND_MAX);
+        rbt = insertRB(rbt,pair);
+    }
+
+    //Create a hash table corresponding to the training set data
+    int temp_lines=0;
+    int temp_pos=0;
+    int temp_neg=0;
+    HashTable *data_ht=initHashTable(TABLE_INIT_SIZE);
+    //Create a hash table to resolve possible conflicts from the prediction data set
+    HashTable *pred_ht=initHashTable(TABLE_INIT_SIZE);
+    //Create the cliques from the training set
+    pos=0;
+    neg=0;
+    for(int i=0;i<N;i++){
+        //Create a dictionary to insert into the hashtable
+        Dictionary *dict = initDictionary(dict_names[i]);
+        char *key = create_key(i);
+        char **value = create_value(i);
+        dict = insertDictionary(dict,key,value,1);
+        data_ht = insertHashTable(&data_ht,dict);
+        free(key);
+    }
+    data_ht = csvParser(DATASET_PATH,&data_ht,&temp_lines,&temp_pos,&temp_neg);
+
+    for(int i=0;i<N;i++){
+        //Create a dictionary to insert into the hashtable
+        Dictionary *dict = initDictionary(dict_names[i]);
+        char *key = create_key(i);
+        char **value = create_value(i);
+        dict = insertDictionary(dict,key,value,1);
+        pred_ht = insertHashTable(&pred_ht,dict);
+        free(key);
+    }
+    pred_ht = csvParser(DATASET_PATH,&pred_ht,&temp_lines,&temp_pos,&temp_neg);
+
+
+    //Resolve any transitivity issues that occurred
+    int size = rbt->num_elements;
+    char **pairs_corrected=malloc(sizeof(char*)*size);
+    sparseVector **X_corrected=malloc(sizeof(sparseVector*)*size);
+    int *y_corrected = malloc(sizeof(int)*size);
+    resolveRB(&data_ht,&pred_ht,rbt,&pairs_corrected,&X_corrected,&y_corrected,ht,vocabulary,bow_type,vector_type,regressor,&pos,&neg);
+
+    //Concatenate the old training set with the new pairs
+    int new_size = lines + size;
+    sparseVector **new_X_train = malloc(sizeof(sparseVector*)*new_size);
+    int *new_y_train = malloc(sizeof(int)*new_size);
+    char **new_pairs_train = malloc(sizeof(char*)*new_size);
+
+    for(int i=0;i<lines;i++){
+        new_X_train[i] = X[i];
+        new_y_train[i] = y[i];
+        new_pairs_train[i] = pairs[i];
+    }
+
+    for(int i=0;i<size;i++){
+        new_X_train[i+lines] = X_corrected[i];
+        new_y_train[i+lines] = y_corrected[i];
+        new_pairs_train[i+lines] = pairs_corrected[i];
+    }
+
+    free(X);
+    X = new_X_train;
+    free(y);
+    y = new_y_train;
+    free(pairs);
+    pairs = new_pairs_train;
+    destroyRB(rbt);
+
+    //Test if there are any transitivity issues
+    HashTable *check_ht=initHashTable(TABLE_INIT_SIZE);
+    //Create the cliques from the training set
+    for(int i=0;i<N;i++){
+        //Create a dictionary to insert into the hashtable
+        Dictionary *dict = initDictionary(dict_names[i]);
+        char *key = create_key(i);
+        char **value = create_value(i);
+        dict = insertDictionary(dict,key,value,1);
+        check_ht = insertHashTable(&check_ht,dict);
+        free(key);
+    }
+    check_ht = csvParser(DATASET_PATH,&check_ht,&temp_lines,&temp_pos,&temp_neg);
+
+    for(int i=0;i<new_size;i++){
+        char *line = strdup(pairs[i]);
+        char *left_sp,*right_sp;
+        //Take left_spec_id
+        left_sp = strtok(line,",");
+        //Take right_spec_id
+        right_sp = strtok(NULL,",");
+
+        int relation = checkRelation(check_ht,left_sp,right_sp);
+        if(relation==-1){
+            if (y[i] == 1)
+                check_ht = createCliqueHashTable(&check_ht,left_sp,right_sp);
+            else
+                check_ht = negativeRelationHashTable(check_ht,left_sp,right_sp);
+        }
+        else{
+            TEST_ASSERT(relation==y[i]);
+        }
+
+        free(line);
+    }
+
+    for(int i=0;i<new_size;i++){
+        destroy_sparseVector(X[i]);
+        free(pairs[i]);
+    }
+
+    free(pairs_corrected);
+    free(X_corrected);
+    free(y_corrected);
+    free(y);
+    free(X);
+    free(pairs);
+    cliqueDeleteHashTable(&data_ht,BUCKET_HARD_DELETE_MODE);
+    cliqueDeleteHashTable(&pred_ht,BUCKET_HARD_DELETE_MODE);
+    cliqueDeleteHashTable(&check_ht,BUCKET_HARD_DELETE_MODE);
+    cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
+    destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);
+    delete_logisticReg(&regressor);
+
+}
+
+
 TEST_LIST = {
         { "dictionary_create", 	      test_dictionary_create       },
         { "dictionary_insert", 	      test_dictionary_insert       },
@@ -1152,5 +1344,6 @@ TEST_LIST = {
         { "red_black_tree_insert",    test_red_black_tree_insert   },
         { "red_black_tree_property",  test_red_black_tree_property },
         { "red_black_tree_rotations", test_red_black_tree_rotations},
+        { "resolve_transitivity",     test_resolve_transitivity    },
         { NULL, NULL }
 };
