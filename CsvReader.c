@@ -282,7 +282,7 @@ RBtree *predict_all_pairs(logisticreg *regressor,float threshold,HashTable *ht,s
     //Check if file Opened
     if(fp_neg==NULL){
         errorCode = OPENING_FILE;
-        fclose(fp_neg);
+        // fclose(fp_neg);
         print_error();
         return NULL;
     }

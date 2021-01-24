@@ -86,7 +86,6 @@ typedef struct job_scheduler
     pthread_mutex_t thread_locking;
     pthread_cond_t queue_condition;     //Condition for the queue
 
-
     pthread_cond_t session_finsihed_cond;
     pthread_cond_t jobs_finished_cond;  
     int jobs_running;               //Protected by queue lock

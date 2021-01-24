@@ -228,30 +228,28 @@ void fit_logisticRegression(void *arguments){
     if(X==NULL)
         weight_length=0;
 
-    pthread_mutex_lock(new_locker);
+    pthread_mutex_lock(locking);
     if((*flag_forNextStep)+1<MAX_THREADS){
         (*flag_forNextStep)++;
-        pthread_cond_wait(condition,new_locker);
+        pthread_cond_wait(condition,locking);
     }
     else{
         (*flag_forNextStep) = 0;
         pthread_cond_broadcast(condition);
     }
-   
-
-    pthread_mutex_unlock(new_locker);
+    pthread_mutex_unlock(locking);
 
     //Changing weights 1 to 1, until the error is reached...
     for(int s=0;s<model->steps;s++){
 
-        pthread_mutex_lock(new_locker);
+        pthread_mutex_lock(locking);
 
         if(X==NULL){
             for(int i=0;i<model->numofN;i++)
                 finished[i]++;
         }
 
-        pthread_mutex_unlock(new_locker);
+        pthread_mutex_unlock(locking);
 
 
         for(int j=0;j<weight_length;j++){
@@ -300,25 +298,23 @@ void fit_logisticRegression(void *arguments){
             pthread_mutex_unlock(locking);
         }
 
-        pthread_mutex_lock(new_locker);
+        pthread_mutex_lock(locking);
         if((*flag_forNextStep)+1<MAX_THREADS){
             (*flag_forNextStep)++;
-            pthread_cond_wait(condition,new_locker);
+            pthread_cond_wait(condition,locking);
 
         }
         else{
             //Update the current weights
             for(int x=0;x<model->numofN; x++) {
                 model->vector_weights[x] = new_weight[x];
-                new_weight[x] = 0.0;
                 grad_array[x] = 0.0;
-                finished[x] = 0;
             }
             (*flag_forNextStep) = 0;
             pthread_cond_broadcast(condition);
 
         }
-        pthread_mutex_unlock(new_locker);
+        pthread_mutex_unlock(locking);
 
     }
 }

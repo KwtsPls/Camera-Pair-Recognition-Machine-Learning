@@ -481,33 +481,33 @@ void test_create_model(){
 void test_train_model(){
 
     int N=1000;
+    int M=500;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,5,25,0.75,1);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,5,4,0.75,1);
 
     //Create a dummy input for the model
-    sparseVector **X = malloc(sizeof(double*)*100);
-    int *y = malloc(sizeof(int)*100);
+    sparseVector **X = malloc(sizeof(sparseVector*)*M);
+    int *y = malloc(sizeof(int)*M);
     sparseVector *xi = create_dummy_input(model,N);
-    for(int i=0;i<100;i++){
+    for(int i=0;i<M;i++){
         X[i]=xi;
         y[i]=0;
     }
 
-
     //Perform a very basic training
     JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
-    model = train_logisticRegression(model,X,y,100,scheduler);
-    waitUntilJobsHaveFinished(scheduler);
+    model = train_logisticRegression(model,X,y,M,scheduler);
+    //waitUntilJobsHaveFinished(scheduler);
+    pthread_mutex_lock(&(scheduler->locking_queue));
     threads_must_exit(scheduler);
     destroy_JobScheduler(&scheduler);
 
     //Check if the correct weights were updated
-    int sparse_counter=0;
+    int sparse_index=0;
     for(int i=0;i<model->numofN;i++){
-        if(xi->index_array[sparse_counter]==i) {
+        if((sparse_index = find_index_sparseVector(xi,i))!=-1) {
             TEST_ASSERT(model->vector_weights[i] != 0.0);
-            sparse_counter++;
         }
         else
             TEST_ASSERT(model->vector_weights[i]==0.0);
@@ -522,15 +522,16 @@ void test_train_model(){
 //Function to test the predictions of the model
 void test_predict_model(){
     int N=1000;
+    int M=500;
 
     //Create a model for logistic regression for vector with concatenated vectors
-    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,2,0.75,1);
+    logisticreg *model = create_logisticReg(N,CONCAT_VECTORS,15,4,0.75,1);
 
     //Create a dummy input for the model
-    sparseVector **X = malloc(sizeof(double*)*100);
-    int *y = malloc(sizeof(int)*100);
+    sparseVector **X = malloc(sizeof(double*)*M);
+    int *y = malloc(sizeof(int)*M);
     sparseVector *xi = create_dummy_input(model,N);
-    for(int i=0;i<100;i++){
+    for(int i=0;i<M;i++){
         X[i]=xi;
         y[i]=0;
     }
@@ -538,8 +539,8 @@ void test_predict_model(){
 
     //Perform a very basic training
     JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
-    model = train_logisticRegression(model,X,y,100,scheduler);
-    waitUntilJobsHaveFinished(scheduler);
+    model = train_logisticRegression(model,X,y,M,scheduler);
+    // pthread_mutex_lock(&(scheduler->locking_queue));
 
     sparseVector **X_test = malloc(sizeof(double*)*20);
     sparseVector *xi_test = create_dummy_input(model,N);
@@ -548,19 +549,18 @@ void test_predict_model(){
     }
     //Predict some results after the training
     double *y_pred = predict_logisticRegression(model,X_test,20,scheduler);
-    waitUntilJobsHaveFinished(scheduler);
     threads_must_exit(scheduler);
+    destroy_JobScheduler(&scheduler);
     //check that the predictions are between 0 and 1
     for(int i=0;i<20;i++)
         TEST_ASSERT(y_pred[i]>=0.0 && y_pred[i]<=1.0);
 
-    free(xi);
-    free(xi_test);
+    destroy_sparseVector(xi);
+    destroy_sparseVector(xi_test);
     free(X_test);
     free(X);
     free(y);
     free(y_pred);
-    destroy_JobScheduler(&scheduler);
     delete_logisticReg(&model);
 }
 

@@ -13,7 +13,7 @@ test_check.o: test_check.c HashTable.h ErrorHandler.h Test_Units/acutest-master/
 	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_check.c
 
 test_machine_learning.o: test_machine_learning.c HashTable.h ErrorHandler.h Test_Units/acutest-master/include/acutest.h Test_Units/Helper_Files/test_names.h
-	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_machine_learning.c
+	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_machine_learning.c -lpthread
 
 main.o : main.c JsonParser.h ErrorHandler.h
 	gcc -g3 -c -Wall main.c

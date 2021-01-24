@@ -39,6 +39,8 @@ JobScheduler *initialize_scheduler(int execution_threads){
     if(er!=0)
         perror("ERROR: Condition initialising");
 
+
+
     //Initialize thread_array
     scheduler->threads = malloc(sizeof(pthread_t)*execution_threads);
     scheduler->Job = initQueue();
