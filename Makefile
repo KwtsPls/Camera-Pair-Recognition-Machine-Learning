@@ -5,15 +5,23 @@ main: Queue.o Inference.o main.o JsonParser.o ErrorHandler.o Dictionary.o Bucket
 
 
 #Make part for the test part of the program using acutest library
-test: test_check.o test_machine_learning.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o DataLoading.o Transitivity.o Queue.o RBtree.o List.o sparseVector.o JobScheduler.o
+test: test_threads.o test_check.o test_machine_learning.o test_data_manipulation.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o CsvReader.o BagOfWords.o  SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o DataLoading.o Transitivity.o Queue.o RBtree.o List.o sparseVector.o JobScheduler.o
 	gcc -g3 -lm test_check.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o BagOfWords.o  CsvReader.o SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o DataLoading.o Queue.o Transitivity.o RBtree.o List.o sparseVector.o JobScheduler.o -o test -lm -lpthread
 	gcc -g3 -lm test_machine_learning.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o BagOfWords.o  CsvReader.o SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o DataLoading.o Queue.o Transitivity.o RBtree.o List.o sparseVector.o JobScheduler.o -o learning_test -lm -lpthread
+	gcc -g3 -lm test_data_manipulation.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o BagOfWords.o  CsvReader.o SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o DataLoading.o Queue.o Transitivity.o RBtree.o List.o sparseVector.o JobScheduler.o -o data_test -lm -lpthread
+	gcc -g3 -lm test_threads.o JsonParser.o ErrorHandler.o Dictionary.o Bucket.o HashTable.o BagOfWords.o  CsvReader.o SecTable.o DataPreprocess.o LogisticRegression.o Metrics.o DataLoading.o Queue.o Transitivity.o RBtree.o List.o sparseVector.o JobScheduler.o -o pthreads_test -lm -lpthread
 
 test_check.o: test_check.c HashTable.h ErrorHandler.h Test_Units/acutest-master/include/acutest.h Test_Units/Helper_Files/test_names.h
 	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_check.c
 
 test_machine_learning.o: test_machine_learning.c HashTable.h ErrorHandler.h Test_Units/acutest-master/include/acutest.h Test_Units/Helper_Files/test_names.h
 	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_machine_learning.c -lpthread
+
+test_data_manipulation.o : test_data_manipulation.c HashTable.h ErrorHandler.h Test_Units/acutest-master/include/acutest.h Test_Units/Helper_Files/test_names.h
+	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_data_manipulation.c
+
+test_threads.o : test_threads.c HashTable.h ErrorHandler.h Test_Units/acutest-master/include/acutest.h Test_Units/Helper_Files/test_names.h
+	gcc -g3 -ITest_Units/acutest-master/include/ -ITest_Units/Helper_Files/ -c -Wall test_threads.c
 
 main.o : main.c JsonParser.h ErrorHandler.h
 	gcc -g3 -c -Wall main.c
@@ -76,4 +84,4 @@ JobScheduler.o : JobScheduler.c JobScheduler.h
 	gcc -g3 -c -Wall JobScheduler.c -lpthread
 
 clean:
-	rm main test main.o JobScheduler.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o BagOfWords.o cliques.csv LogisticRegression.o Metrics.o test_machine_learning.o Inference.o DataLoading.o Transitivity.o RBtree.o List.o sparseVector.o neg_cliques.csv predictions.csv inference learning_test
+	rm main test test_data_manipulation.o main.o JobScheduler.o JsonParser.o ErrorHandler.o CsvReader.o Bucket.o HashTable.o Dictionary.o test_check.o SecTable.o DataPreprocess.o BagOfWords.o cliques.csv LogisticRegression.o Metrics.o test_machine_learning.o Inference.o DataLoading.o Transitivity.o RBtree.o List.o sparseVector.o neg_cliques.csv predictions.csv inference learning_test

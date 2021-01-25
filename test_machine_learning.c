@@ -146,6 +146,7 @@ void test_bow_vector(HashTable *ht,secTable *vocab,char *key){
     free(temp);
 }
 
+//Function to create a dummy input for the trianing of the model
 sparseVector *create_dummy_input(logisticreg *model,int N){
     double *xi = malloc(sizeof(double)*model->numofN);
     int len=0;
@@ -169,6 +170,7 @@ sparseVector *create_dummy_input(logisticreg *model,int N){
 }
 
 /*###### PRE-PROCESSING TEST UNITS ########################*/
+
 
 //Function to test the json parser
 void test_preprocess(){
@@ -201,6 +203,7 @@ void test_preprocess(){
     free(text);
     free(temp);
 }
+
 
 //Function to test json parsing
 void test_json_parser(){
@@ -298,6 +301,7 @@ void test_word_cutting(){
 
 
 /*####### VECTOR TEST UNITS ##################*/
+
 
 //Function to test tf-idf vectors
 void test_tf_idf(){
@@ -447,6 +451,7 @@ void test_absolute(){
 
 /*######### MACHINE LEARNING TEST UNITS ###############*/
 
+
 //Function to test the creation of a new model
 void test_create_model(){
 
@@ -477,6 +482,7 @@ void test_create_model(){
     delete_logisticReg(&model_concat);
 }
 
+
 //Function to test the training of the test
 void test_train_model(){
 
@@ -498,7 +504,6 @@ void test_train_model(){
     //Perform a very basic training
     JobScheduler *scheduler = initialize_scheduler(MAX_THREADS);
     model = train_logisticRegression(model,X,y,M,scheduler);
-    //waitUntilJobsHaveFinished(scheduler);
     pthread_mutex_lock(&(scheduler->locking_queue));
     threads_must_exit(scheduler);
     destroy_JobScheduler(&scheduler);
@@ -518,6 +523,7 @@ void test_train_model(){
     free(y);
     delete_logisticReg(&model);
 }
+
 
 //Function to test the predictions of the model
 void test_predict_model(){
@@ -564,21 +570,116 @@ void test_predict_model(){
     delete_logisticReg(&model);
 }
 
-void test_sparse_vector_create(){
 
+//Function to test the creation of a sparse vector
+void test_sparse_vector_create(){
+    int N=4000;
+    double *xi = malloc(sizeof(double)*N);
+    double *check = malloc(sizeof(double)*N);
+    int len=0;
+    for(int i=1;i<N;i++){
+        int r = rand()%100;
+        xi[i] = (double)r;
+        check[i] = (double)r;
+    }
+    //Set some of the input's components as zero
+    for(int i=0;i<N/2;i++){
+        int r = rand()%(N);
+        xi[r]=0.0;
+        check[r]=0.0;
+    }
+    xi[0]=1.0;
+    check[0]=1.0;
+
+    for(int i=0;i<N;i++){
+        if(xi[i]!=0) len++;
+    }
+
+    sparseVector *x = init_sparseVector(xi,N,len);
+
+    for(int i=0;i<N;i++){
+        int index;
+        if((index=find_index_sparseVector(x,i))!=-1){
+            TEST_ASSERT(x->concentrated_matrix[index]==check[i]);
+        }
+    }
+
+    free(check);
+    destroy_sparseVector(x);
 }
 
+
+//Function to the test the functionality of
+void test_sparse_vector_find_index(){
+    int N=4000;
+    double *xi = malloc(sizeof(double)*N);
+    double *check = malloc(sizeof(double)*N);
+    int len=0;
+    for(int i=1;i<N;i++){
+        int r = rand()%100;
+        xi[i] = (double)r;
+        check[i] = (double)r;
+    }
+    //Set some of the input's components as zero
+    for(int i=0;i<N/2;i++){
+        int r = rand()%(N);
+        xi[r]=0.0;
+        check[r]=0.0;
+    }
+    xi[0]=1.0;
+    check[0]=1.0;
+
+    for(int i=0;i<N;i++){
+        if(xi[i]!=0) len++;
+    }
+
+    sparseVector *x = init_sparseVector(xi,N,len);
+
+    for(int i=0;i<N;i++){
+        if(check[i]!=0.0){
+            int index;
+            TEST_ASSERT((index=find_index_sparseVector(x,i))!=-1);
+            TEST_ASSERT(x->index_array[index]==i);
+        }
+    }
+
+    free(check);
+    destroy_sparseVector(x);
+}
+
+
+//Function to test the functionality of binary search
+//since it is used on find_index_sparseVector()
+void test_sparse_vector_binary_search(){
+    int N=3000;
+    int *A = malloc(sizeof(int)*N);
+    for(int i=0;i<N;i++) A[i]=i;
+
+    int M=1000;
+    for(int i=0;i<M;i++){
+        int key = rand()%N;
+        int index = binary_search(A,0,N-1,key);
+        TEST_ASSERT(index!=-1);
+        TEST_ASSERT(A[index]==key);
+    }
+
+    free(A);
+}
+
+
 TEST_LIST = {
-        { "preprocess",           test_preprocess               },
-        { "json_parser",          test_json_parser              },
-        { "word_cutting",         test_word_cutting             },
-        { "tf_idf_test",          test_tf_idf                   },
-        { "bow_test",             test_bow                      },
-        { "concat_test",          test_concat                   },
-        { "absolute_test",        test_absolute                 },
-        { "create_model",         test_create_model             },
-        { "train_model",          test_train_model              },
-        { "predict_model",        test_predict_model            },
-        { "sparse_vector_create", test_sparse_vector_create     },
+        { "preprocess",                  test_preprocess                   },
+        { "json_parser",                 test_json_parser                  },
+        { "word_cutting",                test_word_cutting                 },
+        { "tf_idf_test",                 test_tf_idf                       },
+        { "bow_test",                    test_bow                          },
+        { "concat_test",                 test_concat                       },
+        { "absolute_test",               test_absolute                     },
+        { "sparse_vector_create",        test_sparse_vector_create         },
+        { "sparse_vector_find_index",    test_sparse_vector_find_index     },
+        { "sparse_vector_binary_search", test_sparse_vector_binary_search  },
+        { "create_model",                test_create_model                 },
+        { "train_model",                 test_train_model                  },
+        { "predict_model",               test_predict_model                },
         { NULL, NULL }
 };

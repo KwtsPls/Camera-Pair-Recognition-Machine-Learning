@@ -73,7 +73,7 @@ int main(int argc, char *argv[]){
     else printf("-Vector implementation : Absolute distance between matrices\n");
 
     if(strcmp(b,"tf-idf")==0) printf("-Vector components: tf-idf values\n");
-    else printf("-Vector components: bag of words\n\n");
+    else printf("-Vector components: bag of words\n");
     printf("#############################\n\n");
     /*###################################################*/
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]){
     printf("0 to 1 ratio is %d\n\n",ratio);
 
 
-    printf("Finished creating cliques!\n\n");
+    printf("Finished creating cliques!\n");
     printf("#############################\n\n");
     /*#####################################################*/
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
     printf("cliques.csv : file containing all pairs\n");
     if(n==1) printf("neg_cliques.csv : file containing all negative relations between cliques\n");
     printf("stats.txt : file containing the statistics of the training procedure\n");
-    printf("vocabulary.txt : file containing the vocabulary of the training\n\n");
+    printf("vocabulary.txt : file containing the vocabulary of the training\n");
     printf("#############################\n\n");
     cliqueDeleteHashTable(&ht,BUCKET_HARD_DELETE_MODE);
     destroy_secTable(&vocabulary,ST_HARD_DELETE_MODE);

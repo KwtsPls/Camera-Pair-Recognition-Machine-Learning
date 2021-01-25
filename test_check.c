@@ -190,6 +190,7 @@ secTable *create_dummy_vocab(){
     return  vocab;
 }
 
+//Function to create a dummy model for the test
 logisticreg *create_dummy_model(){
     logisticreg *model = create_logisticReg(1000,CONCAT_VECTORS,4,2,0.6,2);
     for(int i=0;i<1000;i++){

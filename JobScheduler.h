@@ -90,13 +90,6 @@ typedef struct job_scheduler
     pthread_cond_t jobs_finished_cond;  
     int jobs_running;               //Protected by queue lock
 
-    /*
-    int numOfN;
-    double *new_weight;
-    double *gradient;
-    int *finished;
-    */
-
 }JobScheduler;
 
 
