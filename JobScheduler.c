@@ -158,9 +158,13 @@ void Job_args_deleter(int job_tag,void **args){
         free(arg);
         *args = NULL;
     }
-    else{
+    else if(job_tag == TESTING_JOB){
         inference_job_args *arg = (inference_job_args *) (*args);
         free(arg);
+        *args = NULL;
+    }
+    else{
+        free(*args);
         *args = NULL;
     }
 
