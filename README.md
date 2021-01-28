@@ -272,8 +272,8 @@ H συνάρτηση αναλύει το json file που άνοιξε σε keys
 ### make test - Για να δημιουργηθούν τα test cases του accutest
 ### ./test - Για τα test files
 ### ./learning_test - Για τα test unit του preprocessing και του machine learning
-### ./main -f filename -b bow-type -v vector-type -n negative-mode -m NumOfWords - Για να τρέξει η main
-### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on -m 1000 
+### ./main -f filename -b bow-type -v vector-type -n negative-mode -m Num_of_Words - Για να τρέξει η main
+### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on -m 1000
 ### ./inferece -c filename - Για να τρέξει το inference, ποτέ πριν τη main, δηλαδή αν δεν υπάρχει ήδη κάποιο αρχείο stats.txt
 ### e.g : ./inference -c sigmod_large_labelled_dataset.csv
 ### make clean - Για να σβηστούν τα .o και εκτελέσιμα
