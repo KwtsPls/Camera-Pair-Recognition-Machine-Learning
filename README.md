@@ -212,6 +212,43 @@ H συνάρτηση αυτή επιτρέφει μια δομή indexedWord γ�
 Η συνάρτηση αυτή γράφει στο αρχείο `vocabulary.txt` το vocabulary που χρησιμοποιήθηκε για το training. Έτσι ώστε στο στάδιο του inference, να μην γίνει inference με διαφορετικό vocabulary.
 #### `secTable *initVocab_secTable(char *filename)`
 Η συνάρτηση αυτή διαβάζει ένα αρχείο με όνομα `filename` και δημιουργεί το αντίστοιχο vocabulary, που είχε αποθηκευτεί στο αρχείο.
+## JobScheduler.h
+### thread_train_args
+Δομή που χρησιμοποιείται για να πάρουν ορίσματα τα threads
+### job
+Δομή job, όπου περιέχεται ο `int job_tag` : ακέραιος για να δηλώνεται τι τύπου είναι η εργασία που θα εκτελέσει κάποιο νήμα. `job_fun function` δείκτης σε συνάρτηση που θα εκτελέσει το thread. `void *args` τα ορίσματα τις συνάρτησεις που θα χρησιμοποιήσει η συνάρτηση.
+### train_job_args
+Δομή που χρησιμοποιείται για να πάρουν ορίσματα οι συναρτήσεις για το training
+### inference_job_args
+Δομή που χρησιμοποιείται για να πάρουν ορίσματα οι συναρτήσεις για το inference
+### JobScheduler
+Δομή JobScheduler, `pthread_t *threads` τα threads που είναι να δημιουργηθούν και να τρέχουν παράλληλα, `int execution_threads` ο αριθμός των threads που δημιουργήθηκαν, `int flag_exit_threads_all` flag για το αν τα threads πρέπει να τερματήσουν, `int jobs_curr_running` ακέραιος που μετράει πόσες διεργασίες εκτελούνται αυτή τη στιγμή από τα νήματα, `thread_train_args *t_args` τα ορίσματα που είναι να πάρουν τα threads, `Queue *Job` ουρά για τις διεργασίες που είναι να εκτελέσουν τα threads, `pthread_mutex_t locking_queue` mutex για να κλειδώνει η ουρά, και όταν είναι να αλλάξει η κοινή μνήμη, `pthread_cond_t queue_condition` condition για την ουρά, `pthread_cond_t session_finsihed_cond` condition για τα threads, ` pthread_cond_t jobs_finished_cond` condition για το αν τελειώσαν οι διεργασίες.
+#### `JobScheduler *initialize_scheduler(int execution_threads)`
+Δημιουργείται ένα αντικείμενο JobScheduler και τα threads.
+#### `void schedule(JobScheduler *scheduler,Job *job_s)`
+Εισάγεται μία καινούργια διεργασία στην ουρά, για να εκτελεστεί στα threads.
+#### `void waitUntilJobsHaveFinished(JobScheduler *scheduler)`
+To κύριο thread περιμένει να τελειώσουν όλες οι διεργασίες που έχουν δωθεί να εκτελεστούν από τα υπόλοιπα threads.
+#### `void threads_must_exit(JobScheduler *scheduler)`
+Το κύριο thread στέλνει σήμα ότι τα threads πρέπει να τερματήσουν.
+#### `void destroy_JobScheduler(JobScheduler **scheduler)`
+Διαγράφεται ο JobScheduler και απελευθερώνεται η μνήμη.
+#### `void *thread_fun(void *args)`
+Tην συνάρτηση την εκτελούν τα threads. Βλέπει αν η ουρά είναι άδεια, αν δεν είναι τότε παίρνει την πρώτη διεργασία από την ουρά, την αφαιρεί, απελευθερώνει το mutex και εκτελεί την διεργασία. Αλλιώς περιμένει μέχρι να έρθει κάποιο σήμα. Ο βρόγχος αυτός συνεχίζει μέχρι να δωθεί στα threads σήμα που τους λέει να τερματίσουν.
+## List.h
+### List
+Απλή δομή συνδεδεμένης λίστας που χρησιμοποιείται στα RedBlack trees.
+## RBtree.h
+### RBtree
+Δομή Red Black Tree, χρησιμοποιείται για να αποθηκεύσει το left_spec, right_spec, prediction έτσι ώστε να μπορούμε να λύσουμε τα transitivity conflicts μέσω της καλύτερης πρόβλεψης. Ουσιαστικά ταξινομούνται στο Red Black Tree οι καλύτερες προβλέψεις, έτσι ώστε όταν υπάρχει κάποιο conflict, θεωρούμαι ότι η προηγούμενη πρόβλεψη που οδήγησε εκεί ήταν καλύτερη.
+## Queue.h
+### Queue
+Δομή Queue απλής ουράς.
+## sparseVector.h
+### sparseVector
+Χρησιμοποιείται για να μειωθεί δραματικά ο χρόνος εκτέλεσης του training. Δύο πίνακες ο οποίος πρώτος περιέχει σε κάθε θέση του έναν ακέραιο που θα ήταν ο δείκτης στον αρχικό πίνακα, ενώ στο άλλο η τιμή του. Δεν αποθηκεύονται τα μηδενικά.
+## Transitivity.h
+Για να λυθούν τα transitivity issues, απλά θεωρούμε τις καλύτερες προβλέψεις, ότι αυτές που είναι πιο κόντα στο 1 ή στο 0 τις ταξινομούμε και τις βάζουμε στο καινούργιο train_set.
 # Υπόλοιπες συναρτήσεις
 ## CsvReader.h
 #### `HashTable *csvParser(char *filename, HashTable **ht)`
@@ -272,12 +309,12 @@ H συνάρτηση αναλύει το json file που άνοιξε σε keys
 ### make test - Για να δημιουργηθούν τα test cases του accutest
 ### ./test - Για τα test files
 ### ./learning_test - Για τα test unit του preprocessing και του machine learning
-### ./main -f filename -b bow-type -v vector-type -n negative-mode -m Num_of_Words - Για να τρέξει η main
-### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on -m 1000
+### ./main -f filename -b bow-type -v vector-type -n negative-mode -m NumOfWords - Για να τρέξει η main
+### e.g: ./main -f sigmod_large_labelled_dataset.csv -b tf-idf -v abs -n on -m 1000 
 ### ./inferece -c filename - Για να τρέξει το inference, ποτέ πριν τη main, δηλαδή αν δεν υπάρχει ήδη κάποιο αρχείο stats.txt
 ### e.g : ./inference -c sigmod_large_labelled_dataset.csv
 ### make clean - Για να σβηστούν τα .o και εκτελέσιμα
 ### Παρατηρήσεις
 1. Το αρχείο που είναι να γίνει το inference να είναι τύπου, *sigmod_large_labelled_dataset.csv*. Δλδ στη πρώτη γραμμή να περιέχεται το [left_spec,right_spec,label] και έπειτα τα δεδομένα να είναι αυτού του τύπου.
-
+2. Η καλύτερη εκτέλεση για το training είναι : ./main -f sigmod_large_labelled_dataset.csv -b bow -v abs -n on -m 1000 
 
