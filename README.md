@@ -1,8 +1,12 @@
-# Project στο μάθημα Ανάπτυξη Λογισμικού για Πληροφοριακά Συστήματα !!
-# Mέλη της Ομάδας :
-# 1. Κωνσταντίνος Πλας (1115201700125)
-# 2. Ελευθέριος Στέτσικας (1115201700150)  
-# Περιγραφή των δομών
+# Project on Software Development for Information Systems ( DIT - National and Kapodistrian University of Anthes )
+# Contributors :
+# 1. Konstantinos Plas
+# 2. Eleftherios Stetsikas
+# Professor in charge :
+# 1. Professor Yannis Ioannidis
+# Supervisor :
+# 1. Georgios Pikrammenos
+
 ## BagOfWords.h
 ### indexedWord
 Είναι μία απλή δομή η οποία περιέχει `char *word`, η οποία είναι η λέξη, `int index`, ο δείκτης της λέξης στο Bag Of Words, και τα `double idf, double tf, double tf_idf_mean` που είναι το tf_idf score της λέξης.
