@@ -6,7 +6,9 @@
 # 1. Professor Yannis Ioannidis
 # Supervisor :
 # 1. Georgios Pikrammenos
-# Unit testing was acomplished using acutest.h library
+
+
+# Unit testing was acomplished using acutest.h https://github.com/mity/acutest library
 
 ## BagOfWords.h
 ### indexedWord
