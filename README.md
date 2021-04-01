@@ -1,4 +1,4 @@
-# Project on Software Development for Information Systems ( DIT - National and Kapodistrian University of Anthes )
+# Project on Software Development for Information Systems ( DIT - National and Kapodistrian University of Athens )
 # Contributors :
 # 1. Konstantinos Plas
 # 2. Eleftherios Stetsikas
