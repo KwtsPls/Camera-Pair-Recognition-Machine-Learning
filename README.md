@@ -6,6 +6,7 @@
 # 1. Professor Yannis Ioannidis
 # Supervisor :
 # 1. Georgios Pikrammenos
+# Unit testing was acomplished using acutest.h library
 
 ## BagOfWords.h
 ### indexedWord
